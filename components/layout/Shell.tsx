@@ -37,10 +37,7 @@ export default function Shell({ children }: ShellProps) {
 
   const isOnPulse = pathname === '/';
 
-  const panelState = useMemo(
-    () => ({ sidebar: isSidebarOpen, feed: isFeedOpen, toggleSidebar, toggleFeed }),
-    [isSidebarOpen, isFeedOpen, toggleSidebar, toggleFeed],
-  );
+  const panelState = { sidebar: isSidebarOpen, feed: isFeedOpen, toggleSidebar, toggleFeed };
 
   return (
     <PanelProvider value={panelState}>
@@ -54,7 +51,7 @@ export default function Shell({ children }: ShellProps) {
           onFeedToggle={toggleFeed}
           showPanelToggles={isOnPulse}
         />
-        <main className="flex-1 overflow-auto">{children}</main>
+        <main className="flex flex-1 flex-col overflow-hidden">{children}</main>
         <ChatDrawer
           isOpen={isChatOpen}
           onClose={handleChatClose}

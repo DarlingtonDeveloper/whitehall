@@ -7,9 +7,14 @@ import PulseSidebar from '@/components/sidebar/PulseSidebar';
 import GraphLegend from '@/components/sidebar/GraphLegend';
 import FeedPanel from '@/components/feed/FeedPanel';
 import { useGraphFilter } from '@/components/sidebar/useGraphFilter';
-import { usePanels } from '@/components/layout/PanelContext';
 
-export default function PulseContent() {
+interface PulseContentProps {
+  sidebarOpen: boolean;
+  feedOpen: boolean;
+  toggleSidebar: () => void;
+}
+
+export default function PulseContent({ sidebarOpen, feedOpen, toggleSidebar }: PulseContentProps) {
   const {
     filter,
     graphFilter,
@@ -20,8 +25,6 @@ export default function PulseContent() {
     toggleFocusMode,
     resetFilters,
   } = useGraphFilter();
-
-  const { sidebar, feed, toggleSidebar } = usePanels();
 
   const visibleCount = useMemo(() => {
     return ENTITY_LIST.filter((e) => graphFilter.isVisible(e)).length;
@@ -36,7 +39,7 @@ export default function PulseContent() {
   return (
     <div className="flex flex-1 overflow-hidden">
       {/* Sidebar */}
-      {sidebar && (
+      {sidebarOpen && (
         <PulseSidebar
           filter={filter}
           onSearch={setSearch}
@@ -61,7 +64,7 @@ export default function PulseContent() {
       </div>
 
       {/* Feed panel */}
-      {feed && (
+      {feedOpen && (
         <div className="flex w-80 shrink-0 flex-col border-l border-wh-border bg-wh-panel">
           <FeedPanel title="Activity Feed" />
         </div>
