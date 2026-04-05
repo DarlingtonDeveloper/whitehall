@@ -122,7 +122,7 @@ function buildEntityFocusElements(
 
   for (const e of allRelated) {
     if (e.id === entityId) continue;
-    nodes.push(makeNode(e, pulseScores));
+    nodes.push(makeNode(e, pulseScores, 'focus-root'));
   }
 
   // Edges from the focused entity
