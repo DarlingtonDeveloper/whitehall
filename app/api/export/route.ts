@@ -2,10 +2,11 @@ import { NextResponse } from 'next/server';
 import { getClientBySlug } from '@/data/clients';
 import { gatherItems, groupByTheme } from '@/lib/export/gather';
 import { enrichItems } from '@/lib/export/enrich';
+import { evaluateReport } from '@/lib/export/evaluate';
 import { generateReport } from '@/lib/export/docx-generator';
 
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 interface ExportRequestBody {
   clientId: string;
@@ -13,6 +14,7 @@ interface ExportRequestBody {
     from: string;
     to: string;
   };
+  skipEval?: boolean;
 }
 
 export async function POST(request: Request) {
@@ -26,7 +28,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { clientId, dateRange } = body;
+  const { clientId, dateRange, skipEval } = body;
   if (!clientId || typeof clientId !== 'string') {
     return NextResponse.json(
       { error: 'A "clientId" field is required.' },
@@ -68,10 +70,34 @@ export async function POST(request: Request) {
     // 3. Enrich with Claude (theme analysis + synthesis)
     const analysis = await enrichItems(grouped, client, { from, to });
 
-    // 4. Generate DOCX
+    // 4. Evaluate (template validation + LLM-as-judge factuality/specificity)
+    //    Same pipeline as the monitoring agent's evaluate/ module.
+    //    Flagged items get confidence capped at 0.5, which triggers
+    //    [UNVERIFIED] markers in the DOCX output.
+    if (!skipEval) {
+      const evalResult = await evaluateReport(analysis, items, client);
+      console.log('[export] Evaluation:', {
+        template: evalResult.template_validation.passed,
+        factuality: evalResult.factuality.mean_score,
+        specificity: evalResult.specificity.mean_score,
+        overall: evalResult.overall_pass,
+        flagged: evalResult.flagged_refs,
+      });
+
+      // Reduce confidence for flagged items (matches monitoring agent behaviour)
+      for (const section of Object.values(analysis.sections)) {
+        for (const item of [...(section.items || []), ...(section.significant_items || [])]) {
+          if (evalResult.flagged_refs.includes(item.ref)) {
+            item.confidence = Math.min(item.confidence, 0.5);
+          }
+        }
+      }
+    }
+
+    // 5. Generate DOCX
     const buffer = await generateReport(analysis, client);
 
-    // 5. Return file
+    // 6. Return file
     const weekStart = from.toISOString().split('T')[0].replace(/-/g, '_');
     const filename = `${client.name}_Weekly_Monitoring_Report_wc_${weekStart}.docx`;
 
