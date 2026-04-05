@@ -1,21 +1,16 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
 import { ALL_CLIENTS } from '@/data/clients';
+import { usePanelStore, selectClient } from '@/lib/panelStore';
 
 export default function ClientSwitcher() {
-  const router = useRouter();
-  const pathname = usePathname();
+  const { selectedClientId } = usePanelStore();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
-  // Derive current selection from URL
-  const currentSlug = pathname.startsWith('/client/')
-    ? pathname.split('/')[2] ?? null
-    : null;
-  const currentClient = currentSlug
-    ? ALL_CLIENTS.find((c) => c.id === currentSlug)
+  const currentClient = selectedClientId
+    ? ALL_CLIENTS.find((c) => c.id === selectedClientId)
     : null;
 
   // Close on outside click
@@ -40,11 +35,7 @@ export default function ClientSwitcher() {
 
   function handleSelect(slug: string | null) {
     setOpen(false);
-    if (slug === null) {
-      router.push('/');
-    } else {
-      router.push(`/client/${slug}`);
-    }
+    selectClient(slug);
   }
 
   return (
@@ -57,7 +48,7 @@ export default function ClientSwitcher() {
         aria-expanded={open}
       >
         <span className="h-2 w-2 rounded-full bg-wh-accent-teal" />
-        {currentClient ? currentClient.name : 'All Clients'}
+        {currentClient ? currentClient.name : 'All Entities'}
         <ChevronDown />
       </button>
 
@@ -67,8 +58,8 @@ export default function ClientSwitcher() {
           className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-lg border border-wh-border bg-wh-panel shadow-lg shadow-black/40"
         >
           <DropdownItem
-            label="All Clients"
-            selected={currentSlug === null}
+            label="All Entities"
+            selected={selectedClientId === null}
             onSelect={() => handleSelect(null)}
           />
           {ALL_CLIENTS.map((client) => (
@@ -76,7 +67,7 @@ export default function ClientSwitcher() {
               key={client.id}
               label={client.name}
               sublabel={client.sector}
-              selected={currentSlug === client.id}
+              selected={selectedClientId === client.id}
               onSelect={() => handleSelect(client.id)}
             />
           ))}

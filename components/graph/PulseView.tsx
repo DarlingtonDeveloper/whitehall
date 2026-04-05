@@ -1,7 +1,6 @@
 'use client';
 
 import { useMemo, useState, useCallback, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import type { ElementDefinition } from 'cytoscape';
 
 import { ENTITY_LIST } from '@/data/entities';
@@ -12,6 +11,7 @@ import { computePulseScore, getPulseLevel } from '@/lib/graph/pulse';
 import { supabase } from '@/lib/db';
 import type { FeedItem } from '@/types/feed';
 import type { GraphFilter } from '@/components/sidebar/types';
+import { selectEntity } from '@/lib/panelStore';
 import EntityGraph from './EntityGraph';
 import GraphTooltip from './GraphTooltip';
 
@@ -98,7 +98,6 @@ interface PulseViewProps {
 }
 
 export default function PulseView({ filter }: PulseViewProps) {
-  const router = useRouter();
   const [hoveredEntity, setHoveredEntity] = useState<string | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
@@ -130,12 +129,9 @@ export default function PulseView({ filter }: PulseViewProps) {
     [pulseScores, filter],
   );
 
-  const handleNodeClick = useCallback(
-    (entityId: string) => {
-      router.push(`/entity/${entityId}`);
-    },
-    [router],
-  );
+  const handleNodeClick = useCallback((entityId: string) => {
+    selectEntity(entityId);
+  }, []);
 
   const handleNodeHover = useCallback((entityId: string | null) => {
     setHoveredEntity(entityId);

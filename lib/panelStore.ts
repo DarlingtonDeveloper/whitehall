@@ -1,5 +1,5 @@
 /**
- * Simple reactive store for panel open/close state.
+ * Simple reactive store for panel open/close state + selections.
  * Both NavBar and PulseContent subscribe to this directly,
  * so there's no context/prop-drilling to go wrong.
  */
@@ -8,10 +8,19 @@ import { useSyncExternalStore } from 'react';
 
 interface PanelState {
   sidebar: boolean;
-  feed: boolean;
+  intelligence: boolean;
+  selectedEntityId: string | null;
+  selectedClientId: string | null;
 }
 
-let state: PanelState = { sidebar: true, feed: true };
+const DEFAULT: PanelState = {
+  sidebar: true,
+  intelligence: true,
+  selectedEntityId: null,
+  selectedClientId: null,
+};
+
+let state: PanelState = { ...DEFAULT };
 const listeners = new Set<() => void>();
 
 function emit() {
@@ -23,8 +32,23 @@ export function toggleSidebar() {
   emit();
 }
 
-export function toggleFeed() {
-  state = { ...state, feed: !state.feed };
+export function toggleIntelligence() {
+  state = { ...state, intelligence: !state.intelligence };
+  emit();
+}
+
+export function selectEntity(entityId: string) {
+  state = { ...state, selectedEntityId: entityId };
+  emit();
+}
+
+export function clearEntity() {
+  state = { ...state, selectedEntityId: null };
+  emit();
+}
+
+export function selectClient(clientId: string | null) {
+  state = { ...state, selectedClientId: clientId };
   emit();
 }
 
@@ -37,8 +61,8 @@ function getSnapshot() {
   return state;
 }
 
-function getServerSnapshot() {
-  return { sidebar: true, feed: true };
+function getServerSnapshot(): PanelState {
+  return { ...DEFAULT };
 }
 
 export function usePanelStore(): PanelState {
