@@ -1,37 +1,17 @@
 'use client';
 
-import { useMemo, useState, useCallback } from 'react';
+import { useMemo, useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import type { ElementDefinition } from 'cytoscape';
 
-import { ENTITIES, ENTITY_LIST } from '@/data/entities';
+import { ENTITY_LIST } from '@/data/entities';
 import { getEntityColour } from '@/data/colours';
 import { LAYOUT } from '@/lib/graph/layout';
-import { getPulseLevel } from '@/lib/graph/pulse';
+import { computePulseScore, getPulseLevel } from '@/lib/graph/pulse';
+import { supabase } from '@/lib/db';
+import type { FeedItem } from '@/types/feed';
 import EntityGraph from './EntityGraph';
 import GraphTooltip from './GraphTooltip';
-
-// ---------------------------------------------------------------------------
-// Mock pulse data: give ~20 random entities some simulated activity so the
-// graph glows with life even before real feed items are piped in.
-// ---------------------------------------------------------------------------
-
-function buildMockPulseScores(): Map<string, number> {
-  const scores = new Map<string, number>();
-
-  // Deterministic "random" selection — pick entities at regular intervals
-  // from the entity list so the result is stable across renders.
-  const ids = ENTITY_LIST.map((e) => e.id);
-  const step = Math.max(1, Math.floor(ids.length / 20));
-
-  for (let i = 0; i < ids.length; i += step) {
-    // Vary the score so we get a mix of low / medium / high.
-    const score = ((i * 7) % 11) + 0.5; // deterministic spread 0.5 -- 10.5
-    scores.set(ids[i], score);
-  }
-
-  return scores;
-}
 
 // ---------------------------------------------------------------------------
 // Build Cytoscape elements from the full entity set + pre-computed layout.
@@ -99,8 +79,30 @@ export default function PulseView() {
   const router = useRouter();
   const [hoveredEntity, setHoveredEntity] = useState<string | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
+  const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
 
-  const pulseScores = useMemo(() => buildMockPulseScores(), []);
+  useEffect(() => {
+    async function fetchFeed() {
+      const { data } = await supabase
+        .from('feed_items')
+        .select('entity_ids, published_at')
+        .gte('published_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+        .order('published_at', { ascending: false })
+        .limit(200);
+      if (data) setFeedItems(data as FeedItem[]);
+    }
+    fetchFeed();
+  }, []);
+
+  const pulseScores = useMemo(() => {
+    const scores = new Map<string, number>();
+    for (const entity of ENTITY_LIST) {
+      const score = computePulseScore(entity.id, feedItems);
+      if (score > 0) scores.set(entity.id, score);
+    }
+    return scores;
+  }, [feedItems]);
+
   const elements = useMemo(() => buildElements(pulseScores), [pulseScores]);
 
   const handleNodeClick = useCallback(

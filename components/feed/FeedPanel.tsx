@@ -1,137 +1,9 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/db';
 import type { FeedItem } from '@/types/feed';
 import FeedItemCard from './FeedItem';
-
-/* ------------------------------------------------------------------ */
-/*  Mock-data generator                                                */
-/* ------------------------------------------------------------------ */
-
-const MOCK_TEMPLATES: {
-  title: string;
-  source_type: FeedItem['source_type'];
-  source_name: string;
-}[] = [
-  {
-    title: '{entity} publishes updated policy framework',
-    source_type: 'govuk',
-    source_name: 'GOV.UK',
-  },
-  {
-    title: 'Written Statement: {entity} strategic priorities for 2026-27',
-    source_type: 'govuk',
-    source_name: 'GOV.UK',
-  },
-  {
-    title: 'Hansard: Oral Questions to the Secretary of State',
-    source_type: 'hansard',
-    source_name: 'Hansard',
-  },
-  {
-    title: 'Select Committee evidence session on departmental spending',
-    source_type: 'committee',
-    source_name: 'Parliament',
-  },
-  {
-    title: 'Consultation response: regulatory reform proposals',
-    source_type: 'govuk',
-    source_name: 'GOV.UK',
-  },
-  {
-    title: '{entity} annual report and accounts 2025-26 published',
-    source_type: 'govuk',
-    source_name: 'GOV.UK',
-  },
-  {
-    title: 'New legislation laid before Parliament affecting {entity}',
-    source_type: 'legislation',
-    source_name: 'Legislation.gov.uk',
-  },
-  {
-    title: 'Ministerial appointment: changes to {entity} leadership',
-    source_type: 'govuk',
-    source_name: 'GOV.UK',
-  },
-  {
-    title: 'Public Accounts Committee inquiry into {entity} delivery',
-    source_type: 'committee',
-    source_name: 'Parliament',
-  },
-  {
-    title: 'Hansard: Debate on {entity} funding settlement',
-    source_type: 'hansard',
-    source_name: 'Hansard',
-  },
-  {
-    title: 'NAO value for money study: {entity} programme review',
-    source_type: 'web_search',
-    source_name: 'NAO',
-  },
-  {
-    title: '{entity} launches public consultation on service standards',
-    source_type: 'govuk',
-    source_name: 'GOV.UK',
-  },
-  {
-    title: 'Written Answer: staffing levels at {entity}',
-    source_type: 'hansard',
-    source_name: 'Hansard',
-  },
-  {
-    title: 'Infrastructure and Projects Authority review of {entity} projects',
-    source_type: 'govuk',
-    source_name: 'GOV.UK',
-  },
-  {
-    title: 'Forward scan: upcoming statutory instrument affecting {entity}',
-    source_type: 'forward_scan',
-    source_name: 'Forward Scan',
-  },
-];
-
-function seededRandom(seed: number): () => number {
-  let s = seed;
-  return () => {
-    s = (s * 16807 + 0) % 2147483647;
-    return s / 2147483647;
-  };
-}
-
-function generateMockItems(entityId: string, entityName?: string): FeedItem[] {
-  const rand = seededRandom(
-    entityId.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0),
-  );
-  const label = entityName ?? entityId;
-  const now = Date.now();
-
-  return MOCK_TEMPLATES.map((tpl, i) => {
-    const hoursAgo = Math.floor(rand() * 168) + 1; // 1h to 7 days
-    const publishedAt = new Date(now - hoursAgo * 3600000).toISOString();
-    const score = Math.round((rand() * 0.6 + 0.3) * 100) / 100;
-
-    return {
-      id: `mock-${entityId}-${i}`,
-      source_type: tpl.source_type,
-      source_name: tpl.source_name,
-      title: tpl.title.replace(/{entity}/g, label),
-      url: undefined,
-      published_at: publishedAt,
-      entity_ids: [entityId],
-      relevance_score: score,
-      fingerprint: `mock-fp-${entityId}-${i}`,
-      created_at: publishedAt,
-      is_forward_scan: tpl.source_type === 'forward_scan',
-    };
-  }).sort(
-    (a, b) =>
-      new Date(b.published_at).getTime() - new Date(a.published_at).getTime(),
-  );
-}
-
-/* ------------------------------------------------------------------ */
-/*  Feed panel component                                               */
-/* ------------------------------------------------------------------ */
 
 interface FeedPanelProps {
   title?: string;
@@ -144,14 +16,69 @@ interface FeedPanelProps {
 export default function FeedPanel({
   title = 'Activity Feed',
   entityId,
-  entityName,
-  items,
+  clientId,
+  items: propItems,
 }: FeedPanelProps) {
-  const feedItems = useMemo(() => {
-    if (items && items.length > 0) return items;
-    if (entityId) return generateMockItems(entityId, entityName);
-    return generateMockItems('whitehall', 'Government');
-  }, [items, entityId, entityName]);
+  const [items, setItems] = useState<FeedItem[]>(propItems ?? []);
+  const [loading, setLoading] = useState(!propItems);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (propItems && propItems.length > 0) return;
+
+    async function fetchItems() {
+      setLoading(true);
+      setError(null);
+
+      try {
+        let query = supabase
+          .from('feed_items')
+          .select('*')
+          .order('published_at', { ascending: false })
+          .limit(50);
+
+        if (entityId) {
+          query = query.contains('entity_ids', [entityId]);
+        }
+
+        if (clientId) {
+          // Get items that have client_feed_scores for this client
+          const { data: scores } = await supabase
+            .from('client_feed_scores')
+            .select('feed_item_id')
+            .eq('client_id', clientId)
+            .gt('relevance_score', 0)
+            .order('relevance_score', { ascending: false })
+            .limit(50);
+
+          if (scores && scores.length > 0) {
+            const feedIds = scores.map((s) => s.feed_item_id);
+            query = supabase
+              .from('feed_items')
+              .select('*')
+              .in('id', feedIds)
+              .order('published_at', { ascending: false });
+          }
+        }
+
+        const { data, error: dbError } = await query;
+
+        if (dbError) {
+          setError(dbError.message);
+        } else if (data && data.length > 0) {
+          setItems(data as FeedItem[]);
+        } else {
+          setItems([]);
+        }
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load feed');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchItems();
+  }, [entityId, clientId, propItems]);
 
   return (
     <div className="flex h-full flex-col">
@@ -161,13 +88,37 @@ export default function FeedPanel({
           {title}
         </h2>
         <p className="mt-0.5 text-[10px] text-wh-text-secondary/50">
-          {feedItems.length} items
+          {loading ? 'Loading...' : `${items.length} items`}
         </p>
       </div>
 
       {/* Scrollable feed list */}
       <div className="flex-1 overflow-y-auto">
-        {feedItems.map((item) => (
+        {loading && (
+          <div className="flex flex-col gap-2 p-4">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="h-2 w-16 rounded bg-wh-border/60" />
+                <div className="mt-2 h-3 w-full rounded bg-wh-border/40" />
+                <div className="mt-1 h-3 w-3/4 rounded bg-wh-border/30" />
+              </div>
+            ))}
+          </div>
+        )}
+
+        {error && (
+          <div className="p-4 text-xs text-red-400">
+            {error}
+          </div>
+        )}
+
+        {!loading && !error && items.length === 0 && (
+          <div className="p-4 text-xs text-wh-text-secondary/50">
+            No feed items yet. Run a scan or wait for background collection.
+          </div>
+        )}
+
+        {items.map((item) => (
           <FeedItemCard key={item.id} item={item} />
         ))}
       </div>

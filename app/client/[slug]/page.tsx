@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation';
 import Shell from '@/components/layout/Shell';
 import FeedPanel from '@/components/feed/FeedPanel';
 import { getClientBySlug, ALL_CLIENTS } from '@/data/clients';
+import { getEntity } from '@/data/entities';
 import ConstellationView from '@/components/graph/ConstellationView';
 
 export async function generateStaticParams() {
@@ -118,7 +119,7 @@ function StakeholderGroup({
               className="flex flex-col gap-0.5 px-4 py-1.5 transition-colors hover:bg-wh-border/30"
             >
               <span className="text-xs font-medium text-wh-text-primary">
-                {s.entityId}
+                {getEntity(s.entityId)?.name ?? s.entityId}
               </span>
               <span className="text-[10px] text-wh-text-secondary/60">
                 {s.role}
