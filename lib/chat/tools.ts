@@ -1,142 +1,92 @@
-import type { Tool } from '@anthropic-ai/sdk/resources/messages/messages';
-import { searchEntities, getEntity, ENTITY_LIST } from '@/data/entities';
+import { tool } from 'ai';
+import { z } from 'zod';
+import { searchEntities, getEntity } from '@/data/entities';
 import { getClientBySlug, ALL_CLIENTS } from '@/data/clients';
 import { getPowers } from '@/data/powers';
 import { getRelationships } from '@/data/relationships';
 import { supabase } from '@/lib/db';
 
 // ---------------------------------------------------------------------------
-// Tool definitions (sent to the Anthropic API)
+// Tool definitions using the Vercel AI SDK `tool()` helper.
+// Each tool declares a Zod schema for input and an `execute` function.
+// The AI SDK handles tool invocation, result passing, and multi-step loops
+// automatically — no manual agentic loop needed.
 // ---------------------------------------------------------------------------
 
-export const toolDefinitions: Tool[] = [
-  {
-    name: 'entity_lookup',
+export const chatTools = {
+  entity_lookup: tool({
     description:
-      'Search for UK government entities by name, ID, or current holder. Returns matching entities with their category, description, current holder, and parent relationships. Use this when the user asks about a specific department, minister, regulator, or public body.',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        query: {
-          type: 'string',
-          description:
-            'Search query — can be an entity name (e.g. "DESNZ"), an entity ID (e.g. "desnz"), or a person name (e.g. "Ed Miliband"). Case-insensitive partial matching.',
-        },
-      },
-      required: ['query'],
+      'Search for UK government entities by name, ID, or current holder. Returns matching entities with their category, description, current holder, and parent relationships.',
+    inputSchema: z.object({
+      query: z
+        .string()
+        .describe(
+          'Search query — entity name, ID, or person name. Case-insensitive.',
+        ),
+    }),
+    execute: async ({ query }): Promise<Record<string, unknown>> => {
+      return handleEntityLookup(query);
     },
-  },
-  {
-    name: 'feed_search',
+  }),
+
+  feed_search: tool({
     description:
-      'Search recent feed items (parliamentary activity, consultations, press releases, appointments). Returns relevant items with title, source, date, and summary. Use this when the user asks about recent activity, news, or developments.',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        query: {
-          type: 'string',
-          description: 'Search query for feed items — keywords, entity names, or topics.',
-        },
-        limit: {
-          type: 'number',
-          description: 'Maximum number of results to return. Default 5.',
-        },
-      },
-      required: ['query'],
+      'Search recent feed items (parliamentary activity, consultations, press releases, appointments).',
+    inputSchema: z.object({
+      query: z
+        .string()
+        .describe('Search query — keywords, entity names, or topics.'),
+      limit: z
+        .number()
+        .optional()
+        .describe('Maximum results. Default 5.'),
+    }),
+    execute: async ({ query, limit }): Promise<Record<string, unknown>> => {
+      return handleFeedSearch(query, limit);
     },
-  },
-  {
-    name: 'stakeholder_map',
+  }),
+
+  stakeholder_map: tool({
     description:
-      'Get the full stakeholder map for a client, showing all tracked government entities organised by priority level (primary, secondary, tertiary). Use this when the user asks about a client\'s key contacts, decision-makers, or stakeholder relationships.',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        clientId: {
-          type: 'string',
-          description:
-            'The client slug/ID (e.g. "rwe", "sanofi"). If not provided, lists available clients.',
-        },
-      },
-      required: [],
+      "Get the full stakeholder map for a client, showing tracked government entities by priority level.",
+    inputSchema: z.object({
+      clientId: z
+        .string()
+        .optional()
+        .describe('Client slug/ID (e.g. "rwe", "sanofi").'),
+    }),
+    execute: async ({ clientId }): Promise<Record<string, unknown>> => {
+      return handleStakeholderMap(clientId);
     },
-  },
-  {
-    name: 'graph_action',
+  }),
+
+  graph_action: tool({
     description:
-      'Manipulate the interactive graph visualisation. Use this when the user asks to show, focus on, filter, or highlight entities on the graph. Actions: select_entity (opens entity panel and centres graph), search (filters graph nodes by text), reset (clears all filters), focus_mode (toggle focus mode which hides non-matching nodes).',
-    input_schema: {
-      type: 'object' as const,
-      properties: {
-        action: {
-          type: 'string',
-          enum: ['select_entity', 'search', 'reset', 'focus_mode'],
-          description: 'The graph action to perform.',
-        },
-        entityId: {
-          type: 'string',
-          description: 'Entity ID for select_entity action (e.g. "desnz", "ofgem").',
-        },
-        query: {
-          type: 'string',
-          description: 'Search query for search action.',
-        },
-        enabled: {
-          type: 'boolean',
-          description: 'Whether to enable or disable focus mode.',
-        },
-      },
-      required: ['action'],
+      'Manipulate the interactive graph visualisation. Actions: select_entity, search, reset, focus_mode.',
+    inputSchema: z.object({
+      action: z
+        .enum(['select_entity', 'search', 'reset', 'focus_mode'])
+        .describe('The graph action to perform.'),
+      entityId: z.string().optional().describe('Entity ID for select_entity.'),
+      query: z.string().optional().describe('Search query for search action.'),
+      enabled: z.boolean().optional().describe('Enable/disable focus mode.'),
+    }),
+    execute: async ({ action, entityId, query, enabled }): Promise<Record<string, unknown>> => {
+      return handleGraphAction(action, entityId, query, enabled);
     },
-  },
-];
+  }),
+};
 
 // ---------------------------------------------------------------------------
-// Tool handlers (execute when Claude invokes a tool)
+// Tool handler implementations
 // ---------------------------------------------------------------------------
 
-interface ToolInput {
-  [key: string]: unknown;
-}
-
-export function handleToolCall(
-  toolName: string,
-  toolInput: ToolInput,
-): string {
-  switch (toolName) {
-    case 'entity_lookup':
-      return handleEntityLookup(toolInput);
-    case 'feed_search':
-      return handleFeedSearch(toolInput);
-    case 'stakeholder_map':
-      return handleStakeholderMap(toolInput);
-    case 'graph_action':
-      return handleGraphAction(toolInput);
-    default:
-      return JSON.stringify({ error: `Unknown tool: ${toolName}` });
-  }
-}
-
-/** Async variant for tools that need database access */
-export async function handleToolCallAsync(
-  toolName: string,
-  toolInput: ToolInput,
-): Promise<string> {
-  if (toolName === 'feed_search') {
-    return handleFeedSearchAsync(toolInput);
-  }
-  return handleToolCall(toolName, toolInput);
-}
-
-function handleEntityLookup(input: ToolInput): string {
-  const query = String(input.query ?? '');
-
-  // Try exact ID match first
+function handleEntityLookup(query: string): Record<string, unknown> {
   const exact = getEntity(query);
   if (exact) {
     const powers = getPowers(query);
     const rels = getRelationships(query);
-    return JSON.stringify({
+    return {
       match: 'exact',
       entity: {
         id: exact.id,
@@ -160,20 +110,19 @@ function handleEntityLookup(input: ToolInput): string {
           description: p.description,
         })),
       },
-    });
+    };
   }
 
-  // Fuzzy search
   const results = searchEntities(query).slice(0, 10);
   if (results.length === 0) {
-    return JSON.stringify({
+    return {
       match: 'none',
-      message: `No entities found matching "${query}". Try a different search term or use a known entity ID.`,
+      message: `No entities found matching "${query}".`,
       suggestion: 'Common searches: "Treasury", "Home Office", "Ofgem", "Secretary of State"',
-    });
+    };
   }
 
-  return JSON.stringify({
+  return {
     match: 'search',
     count: results.length,
     results: results.map((e) => ({
@@ -184,17 +133,11 @@ function handleEntityLookup(input: ToolInput): string {
       currentHolder: e.currentHolder ?? null,
       description: e.description.slice(0, 200),
     })),
-  });
+  };
 }
 
-function handleFeedSearch(input: ToolInput): string {
-  // Synchronous fallback — returns a note to use async version
-  return JSON.stringify({ note: 'Querying feed database...', query: String(input.query ?? '') });
-}
-
-async function handleFeedSearchAsync(input: ToolInput): Promise<string> {
-  const query = String(input.query ?? '');
-  const limit = Math.min(Number(input.limit ?? 10), 20);
+async function handleFeedSearch(query: string, limit?: number): Promise<Record<string, unknown>> {
+  const maxLimit = Math.min(limit ?? 10, 20);
 
   try {
     const escaped = query.replace(/[%_]/g, '\\$&');
@@ -203,14 +146,12 @@ async function handleFeedSearchAsync(input: ToolInput): Promise<string> {
       .select('id, title, url, source_type, source_name, published_at, entity_ids')
       .or(`title.ilike.%${escaped}%,source_name.ilike.%${escaped}%`)
       .order('published_at', { ascending: false })
-      .limit(limit);
+      .limit(maxLimit);
 
-    if (error) {
-      return JSON.stringify({ error: error.message, query });
-    }
+    if (error) return { error: error.message, query };
 
     if (!data || data.length === 0) {
-      // Try entity-based search as fallback
+      // Fallback: entity-based search
       const entities = searchEntities(query).slice(0, 5);
       if (entities.length > 0) {
         const entityIds = entities.map((e) => e.id);
@@ -219,10 +160,10 @@ async function handleFeedSearchAsync(input: ToolInput): Promise<string> {
           .select('id, title, url, source_type, source_name, published_at, entity_ids')
           .overlaps('entity_ids', entityIds)
           .order('published_at', { ascending: false })
-          .limit(limit);
+          .limit(maxLimit);
 
         if (entityData && entityData.length > 0) {
-          return JSON.stringify({
+          return {
             query,
             matchedVia: 'entity_ids',
             results: entityData.map((item) => ({
@@ -233,14 +174,13 @@ async function handleFeedSearchAsync(input: ToolInput): Promise<string> {
               date: item.published_at,
               entities: item.entity_ids,
             })),
-          });
+          };
         }
       }
-
-      return JSON.stringify({ query, results: [], message: 'No feed items found matching this query.' });
+      return { query, results: [], message: 'No feed items found.' };
     }
 
-    return JSON.stringify({
+    return {
       query,
       results: data.map((item) => ({
         title: item.title,
@@ -250,87 +190,71 @@ async function handleFeedSearchAsync(input: ToolInput): Promise<string> {
         date: item.published_at,
         entities: item.entity_ids,
       })),
-    });
+    };
   } catch (err) {
-    return JSON.stringify({ error: err instanceof Error ? err.message : 'Feed search failed', query });
+    return { error: err instanceof Error ? err.message : 'Feed search failed', query };
   }
 }
 
-function handleGraphAction(input: ToolInput): string {
-  const action = String(input.action ?? '');
+function handleGraphAction(
+  action: string,
+  entityId?: string,
+  query?: string,
+  enabled?: boolean,
+): Record<string, unknown> {
   switch (action) {
     case 'select_entity': {
-      const entityId = String(input.entityId ?? '');
-      const entity = getEntity(entityId);
+      const id = entityId ?? '';
+      const entity = getEntity(id);
       if (!entity) {
-        // Try fuzzy match
-        const matches = searchEntities(entityId);
+        const matches = searchEntities(id);
         if (matches.length > 0) {
-          return JSON.stringify({
-            success: true,
-            resolved: true,
-            entityId: matches[0].id,
-            message: `Selected ${matches[0].name} on the graph.`,
-          });
+          return { success: true, resolved: true, entityId: matches[0].id, message: `Selected ${matches[0].name} on the graph.` };
         }
-        return JSON.stringify({ error: `Entity "${entityId}" not found.` });
+        return { error: `Entity "${id}" not found.` };
       }
-      return JSON.stringify({ success: true, entityId: entity.id, message: `Selected ${entity.name} on the graph.` });
+      return { success: true, entityId: entity.id, message: `Selected ${entity.name} on the graph.` };
     }
     case 'search':
-      return JSON.stringify({ success: true, message: `Filtering graph for: "${input.query}"` });
+      return { success: true, message: `Filtering graph for: "${query}"` };
     case 'reset':
-      return JSON.stringify({ success: true, message: 'Graph filters cleared.' });
+      return { success: true, message: 'Graph filters cleared.' };
     case 'focus_mode':
-      return JSON.stringify({ success: true, message: `Focus mode ${input.enabled ? 'enabled' : 'disabled'}.` });
+      return { success: true, message: `Focus mode ${enabled ? 'enabled' : 'disabled'}.` };
     default:
-      return JSON.stringify({ error: `Unknown graph action: ${action}` });
+      return { error: `Unknown graph action: ${action}` };
   }
 }
 
-function handleStakeholderMap(input: ToolInput): string {
-  const clientId = input.clientId as string | undefined;
-
+function handleStakeholderMap(clientId?: string): Record<string, unknown> {
   if (!clientId) {
-    return JSON.stringify({
-      availableClients: ALL_CLIENTS.map((c) => ({
-        id: c.id,
-        name: c.name,
-        sector: c.sector,
-      })),
+    return {
+      availableClients: ALL_CLIENTS.map((c) => ({ id: c.id, name: c.name, sector: c.sector })),
       message: 'Provide a clientId to see their stakeholder map.',
-    });
+    };
   }
 
   const client = getClientBySlug(clientId);
   if (!client) {
-    return JSON.stringify({
+    return {
       error: `Client "${clientId}" not found.`,
       availableClients: ALL_CLIENTS.map((c) => ({ id: c.id, name: c.name })),
-    });
+    };
   }
 
-  const grouped: Record<string, Array<{
-    entityId: string;
-    name: string;
-    holder: string | null;
-    role: string;
-    notes: string | null;
-  }>> = { primary: [], secondary: [], tertiary: [] };
-
+  const grouped: Record<string, unknown[]> = { primary: [], secondary: [], tertiary: [] };
   for (const s of client.stakeholders) {
     const entity = getEntity(s.entityId);
-    const entry = {
+    (grouped[s.priority] ?? []).push({
       entityId: s.entityId,
       name: entity?.name ?? s.entityId,
       holder: entity?.currentHolder ?? null,
       role: s.role,
       notes: s.notes ?? null,
-    };
-    (grouped[s.priority] ?? []).push(entry);
+    });
   }
 
-  return JSON.stringify({
+  return {
     client: { id: client.id, name: client.name, sector: client.sector },
     stakeholders: grouped,
     totalCount: client.stakeholders.length,
@@ -339,5 +263,5 @@ function handleStakeholderMap(input: ToolInput): string {
       entityCount: t.entityIds.length,
       keywords: t.keywords,
     })),
-  });
+  };
 }

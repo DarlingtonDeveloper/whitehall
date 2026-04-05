@@ -1,6 +1,7 @@
-import Anthropic from '@anthropic-ai/sdk';
+import { streamText, stepCountIs } from 'ai';
+import { anthropic } from '@ai-sdk/anthropic';
 import { buildSystemPrompt } from '@/lib/chat/systemPrompt';
-import { toolDefinitions, handleToolCallAsync } from '@/lib/chat/tools';
+import { chatTools } from '@/lib/chat/tools';
 
 export const dynamic = 'force-dynamic';
 
@@ -17,7 +18,8 @@ export async function POST(request: Request) {
   if (!apiKey) {
     return new Response(
       JSON.stringify({
-        error: 'ANTHROPIC_API_KEY is not configured. Add it to your .env.local file to enable the chat feature.',
+        error:
+          'ANTHROPIC_API_KEY is not configured. Add it to your .env.local file to enable the chat feature.',
       }),
       { status: 503, headers: { 'Content-Type': 'application/json' } },
     );
@@ -41,11 +43,10 @@ export async function POST(request: Request) {
     );
   }
 
-  const client = new Anthropic({ apiKey });
   const systemPrompt = buildSystemPrompt({ clientId, entityId });
 
-  // Build message history
-  const messages: Anthropic.MessageParam[] = [];
+  // Build message history in AI SDK format
+  const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
   if (history && Array.isArray(history)) {
     for (const msg of history) {
       if (msg.role === 'user' || msg.role === 'assistant') {
@@ -55,92 +56,82 @@ export async function POST(request: Request) {
   }
   messages.push({ role: 'user', content: message });
 
+  /**
+   * DELIBERATE: Graph command side-channel via HTML comment markers.
+   *
+   * When the graph_action tool is invoked, we embed <!--GRAPH_CMD:{json}-->
+   * markers in the text stream. The client parses these out before display
+   * and dispatches them to the graph via a pub/sub bus.
+   *
+   * Why HTML comments instead of a structured sideband?
+   * 1. streamText returns a single text stream — there's no built-in
+   *    sideband for out-of-band metadata.
+   * 2. HTML comments are invisible if accidentally rendered as markdown,
+   *    and trivially parseable with a regex.
+   * 3. They can be emitted mid-stream (as soon as the tool resolves),
+   *    letting the graph react before the full response finishes.
+   */
+  const graphCommands: string[] = [];
+
+  const result = streamText({
+    model: anthropic('claude-sonnet-4-20250514'),
+    system: systemPrompt,
+    messages,
+    tools: chatTools,
+    stopWhen: stepCountIs(5),
+    onStepFinish: ({ toolCalls, toolResults }) => {
+      if (!toolCalls || !toolResults) return;
+      for (let i = 0; i < toolCalls.length; i++) {
+        const call = toolCalls[i];
+        if (call.toolName !== 'graph_action') continue;
+        const toolResult = toolResults[i];
+        if (!toolResult || typeof toolResult !== 'object') continue;
+        const res = toolResult as Record<string, unknown>;
+        if (!res.success) continue;
+
+        const input = call.input as Record<string, unknown>;
+        const cmd: Record<string, unknown> = { type: input.action };
+        if (input.action === 'select_entity') {
+          cmd.entityId = res.entityId ?? input.entityId;
+        } else if (input.action === 'search') {
+          cmd.query = input.query;
+        } else if (input.action === 'focus_mode') {
+          cmd.enabled = input.enabled;
+        }
+        graphCommands.push(`<!--GRAPH_CMD:${JSON.stringify(cmd)}-->`);
+      }
+    },
+  });
+
+  // Convert the AI SDK stream to a plain text stream with embedded graph commands
   const encoder = new TextEncoder();
+  let commandsEmitted = false;
 
   const readable = new ReadableStream({
     async start(controller) {
       try {
-        let currentMessages = [...messages];
-        let continueLoop = true;
-
-        while (continueLoop) {
-          continueLoop = false;
-
-          const stream = client.messages.stream({
-            model: 'claude-sonnet-4-20250514',
-            max_tokens: 2048,
-            system: systemPrompt,
-            messages: currentMessages,
-            tools: toolDefinitions,
-          });
-
-          for await (const event of stream) {
-            if (
-              event.type === 'content_block_delta' &&
-              event.delta.type === 'text_delta'
-            ) {
-              controller.enqueue(encoder.encode(event.delta.text));
+        for await (const chunk of result.textStream) {
+          // Emit pending graph commands before the first text chunk
+          if (!commandsEmitted && graphCommands.length > 0) {
+            for (const cmd of graphCommands) {
+              controller.enqueue(encoder.encode(cmd));
             }
+            graphCommands.length = 0;
+            commandsEmitted = true;
           }
+          controller.enqueue(encoder.encode(chunk));
+        }
 
-          const finalMessage = await stream.finalMessage();
-
-          if (finalMessage.stop_reason === 'tool_use') {
-            const toolBlocks = finalMessage.content
-              .filter((block): block is Anthropic.ToolUseBlock => block.type === 'tool_use');
-
-            if (toolBlocks.length > 0) {
-              // Emit graph action markers before tool results
-              for (const block of toolBlocks) {
-                if (block.name === 'graph_action') {
-                  const input = block.input as Record<string, unknown>;
-                  // For select_entity with fuzzy match, resolve first
-                  const result = await handleToolCallAsync(block.name, input);
-                  const parsed = JSON.parse(result);
-                  if (parsed.success) {
-                    const cmd: Record<string, unknown> = { type: input.action };
-                    if (input.action === 'select_entity') {
-                      cmd.entityId = parsed.entityId ?? input.entityId;
-                    } else if (input.action === 'search') {
-                      cmd.query = input.query;
-                    } else if (input.action === 'focus_mode') {
-                      cmd.enabled = input.enabled;
-                    }
-                    controller.enqueue(encoder.encode(`<!--GRAPH_CMD:${JSON.stringify(cmd)}-->`));
-                  }
-                }
-              }
-
-              currentMessages.push({
-                role: 'assistant',
-                content: finalMessage.content,
-              });
-
-              const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
-                toolBlocks.map(async (block) => ({
-                  type: 'tool_result' as const,
-                  tool_use_id: block.id,
-                  content: await handleToolCallAsync(block.name, block.input as Record<string, unknown>),
-                })),
-              );
-
-              currentMessages.push({
-                role: 'user',
-                content: toolResults,
-              });
-
-              continueLoop = true;
-            }
-          }
+        // Emit any graph commands that arrived during later steps
+        for (const cmd of graphCommands) {
+          controller.enqueue(encoder.encode(cmd));
         }
 
         controller.close();
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : 'An unexpected error occurred.';
-        controller.enqueue(
-          encoder.encode(`\n\n[Error: ${errorMessage}]`),
-        );
+        controller.enqueue(encoder.encode(`\n\n[Error: ${errorMessage}]`));
         controller.close();
       }
     },

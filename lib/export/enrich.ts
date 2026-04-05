@@ -1,10 +1,11 @@
 // ---------------------------------------------------------------------------
 // LLM enrichment — runs theme analyses in parallel (Sonnet), then a single
 // synthesis pass to produce cross-cutting sections. Direct port of the
-// monitoring agent's analyse/ pipeline.
+// monitoring agent's analyse/ pipeline, using the Vercel AI SDK.
 // ---------------------------------------------------------------------------
 
-import Anthropic from '@anthropic-ai/sdk';
+import { generateText } from 'ai';
+import { anthropic } from '@ai-sdk/anthropic';
 import type { ClientConfig } from '@/types/client';
 import type { FeedItem } from '@/types/feed';
 import type { AnalysisJSON } from './types';
@@ -41,10 +42,6 @@ export async function enrichItems(
   client: ClientConfig,
   dateRange: { from: Date; to: Date },
 ): Promise<AnalysisJSON> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error('ANTHROPIC_API_KEY not configured');
-
-  const anthropic = new Anthropic({ apiKey });
   const reportingPeriod = formatReportingPeriod(dateRange.from);
 
   // Map theme IDs to section numbers (2.1, 2.2, etc.)
@@ -73,14 +70,11 @@ export async function enrichItems(
       theme.sectionNumber,
     );
 
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 4096,
-      messages: [{ role: 'user', content: prompt }],
+    const { text } = await generateText({
+      model: anthropic('claude-sonnet-4-20250514'),
+      maxOutputTokens: 4096,
+      prompt,
     });
-
-    const text =
-      response.content[0].type === 'text' ? response.content[0].text : '';
 
     return {
       themeId: theme.id,
@@ -120,16 +114,11 @@ export async function enrichItems(
     reportingPeriod,
   );
 
-  const synthesisResponse = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 4096,
-    messages: [{ role: 'user', content: synthesisPrompt }],
+  const { text: synthesisText } = await generateText({
+    model: anthropic('claude-sonnet-4-20250514'),
+    maxOutputTokens: 4096,
+    prompt: synthesisPrompt,
   });
-
-  const synthesisText =
-    synthesisResponse.content[0].type === 'text'
-      ? synthesisResponse.content[0].text
-      : '';
 
   const synthesis = parseJsonResponse(synthesisText, {
     executive_summary: { top_line: '', key_developments: [] },
