@@ -43,7 +43,7 @@ export default function ClientSwitcher() {
       <button
         type="button"
         onClick={() => setOpen((prev) => !prev)}
-        className="flex items-center gap-2 rounded-md border border-wh-border bg-wh-bg px-3 py-1.5 text-xs font-medium text-wh-text-secondary transition-colors hover:border-wh-accent-teal/40 hover:text-wh-text-primary"
+        className="flex items-center gap-2 rounded-md border border-wh-border/50 bg-wh-bg/30 px-3 py-1.5 text-xs font-medium text-wh-text-secondary backdrop-blur-sm transition-colors hover:border-wh-accent-teal/40 hover:text-wh-text-primary"
         aria-haspopup="listbox"
         aria-expanded={open}
       >
