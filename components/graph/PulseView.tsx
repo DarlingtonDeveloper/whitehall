@@ -235,6 +235,7 @@ export default function PulseView({ filter }: PulseViewProps) {
   const focusNodeId = selectedEntityId ?? null;
 
   const handleNodeClick = useCallback((entityId: string) => {
+    setHoveredEntity(null);
     selectEntity(entityId);
   }, []);
 
