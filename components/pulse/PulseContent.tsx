@@ -6,12 +6,11 @@ import { getEntityColour } from '@/data/colours';
 import { getRelationships } from '@/data/relationships';
 import { getClientBySlug } from '@/data/clients';
 import PulseView from '@/components/graph/PulseView';
-import PulseSidebar from '@/components/sidebar/PulseSidebar';
-import GraphLegend from '@/components/sidebar/GraphLegend';
+import FilterPanel from '@/components/sidebar/FilterPanel';
 import IntelligencePanel from '@/components/intelligence/IntelligencePanel';
 import EntityPanel from '@/components/entity/EntityPanel';
 import { useGraphFilter } from '@/components/sidebar/useGraphFilter';
-import { usePanelStore, toggleSidebar, clearEntity } from '@/lib/panelStore';
+import { usePanelStore, clearEntity } from '@/lib/panelStore';
 
 export default function PulseContent() {
   const {
@@ -73,10 +72,9 @@ export default function PulseContent() {
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
-      {/* Left panel: Entity detail or Sidebar */}
-      {entityData ? (
+      {/* Left panel: Entity detail (when selected) */}
+      {entityData && (
         <div className="flex w-96 shrink-0 flex-col border-r border-wh-border bg-wh-panel">
-          {/* Close button */}
           <div className="flex shrink-0 items-center justify-end border-b border-wh-border px-3 py-1.5">
             <button
               type="button"
@@ -95,30 +93,24 @@ export default function PulseContent() {
             relationships={entityData.relationships}
           />
         </div>
-      ) : (
-        panels.sidebar && (
-          <PulseSidebar
+      )}
+
+      {/* Graph area with floating filter panel */}
+      <div className="relative min-w-0 flex-1">
+        <PulseView filter={effectiveGraphFilter} />
+        {panels.sidebar && (
+          <FilterPanel
             filter={filter}
             onSearch={setSearch}
             onToggleTag={toggleTag}
             onSetJurisdiction={setJurisdiction}
+            onToggleType={toggleType}
+            onToggleFocusMode={toggleFocusMode}
+            onResetFilters={resetFilters}
             visibleCount={visibleCount}
-            onCollapse={toggleSidebar}
+            hasActiveFilters={hasActiveFilters}
           />
-        )
-      )}
-
-      {/* Graph area with legend overlay */}
-      <div className="relative min-w-0 flex-1">
-        <PulseView filter={effectiveGraphFilter} />
-        <GraphLegend
-          hiddenTypes={filter.hiddenTypes}
-          onToggleType={toggleType}
-          focusMode={filter.focusMode}
-          onToggleFocusMode={toggleFocusMode}
-          onResetFilters={resetFilters}
-          hasActiveFilters={hasActiveFilters}
-        />
+        )}
       </div>
 
       {/* Intelligence panel (feed + chat) */}
