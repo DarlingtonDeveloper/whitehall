@@ -81,13 +81,17 @@ export async function POST(request: Request) {
     stopWhen: stepCountIs(5),
     onStepFinish: ({ toolCalls, toolResults }) => {
       if (!toolCalls || !toolResults) return;
-      for (let i = 0; i < toolCalls.length; i++) {
-        const call = toolCalls[i];
+      for (const call of toolCalls) {
         if (call.toolName !== 'graph_action') continue;
-        const toolResult = toolResults[i];
-        if (!toolResult || typeof toolResult !== 'object') continue;
-        const res = toolResult as Record<string, unknown>;
-        if (!res.success) continue;
+
+        // AI SDK toolResults are objects with { toolCallId, output, ... }
+        // Match by toolCallId rather than assuming index alignment.
+        const matched = toolResults.find(
+          (r) => r.toolCallId === call.toolCallId,
+        );
+        if (!matched) continue;
+        const res = matched.output as Record<string, unknown> | undefined;
+        if (!res?.success) continue;
 
         const input = call.input as Record<string, unknown>;
         const cmd: Record<string, unknown> = { type: input.action };
