@@ -27,11 +27,13 @@ function makeNode(
   pulseScores: Map<string, number>,
   classes?: string,
   usePresetPos?: boolean,
+  priority?: 'primary' | 'secondary' | 'tertiary',
 ): ElementDefinition {
   const score = pulseScores.get(entity.id) ?? 0;
   const level = getPulseLevel(score);
   const pulseClass = level === 'none' ? '' : `pulse-${level}`;
-  const allClasses = [pulseClass, classes].filter(Boolean).join(' ');
+  const priorityClass = priority && priority !== 'primary' ? `stakeholder-${priority}` : '';
+  const allClasses = [pulseClass, priorityClass, classes].filter(Boolean).join(' ');
 
   const node: ElementDefinition = {
     data: {
@@ -41,6 +43,7 @@ function makeNode(
       shape: getNodeShape(entity.category, entity.subtype),
       category: entity.category,
       subtype: entity.subtype,
+      priority: priority ?? 'primary',
     },
     classes: allClasses,
   };
@@ -165,6 +168,10 @@ function buildClientFocusElements(
   if (!config) return [];
 
   const stakeholderIds = new Set(config.stakeholders.map((s) => s.entityId));
+  const priorityMap = new Map(config.stakeholders.map((s) => [s.entityId, s.priority]));
+  const primaryIds = new Set(
+    config.stakeholders.filter((s) => s.priority === 'primary').map((s) => s.entityId),
+  );
   const nodes: ElementDefinition[] = [];
   const edges: ElementDefinition[] = [];
 
@@ -172,14 +179,18 @@ function buildClientFocusElements(
     const entity = ENTITIES[s.entityId];
     if (!entity) continue;
     const cls = s.priority === 'primary' ? 'focus-root' : '';
-    nodes.push(makeNode(entity, pulseScores, cls));
+    nodes.push(makeNode(entity, pulseScores, cls, false, s.priority as 'primary' | 'secondary' | 'tertiary'));
 
-    // Edges to other stakeholders
+    // Only show edges where at least one end is a primary stakeholder
     for (const pid of entity.parentIds) {
-      if (stakeholderIds.has(pid)) edges.push(makeEdge(entity.id, pid));
+      if (stakeholderIds.has(pid) && (primaryIds.has(entity.id) || primaryIds.has(pid))) {
+        edges.push(makeEdge(entity.id, pid));
+      }
     }
     for (const pid of entity.secondaryParentIds ?? []) {
-      if (stakeholderIds.has(pid)) edges.push(makeEdge(entity.id, pid, true));
+      if (stakeholderIds.has(pid) && (primaryIds.has(entity.id) || primaryIds.has(pid))) {
+        edges.push(makeEdge(entity.id, pid, true));
+      }
     }
   }
 

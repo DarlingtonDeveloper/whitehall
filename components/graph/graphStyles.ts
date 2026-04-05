@@ -91,6 +91,24 @@ export const graphStyles: StylesheetStyle[] = [
       'height': 14,
     },
   },
+  // Secondary stakeholder nodes (smaller, dimmer)
+  {
+    selector: 'node.stakeholder-secondary',
+    style: {
+      'width': 6,
+      'height': 6,
+      'opacity': 0.7,
+    },
+  },
+  // Tertiary stakeholder nodes (smallest, dimmest)
+  {
+    selector: 'node.stakeholder-tertiary',
+    style: {
+      'width': 5,
+      'height': 5,
+      'opacity': 0.45,
+    },
+  },
   // Filtered-out nodes (hidden by sidebar/legend filters)
   {
     selector: 'node.filtered-out',

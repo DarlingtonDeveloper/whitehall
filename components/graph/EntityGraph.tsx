@@ -54,12 +54,26 @@ export default function EntityGraph({
         numIter: 300,
       });
     }
-    if (layout === 'concentric' && focusNodeId) {
-      Object.assign(layoutConfig, {
-        concentric: (node: { id: () => string }) => (node.id() === focusNodeId ? 10 : 1),
-        levelWidth: () => 1,
-        minNodeSpacing: 60,
-      });
+    if (layout === 'concentric') {
+      if (focusNodeId) {
+        // Entity focus: selected node at centre
+        Object.assign(layoutConfig, {
+          concentric: (node: { id: () => string }) => (node.id() === focusNodeId ? 10 : 1),
+          levelWidth: () => 1,
+          minNodeSpacing: 60,
+        });
+      } else {
+        // Client focus: arrange by stakeholder priority rings
+        const PRIORITY_WEIGHT: Record<string, number> = { primary: 10, secondary: 5, tertiary: 1 };
+        Object.assign(layoutConfig, {
+          concentric: (node: { data: (key: string) => string }) => {
+            const p = node.data('priority') || 'tertiary';
+            return PRIORITY_WEIGHT[p] ?? 1;
+          },
+          levelWidth: () => 2,
+          minNodeSpacing: 80,
+        });
+      }
     }
 
     const cy = cytoscape({
@@ -114,8 +128,8 @@ export default function EntityGraph({
     cy.on('mouseout', 'node', (evt) => {
       const node = evt.target;
       node.removeClass('hover');
-      // Keep show-label only if zoomed past threshold.
-      if (cy.zoom() < LABEL_ZOOM_THRESHOLD) {
+      // Keep show-label on focus-root nodes (primary stakeholders) and when zoomed in.
+      if (cy.zoom() < LABEL_ZOOM_THRESHOLD && !node.hasClass('focus-root')) {
         node.removeClass('show-label');
       }
 
@@ -131,8 +145,8 @@ export default function EntityGraph({
       if (z >= LABEL_ZOOM_THRESHOLD) {
         cy.nodes().addClass('show-label');
       } else {
-        // Only remove labels from nodes that are NOT currently hovered.
-        cy.nodes().filter((n) => !n.hasClass('hover')).removeClass('show-label');
+        // Remove labels from nodes that are NOT hovered and NOT focus-root.
+        cy.nodes().filter((n) => !n.hasClass('hover') && !n.hasClass('focus-root')).removeClass('show-label');
       }
     });
 
