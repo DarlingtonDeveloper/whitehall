@@ -33,7 +33,7 @@ export default function Shell({ children }: ShellProps) {
   return (
     <div className="flex h-full flex-col">
       <NavBar onChatToggle={handleChatToggle} isChatOpen={isChatOpen} />
-      <main className="flex flex-1 flex-col overflow-hidden">{children}</main>
+      <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">{children}</main>
       <ChatDrawer
         isOpen={isChatOpen}
         onClose={handleChatClose}

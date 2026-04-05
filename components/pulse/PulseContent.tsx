@@ -34,7 +34,7 @@ export default function PulseContent() {
     filter.hiddenTypes.size > 0;
 
   return (
-    <div className="flex flex-1 overflow-hidden">
+    <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
       {/* Sidebar */}
       {panels.sidebar && (
         <PulseSidebar
@@ -48,7 +48,7 @@ export default function PulseContent() {
       )}
 
       {/* Graph area with legend overlay */}
-      <div className="relative flex-1">
+      <div className="relative min-w-0 flex-1">
         <PulseView filter={graphFilter} />
         <GraphLegend
           hiddenTypes={filter.hiddenTypes}

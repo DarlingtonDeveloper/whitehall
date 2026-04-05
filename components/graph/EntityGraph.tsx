@@ -117,6 +117,21 @@ export default function EntityGraph({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [elements, layout, minZoom, maxZoom]);
 
+  // -----------------------------------------------------------------------
+  // Resize observer — refit Cytoscape when the container changes size
+  // (e.g. sidebar or feed panel toggled).
+  // -----------------------------------------------------------------------
+  useEffect(() => {
+    if (!cyRef.current || !containerRef.current) return;
+    const cy = cyRef.current;
+    const ro = new ResizeObserver(() => {
+      cy.resize();
+      cy.fit(undefined, 40);
+    });
+    ro.observe(containerRef.current);
+    return () => ro.disconnect();
+  });
+
   return (
     <div
       ref={containerRef}
