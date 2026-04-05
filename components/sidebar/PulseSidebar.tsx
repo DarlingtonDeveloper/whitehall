@@ -1,8 +1,8 @@
 'use client';
 
 import { useMemo, useState, useCallback } from 'react';
-import Link from 'next/link';
 import { ENTITY_LIST } from '@/data/entities';
+import { selectEntity } from '@/lib/panelStore';
 import { TAGS } from '@/data/tags';
 import { getEntityColour } from '@/data/colours';
 import { JURISDICTIONS } from '@/data/jurisdictions';
@@ -214,10 +214,11 @@ export default function PulseSidebar({
         {openSections.has('entities') && (
           <div className="flex-1 overflow-y-auto">
             {filteredEntities.map((entity) => (
-              <Link
+              <button
                 key={entity.id}
-                href={`/entity/${entity.id}`}
-                className="flex items-center gap-2 px-3 py-1.5 transition-colors hover:bg-wh-border/30"
+                type="button"
+                onClick={() => selectEntity(entity.id)}
+                className="flex w-full items-center gap-2 px-3 py-1.5 text-left transition-colors hover:bg-wh-border/30"
               >
                 <span
                   className="h-2 w-2 shrink-0 rounded-sm"
@@ -229,7 +230,7 @@ export default function PulseSidebar({
                 <span className="ml-auto shrink-0 text-[9px] capitalize text-wh-text-secondary/40">
                   {entity.category}
                 </span>
-              </Link>
+              </button>
             ))}
           </div>
         )}

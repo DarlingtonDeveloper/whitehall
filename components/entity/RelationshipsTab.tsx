@@ -1,7 +1,7 @@
 'use client';
 
 import type { Entity } from '@/types/entity';
-import Link from 'next/link';
+import { selectEntity } from '@/lib/panelStore';
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
@@ -117,10 +117,11 @@ export default function RelationshipsTab({ relationships }: RelationshipsTabProp
           {/* Entries */}
           <div className="space-y-px">
             {group.items.map((entity) => (
-              <Link
+              <button
                 key={entity.id}
-                href={`/entity/${entity.id}`}
-                className="flex items-start gap-2.5 rounded-md px-2.5 py-2 transition-colors hover:bg-wh-border/30"
+                type="button"
+                onClick={() => selectEntity(entity.id)}
+                className="flex w-full items-start gap-2.5 rounded-md px-2.5 py-2 text-left transition-colors hover:bg-wh-border/30"
               >
                 <span
                   className="mt-1 h-2 w-2 shrink-0 rounded-full"
@@ -144,7 +145,7 @@ export default function RelationshipsTab({ relationships }: RelationshipsTabProp
                     </span>
                   </div>
                 </div>
-              </Link>
+              </button>
             ))}
           </div>
         </div>
