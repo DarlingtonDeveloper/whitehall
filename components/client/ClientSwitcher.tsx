@@ -3,8 +3,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { ALL_CLIENTS } from '@/data/clients';
 import { usePanelStore, selectClient } from '@/lib/panelStore';
+import { useGate } from '@/lib/useGate';
 
 export default function ClientSwitcher() {
+  const [unlocked] = useGate();
   const { selectedClientId } = usePanelStore();
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -37,6 +39,8 @@ export default function ClientSwitcher() {
     setOpen(false);
     selectClient(slug);
   }
+
+  if (!unlocked) return null;
 
   return (
     <div className="relative" ref={ref}>

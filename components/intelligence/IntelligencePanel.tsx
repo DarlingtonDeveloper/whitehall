@@ -12,6 +12,7 @@ import { usePanelStore } from '@/lib/panelStore';
 import { getEntity } from '@/data/entities';
 import { getClientBySlug } from '@/data/clients';
 import { dispatchGraphCommand, type GraphCommand } from '@/lib/graphCommands';
+import { useGate } from '@/lib/useGate';
 import FeedPanel from '@/components/feed/FeedPanel';
 import ChatMessage from '@/components/chat/ChatMessage';
 import SuggestedQuestions from '@/components/chat/SuggestedQuestions';
@@ -41,24 +42,6 @@ function nextId() {
 /* -------------------------------------------------------------------------- */
 /*  Component                                                                 */
 /* -------------------------------------------------------------------------- */
-
-const PANEL_KEY = 'wh-intel-unlocked';
-
-function useGate(): [boolean, (pw: string) => boolean] {
-  const [unlocked, setUnlocked] = useState(() => {
-    if (typeof window === 'undefined') return false;
-    return sessionStorage.getItem(PANEL_KEY) === '1';
-  });
-  const tryUnlock = useCallback((pw: string) => {
-    if (pw === 'wa') {
-      sessionStorage.setItem(PANEL_KEY, '1');
-      setUnlocked(true);
-      return true;
-    }
-    return false;
-  }, []);
-  return [unlocked, tryUnlock];
-}
 
 export default function IntelligencePanel() {
   const [unlocked, tryUnlock] = useGate();
