@@ -507,7 +507,8 @@ export async function collectDivisions(): Promise<{ inserted: number; skipped: n
 
   if (data && Array.isArray(data)) {
     for (const div of data) {
-      const title = div.Title || 'Untitled Division';
+      if (!div.Title || !div.DivisionId) continue;
+      const title = div.Title;
       const divUrl = `https://votes.parliament.uk/votes/commons/division/${div.DivisionId}`;
       const fingerprint = makeFingerprint(divUrl, title);
 
@@ -562,7 +563,8 @@ export async function collectLordsDivisions(): Promise<{ inserted: number; skipp
 
   if (data && Array.isArray(data)) {
     for (const div of data) {
-      const title = div.Title || 'Untitled Division';
+      if (!div.Title || !div.DivisionId) continue;
+      const title = div.Title;
       const divUrl = `https://votes.parliament.uk/votes/lords/division/${div.DivisionId}`;
       const fingerprint = makeFingerprint(divUrl, title);
 

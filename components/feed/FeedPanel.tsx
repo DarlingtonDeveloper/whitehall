@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/db';
 import { getClientBySlug } from '@/data/clients';
 import { usePanelStore } from '@/lib/panelStore';
+import { useClientOverrides } from '@/lib/clientOverrides';
 import type { FeedItem } from '@/types/feed';
 import FeedItemCard from './FeedItem';
 
@@ -44,15 +45,26 @@ export default function FeedPanel({
   const [search, setSearch] = useState('');
   const [dateRange, setDateRange] = useState<DateRange>('7d');
 
+  // Get active keywords for client-based keyword filtering
+  const clientConfig = clientId ? getClientBySlug(clientId) : null;
+  const { activeKeywords } = useClientOverrides(
+    clientId ?? '__none__',
+    {
+      policyKeywords: clientConfig?.policyKeywords ?? [],
+      industryKeywords: clientConfig?.industryKeywords ?? [],
+      competitors: clientConfig?.competitors ?? [],
+      projects: clientConfig?.projects ?? [],
+      monitoringThemes: clientConfig?.monitoringThemes ?? [],
+    },
+  );
+
   // Compute active source IDs for client filtering (stakeholders minus disabled)
   const activeSourceIds = useMemo(() => {
-    if (!clientId) return null;
-    const clientConfig = getClientBySlug(clientId);
     if (!clientConfig) return null;
     const all = clientConfig.stakeholders.map((s) => s.entityId);
     if (disabledSourceIds.length === 0) return all;
     return all.filter((id) => !disabledSourceIds.includes(id));
-  }, [clientId, disabledSourceIds]);
+  }, [clientConfig, disabledSourceIds]);
 
   useEffect(() => {
     if (propItems && propItems.length > 0) return;
@@ -62,38 +74,83 @@ export default function FeedPanel({
       setError(null);
 
       try {
-        let query = supabase
+        // --- Entity-based query ---
+        if (entityId) {
+          const { data, error: dbError } = await supabase
+            .from('feed_items')
+            .select('*')
+            .contains('entity_ids', [entityId])
+            .order('published_at', { ascending: false })
+            .limit(100);
+
+          if (dbError) {
+            setError(dbError.message);
+          } else {
+            setItems((data as FeedItem[]) ?? []);
+          }
+          setLoading(false);
+          return;
+        }
+
+        // --- Client-based: entity IDs + keyword matching ---
+        if (clientId && activeSourceIds) {
+          const seen = new Map<string, FeedItem>();
+
+          // 1. Fetch by stakeholder entity IDs
+          if (activeSourceIds.length > 0) {
+            const { data } = await supabase
+              .from('feed_items')
+              .select('*')
+              .overlaps('entity_ids', activeSourceIds)
+              .order('published_at', { ascending: false })
+              .limit(200);
+            for (const item of (data ?? []) as FeedItem[]) {
+              seen.set(item.id, item);
+            }
+          }
+
+          // 2. Fetch by keyword matches (search title/body)
+          // Use top keywords in batches to build OR filter
+          const kwsToSearch = activeKeywords.slice(0, 30);
+          if (kwsToSearch.length > 0) {
+            const orConditions = kwsToSearch
+              .map((kw) => {
+                const escaped = kw.replace(/[%_]/g, '\\$&');
+                return `title.ilike.%${escaped}%`;
+              })
+              .join(',');
+
+            const { data } = await supabase
+              .from('feed_items')
+              .select('*')
+              .or(orConditions)
+              .order('published_at', { ascending: false })
+              .limit(100);
+            for (const item of (data ?? []) as FeedItem[]) {
+              if (!seen.has(item.id)) seen.set(item.id, item);
+            }
+          }
+
+          // Merge and sort by date
+          const merged = Array.from(seen.values()).sort(
+            (a, b) => new Date(b.published_at).getTime() - new Date(a.published_at).getTime(),
+          );
+          setItems(merged);
+          setLoading(false);
+          return;
+        }
+
+        // --- Default: no filters ---
+        const { data, error: dbError } = await supabase
           .from('feed_items')
           .select('*')
           .order('published_at', { ascending: false })
           .limit(100);
 
-        if (entityId) {
-          query = query.contains('entity_ids', [entityId]);
-        }
-
-        if (clientId && activeSourceIds && activeSourceIds.length > 0) {
-          query = supabase
-            .from('feed_items')
-            .select('*')
-            .overlaps('entity_ids', activeSourceIds)
-            .order('published_at', { ascending: false })
-            .limit(200);
-        } else if (clientId && activeSourceIds && activeSourceIds.length === 0) {
-          // All sources disabled — show nothing
-          setItems([]);
-          setLoading(false);
-          return;
-        }
-
-        const { data, error: dbError } = await query;
-
         if (dbError) {
           setError(dbError.message);
-        } else if (data && data.length > 0) {
-          setItems(data as FeedItem[]);
         } else {
-          setItems([]);
+          setItems((data as FeedItem[]) ?? []);
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load feed');
@@ -104,7 +161,7 @@ export default function FeedPanel({
 
     fetchItems();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entityId, clientId, propItems, activeSourceIds]);
+  }, [entityId, clientId, propItems, activeSourceIds, activeKeywords]);
 
   // Client-side filtering by search + date
   const filtered = useMemo(() => {

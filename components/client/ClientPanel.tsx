@@ -1,24 +1,19 @@
 'use client';
 
 import { useMemo, useState, useCallback, useRef, type KeyboardEvent } from 'react';
-import type { ClientConfig, MonitoringTheme } from '@/types/client';
+import type { ClientConfig } from '@/types/client';
 import { getEntity } from '@/data/entities';
 import { selectEntity, selectClient, usePanelStore, toggleSource } from '@/lib/panelStore';
-import { useClientOverrides } from '@/lib/clientOverrides';
+import {
+  useClientOverrides,
+  type KeywordField,
+  type KeywordEntry,
+  type ThemeEntry,
+} from '@/lib/clientOverrides';
 
 /* ------------------------------------------------------------------ */
-/*  Types                                                              */
+/*  Constants                                                          */
 /* ------------------------------------------------------------------ */
-
-interface ClientPanelProps {
-  client: ClientConfig;
-}
-
-type KeywordField =
-  | 'policyKeywords'
-  | 'industryKeywords'
-  | 'competitors'
-  | 'projects';
 
 const KEYWORD_SECTIONS: { field: KeywordField; label: string }[] = [
   { field: 'policyKeywords', label: 'Policy Keywords' },
@@ -31,16 +26,15 @@ const KEYWORD_SECTIONS: { field: KeywordField; label: string }[] = [
 /*  Main component                                                     */
 /* ------------------------------------------------------------------ */
 
-export default function ClientPanel({ client }: ClientPanelProps) {
+export default function ClientPanel({ client }: { client: ClientConfig }) {
   const { disabledSourceIds } = usePanelStore();
-  const { keywords, themes, updateKeywords, updateThemes } =
-    useClientOverrides(client.id, {
-      policyKeywords: client.policyKeywords,
-      industryKeywords: client.industryKeywords,
-      competitors: client.competitors,
-      projects: client.projects,
-      monitoringThemes: client.monitoringThemes,
-    });
+  const overrides = useClientOverrides(client.id, {
+    policyKeywords: client.policyKeywords,
+    industryKeywords: client.industryKeywords,
+    competitors: client.competitors,
+    projects: client.projects,
+    monitoringThemes: client.monitoringThemes,
+  });
 
   const grouped = useMemo(() => {
     const primary = client.stakeholders.filter((s) => s.priority === 'primary');
@@ -48,74 +42,6 @@ export default function ClientPanel({ client }: ClientPanelProps) {
     const tertiary = client.stakeholders.filter((s) => s.priority === 'tertiary');
     return { primary, secondary, tertiary };
   }, [client]);
-
-  /* -- Keyword helpers -- */
-  const addKeyword = useCallback(
-    (field: KeywordField, value: string) => {
-      const trimmed = value.trim();
-      if (!trimmed || keywords[field].includes(trimmed)) return;
-      updateKeywords(field, [...keywords[field], trimmed]);
-    },
-    [keywords, updateKeywords],
-  );
-
-  const removeKeyword = useCallback(
-    (field: KeywordField, value: string) => {
-      updateKeywords(
-        field,
-        keywords[field].filter((k) => k !== value),
-      );
-    },
-    [keywords, updateKeywords],
-  );
-
-  /* -- Theme helpers -- */
-  const addTheme = useCallback(() => {
-    const id = `theme-${Date.now()}`;
-    updateThemes([...themes, { id, name: '', entityIds: [], keywords: [] }]);
-  }, [themes, updateThemes]);
-
-  const removeTheme = useCallback(
-    (id: string) => {
-      updateThemes(themes.filter((t) => t.id !== id));
-    },
-    [themes, updateThemes],
-  );
-
-  const renameTheme = useCallback(
-    (id: string, name: string) => {
-      updateThemes(themes.map((t) => (t.id === id ? { ...t, name } : t)));
-    },
-    [themes, updateThemes],
-  );
-
-  const addThemeKeyword = useCallback(
-    (themeId: string, value: string) => {
-      const trimmed = value.trim();
-      if (!trimmed) return;
-      updateThemes(
-        themes.map((t) => {
-          if (t.id !== themeId) return t;
-          if (t.keywords.includes(trimmed)) return t;
-          return { ...t, keywords: [...t.keywords, trimmed] };
-        }),
-      );
-    },
-    [themes, updateThemes],
-  );
-
-  const removeThemeKeyword = useCallback(
-    (themeId: string, value: string) => {
-      updateThemes(
-        themes.map((t) =>
-          t.id === themeId
-            ? { ...t, keywords: t.keywords.filter((k) => k !== value) }
-            : t,
-        ),
-      );
-    },
-    [themes, updateThemes],
-  );
 
   return (
     <div className="flex h-full flex-col">
@@ -138,21 +64,9 @@ export default function ClientPanel({ client }: ClientPanelProps) {
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto">
         {/* Stakeholder groups */}
-        <StakeholderGroup
-          label="Primary"
-          items={grouped.primary}
-          disabledSourceIds={disabledSourceIds}
-        />
-        <StakeholderGroup
-          label="Secondary"
-          items={grouped.secondary}
-          disabledSourceIds={disabledSourceIds}
-        />
-        <StakeholderGroup
-          label="Tertiary"
-          items={grouped.tertiary}
-          disabledSourceIds={disabledSourceIds}
-        />
+        <StakeholderGroup label="Primary" items={grouped.primary} disabledSourceIds={disabledSourceIds} />
+        <StakeholderGroup label="Secondary" items={grouped.secondary} disabledSourceIds={disabledSourceIds} />
+        <StakeholderGroup label="Tertiary" items={grouped.tertiary} disabledSourceIds={disabledSourceIds} />
 
         {/* Keyword sections */}
         <div className="border-t border-wh-border/50">
@@ -160,9 +74,10 @@ export default function ClientPanel({ client }: ClientPanelProps) {
             <KeywordSection
               key={field}
               label={label}
-              items={keywords[field]}
-              onAdd={(v) => addKeyword(field, v)}
-              onRemove={(v) => removeKeyword(field, v)}
+              entries={overrides.keywordSections[field]}
+              onToggle={overrides.toggleKeyword}
+              onAdd={(v) => overrides.addKeyword(field, v)}
+              onRemove={(v) => overrides.removeKeyword(field, v)}
             />
           ))}
         </div>
@@ -174,25 +89,27 @@ export default function ClientPanel({ client }: ClientPanelProps) {
               Monitoring Themes
             </span>
             <span className="text-[10px] text-wh-text-secondary/40">
-              {themes.length}
+              {overrides.themeEntries.length}
             </span>
           </div>
 
-          {themes.map((theme) => (
+          {overrides.themeEntries.map((entry) => (
             <ThemeBlock
-              key={theme.id}
-              theme={theme}
-              onRemoveTheme={() => removeTheme(theme.id)}
-              onRename={(name) => renameTheme(theme.id, name)}
-              onAddKeyword={(v) => addThemeKeyword(theme.id, v)}
-              onRemoveKeyword={(v) => removeThemeKeyword(theme.id, v)}
+              key={entry.theme.id}
+              entry={entry}
+              onToggleTheme={() => overrides.toggleTheme(entry.theme.id)}
+              onRemoveTheme={() => overrides.removeTheme(entry.theme.id)}
+              onRename={(name) => overrides.renameTheme(entry.theme.id, name)}
+              onToggleKeyword={(v) => overrides.toggleThemeKeyword(entry.theme.id, v)}
+              onAddKeyword={(v) => overrides.addThemeKeyword(entry.theme.id, v)}
+              onRemoveKeyword={(v) => overrides.removeThemeKeyword(entry.theme.id, v)}
             />
           ))}
 
           <div className="px-4 py-2">
             <button
               type="button"
-              onClick={addTheme}
+              onClick={overrides.addTheme}
               className="text-[10px] font-medium text-wh-accent-teal hover:text-wh-accent-teal/80 transition-colors"
             >
               + Add Theme
@@ -201,7 +118,7 @@ export default function ClientPanel({ client }: ClientPanelProps) {
         </div>
       </div>
 
-      {/* Footer: deselect */}
+      {/* Footer */}
       <div className="shrink-0 border-t border-wh-border px-4 py-2.5">
         <button
           type="button"
@@ -239,21 +156,16 @@ function StakeholderGroup({
   return (
     <div className="border-b border-wh-border/50">
       <div className="flex items-center gap-2 px-4 py-2">
-        <span
-          className={`h-1.5 w-1.5 rounded-full ${dotColour[label] ?? 'bg-wh-text-secondary/50'}`}
-        />
+        <span className={`h-1.5 w-1.5 rounded-full ${dotColour[label] ?? 'bg-wh-text-secondary/50'}`} />
         <span className="text-[10px] font-semibold uppercase tracking-wider text-wh-text-secondary/70">
           {label}
         </span>
-        <span className="text-[10px] text-wh-text-secondary/40">
-          {items.length}
-        </span>
+        <span className="text-[10px] text-wh-text-secondary/40">{items.length}</span>
       </div>
       <ul className="pb-2">
         {items.map((s) => {
           const entity = getEntity(s.entityId);
           const isEnabled = !disabledSourceIds.includes(s.entityId);
-
           return (
             <li key={s.entityId} className="flex items-center pr-3">
               <button
@@ -268,8 +180,6 @@ function StakeholderGroup({
                   {s.role}
                 </span>
               </button>
-
-              {/* Source toggle */}
               <button
                 type="button"
                 aria-label={`${isEnabled ? 'Disable' : 'Enable'} ${entity?.name ?? s.entityId} as feed source`}
@@ -293,22 +203,23 @@ function StakeholderGroup({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Keyword section with CRUD                                          */
+/*  Keyword section — toggle on/off, add new, remove user-added        */
 /* ------------------------------------------------------------------ */
 
 function KeywordSection({
   label,
-  items,
+  entries,
+  onToggle,
   onAdd,
   onRemove,
 }: {
   label: string;
-  items: string[];
+  entries: KeywordEntry[];
+  onToggle: (value: string) => void;
   onAdd: (value: string) => void;
   onRemove: (value: string) => void;
 }) {
   const [draft, setDraft] = useState('');
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const commit = () => {
     if (draft.trim()) {
@@ -324,6 +235,8 @@ function KeywordSection({
     }
   };
 
+  const enabledCount = entries.filter((e) => e.enabled).length;
+
   return (
     <div className="border-b border-wh-border/30 px-4 py-2">
       <div className="flex items-center gap-2 mb-1.5">
@@ -331,34 +244,42 @@ function KeywordSection({
           {label}
         </span>
         <span className="text-[10px] text-wh-text-secondary/40">
-          {items.length}
+          {enabledCount}/{entries.length}
         </span>
       </div>
 
-      {items.length > 0 && (
+      {entries.length > 0 && (
         <div className="flex flex-wrap gap-1 mb-1.5">
-          {items.map((kw) => (
+          {entries.map((entry) => (
             <span
-              key={kw}
-              className="group flex items-center gap-1 rounded bg-wh-border/60 px-2 py-0.5 text-[10px] text-wh-text-secondary/70"
+              key={entry.value}
+              className={`group flex items-center gap-1 rounded px-2 py-0.5 text-[10px] transition-colors cursor-pointer ${
+                entry.enabled
+                  ? 'bg-wh-border/60 text-wh-text-secondary/70'
+                  : 'bg-wh-border/20 text-wh-text-secondary/30 line-through'
+              }`}
+              onClick={() => onToggle(entry.value)}
             >
-              {kw}
-              <button
-                type="button"
-                aria-label={`Remove ${kw}`}
-                onClick={() => onRemove(kw)}
-                className="text-wh-text-secondary/30 hover:text-red-400 transition-colors leading-none"
-              >
-                x
-              </button>
+              {entry.value}
+              {entry.isUserAdded && (
+                <button
+                  type="button"
+                  aria-label={`Remove ${entry.value}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onRemove(entry.value);
+                  }}
+                  className="text-wh-text-secondary/30 hover:text-red-400 transition-colors leading-none ml-0.5"
+                >
+                  x
+                </button>
+              )}
             </span>
           ))}
         </div>
       )}
 
-      {/* Inline add input */}
       <input
-        ref={inputRef}
         type="text"
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
@@ -372,25 +293,29 @@ function KeywordSection({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Monitoring theme block (collapsible, CRUD)                         */
+/*  Monitoring theme block — collapsible, toggleable, CRUD             */
 /* ------------------------------------------------------------------ */
 
 function ThemeBlock({
-  theme,
+  entry,
+  onToggleTheme,
   onRemoveTheme,
   onRename,
+  onToggleKeyword,
   onAddKeyword,
   onRemoveKeyword,
 }: {
-  theme: MonitoringTheme;
+  entry: ThemeEntry;
+  onToggleTheme: () => void;
   onRemoveTheme: () => void;
   onRename: (name: string) => void;
+  onToggleKeyword: (value: string) => void;
   onAddKeyword: (value: string) => void;
   onRemoveKeyword: (value: string) => void;
 }) {
   const [open, setOpen] = useState(true);
   const [draft, setDraft] = useState('');
-  const [editing, setEditing] = useState(!theme.name);
+  const [editing, setEditing] = useState(!entry.theme.name);
 
   const commitKeyword = () => {
     if (draft.trim()) {
@@ -413,24 +338,41 @@ function ThemeBlock({
     }
   };
 
+  const enabledKwCount = entry.keywords.filter((k) => k.enabled).length;
+
   return (
-    <div className="border-b border-wh-border/30 px-4 py-2">
+    <div className={`border-b border-wh-border/30 px-4 py-2 transition-opacity ${entry.enabled ? '' : 'opacity-40'}`}>
       {/* Theme header */}
       <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={() => setOpen(!open)}
           className="text-[10px] text-wh-text-secondary/50 hover:text-wh-text-secondary transition-colors leading-none"
-          aria-label={open ? 'Collapse theme' : 'Expand theme'}
         >
           {open ? '\u25BC' : '\u25B6'}
         </button>
 
-        {editing ? (
+        {/* Theme toggle */}
+        <button
+          type="button"
+          onClick={onToggleTheme}
+          className="shrink-0"
+          aria-label={`${entry.enabled ? 'Disable' : 'Enable'} theme ${entry.theme.name}`}
+        >
+          <span
+            className={`block h-3 w-3 rounded-full border-2 transition-colors ${
+              entry.enabled
+                ? 'border-wh-accent-teal bg-wh-accent-teal'
+                : 'border-wh-border bg-transparent'
+            }`}
+          />
+        </button>
+
+        {editing && entry.isUserAdded ? (
           <input
             type="text"
             autoFocus
-            value={theme.name}
+            value={entry.theme.name}
             onChange={(e) => onRename(e.target.value)}
             onKeyDown={handleNameKeyDown}
             onBlur={() => setEditing(false)}
@@ -438,50 +380,64 @@ function ThemeBlock({
             className="flex-1 min-w-0 bg-transparent text-xs font-medium text-wh-text-primary placeholder:text-wh-text-secondary/30 outline-none border-b border-wh-border focus:border-wh-accent-teal transition-colors"
           />
         ) : (
-          <button
-            type="button"
-            onClick={() => setEditing(true)}
-            className="flex-1 min-w-0 text-left text-xs font-medium text-wh-text-primary truncate hover:text-wh-accent-teal transition-colors"
+          <span
+            className="flex-1 min-w-0 text-xs font-medium text-wh-text-primary truncate"
+            onClick={() => entry.isUserAdded && setEditing(true)}
           >
-            {theme.name || 'Untitled theme'}
-          </button>
+            {entry.theme.name || 'Untitled theme'}
+          </span>
         )}
 
-        <button
-          type="button"
-          aria-label={`Delete theme ${theme.name}`}
-          onClick={onRemoveTheme}
-          className="shrink-0 text-wh-text-secondary/30 hover:text-red-400 transition-colors text-xs leading-none"
-        >
-          x
-        </button>
+        <span className="text-[9px] text-wh-text-secondary/30">
+          {enabledKwCount}/{entry.keywords.length}
+        </span>
+
+        {entry.isUserAdded && (
+          <button
+            type="button"
+            aria-label={`Delete theme ${entry.theme.name}`}
+            onClick={onRemoveTheme}
+            className="shrink-0 text-wh-text-secondary/30 hover:text-red-400 transition-colors text-xs leading-none"
+          >
+            x
+          </button>
+        )}
       </div>
 
       {/* Collapsible body */}
       {open && (
         <div className="mt-1.5 pl-4">
-          {theme.keywords.length > 0 && (
+          {entry.keywords.length > 0 && (
             <div className="flex flex-wrap gap-1 mb-1.5">
-              {theme.keywords.map((kw) => (
+              {entry.keywords.map((kw) => (
                 <span
-                  key={kw}
-                  className="group flex items-center gap-1 rounded bg-wh-border/40 px-1.5 py-0.5 text-[9px] text-wh-text-secondary/60"
+                  key={kw.value}
+                  className={`group flex items-center gap-1 rounded px-1.5 py-0.5 text-[9px] transition-colors cursor-pointer ${
+                    kw.enabled
+                      ? 'bg-wh-border/40 text-wh-text-secondary/60'
+                      : 'bg-wh-border/15 text-wh-text-secondary/25 line-through'
+                  }`}
+                  onClick={() => onToggleKeyword(kw.value)}
                 >
-                  {kw}
-                  <button
-                    type="button"
-                    aria-label={`Remove ${kw} from ${theme.name}`}
-                    onClick={() => onRemoveKeyword(kw)}
-                    className="text-wh-text-secondary/30 hover:text-red-400 transition-colors leading-none"
-                  >
-                    x
-                  </button>
+                  {kw.value}
+                  {kw.isUserAdded && (
+                    <button
+                      type="button"
+                      aria-label={`Remove ${kw.value}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onRemoveKeyword(kw.value);
+                      }}
+                      className="text-wh-text-secondary/30 hover:text-red-400 transition-colors leading-none"
+                    >
+                      x
+                    </button>
+                  )}
                 </span>
               ))}
             </div>
           )}
 
-          {/* Inline add keyword */}
           <input
             type="text"
             value={draft}
