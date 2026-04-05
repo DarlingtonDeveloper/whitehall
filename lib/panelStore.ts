@@ -12,6 +12,7 @@ interface PanelState {
   intelligence: boolean;
   selectedEntityId: string | null;
   selectedClientId: string | null;
+  disabledSourceIds: string[];
 }
 
 const DEFAULT: PanelState = {
@@ -20,6 +21,7 @@ const DEFAULT: PanelState = {
   intelligence: true,
   selectedEntityId: null,
   selectedClientId: null,
+  disabledSourceIds: [],
 };
 
 let state: PanelState = { ...DEFAULT };
@@ -55,7 +57,21 @@ export function clearEntity() {
 }
 
 export function selectClient(clientId: string | null) {
-  state = { ...state, selectedClientId: clientId };
+  state = { ...state, selectedClientId: clientId, disabledSourceIds: [] };
+  emit();
+}
+
+export function toggleSource(entityId: string) {
+  const ids = state.disabledSourceIds;
+  const next = ids.includes(entityId)
+    ? ids.filter((id) => id !== entityId)
+    : [...ids, entityId];
+  state = { ...state, disabledSourceIds: next };
+  emit();
+}
+
+export function resetSources() {
+  state = { ...state, disabledSourceIds: [] };
   emit();
 }
 

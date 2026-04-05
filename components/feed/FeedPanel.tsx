@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/db';
+import { getClientBySlug } from '@/data/clients';
+import { usePanelStore } from '@/lib/panelStore';
 import type { FeedItem } from '@/types/feed';
 import FeedItemCard from './FeedItem';
 
@@ -35,11 +37,22 @@ export default function FeedPanel({
   clientId,
   items: propItems,
 }: FeedPanelProps) {
+  const { disabledSourceIds } = usePanelStore();
   const [items, setItems] = useState<FeedItem[]>(propItems ?? []);
   const [loading, setLoading] = useState(!propItems);
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [dateRange, setDateRange] = useState<DateRange>('7d');
+
+  // Compute active source IDs for client filtering (stakeholders minus disabled)
+  const activeSourceIds = useMemo(() => {
+    if (!clientId) return null;
+    const clientConfig = getClientBySlug(clientId);
+    if (!clientConfig) return null;
+    const all = clientConfig.stakeholders.map((s) => s.entityId);
+    if (disabledSourceIds.length === 0) return all;
+    return all.filter((id) => !disabledSourceIds.includes(id));
+  }, [clientId, disabledSourceIds]);
 
   useEffect(() => {
     if (propItems && propItems.length > 0) return;
@@ -59,23 +72,18 @@ export default function FeedPanel({
           query = query.contains('entity_ids', [entityId]);
         }
 
-        if (clientId) {
-          const { data: scores } = await supabase
-            .from('client_feed_scores')
-            .select('feed_item_id')
-            .eq('client_id', clientId)
-            .gt('relevance_score', 0)
-            .order('relevance_score', { ascending: false })
-            .limit(100);
-
-          if (scores && scores.length > 0) {
-            const feedIds = scores.map((s) => s.feed_item_id);
-            query = supabase
-              .from('feed_items')
-              .select('*')
-              .in('id', feedIds)
-              .order('published_at', { ascending: false });
-          }
+        if (clientId && activeSourceIds && activeSourceIds.length > 0) {
+          query = supabase
+            .from('feed_items')
+            .select('*')
+            .overlaps('entity_ids', activeSourceIds)
+            .order('published_at', { ascending: false })
+            .limit(200);
+        } else if (clientId && activeSourceIds && activeSourceIds.length === 0) {
+          // All sources disabled — show nothing
+          setItems([]);
+          setLoading(false);
+          return;
         }
 
         const { data, error: dbError } = await query;
@@ -95,7 +103,8 @@ export default function FeedPanel({
     }
 
     fetchItems();
-  }, [entityId, clientId, propItems]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [entityId, clientId, propItems, activeSourceIds]);
 
   // Client-side filtering by search + date
   const filtered = useMemo(() => {

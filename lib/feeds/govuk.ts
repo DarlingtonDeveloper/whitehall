@@ -47,7 +47,7 @@ interface ParsedEntry {
 
 // ── GOV.UK slug to Whitehall entity mapping ──────────────────────────────
 
-const GOVUK_TO_ENTITY: Record<string, string[]> = {
+export const GOVUK_TO_ENTITY: Record<string, string[]> = {
   // Ministerial departments
   'department-for-energy-security-and-net-zero': ['desnz'],
   'department-of-health-and-social-care': ['dhsc'],
@@ -353,7 +353,7 @@ function buildFeedUrl(slug: string, type: FeedType): string {
 
 // ── Fingerprint helper ───────────────────────────────────────────────────
 
-function makeFingerprint(url: string, title: string): string {
+export function makeFingerprint(url: string, title: string): string {
   return crypto
     .createHash('sha256')
     .update(`${url}||${title}`)
@@ -362,7 +362,7 @@ function makeFingerprint(url: string, title: string): string {
 
 // ── RAG status from keywords ─────────────────────────────────────────────
 
-function determineRagStatus(title: string, body: string): 'RED' | 'AMBER' | 'GREEN' {
+export function determineRagStatus(title: string, body: string): 'RED' | 'AMBER' | 'GREEN' {
   const text = `${title} ${body}`.toLowerCase();
 
   // RED triggers
@@ -395,7 +395,7 @@ function determineRagStatus(title: string, body: string): 'RED' | 'AMBER' | 'GRE
 
 // ── Keyword-based entity enrichment ──────────────────────────────────────
 
-function enrichEntityIds(
+export function enrichEntityIds(
   baseEntityIds: string[],
   title: string,
   body: string,

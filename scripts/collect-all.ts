@@ -2,58 +2,87 @@
 /**
  * Full Feed Collection Script
  *
- * Runs GOV.UK and Hansard collectors in sequence and reports totals.
+ * Runs ALL collectors in sequence and reports totals.
+ * Sources: GOV.UK Atom feeds, GOV.UK Search API, Hansard,
+ *          Parliament APIs, legislation.gov.uk
  *
  * Usage:
  *   npx tsx scripts/collect-all.ts
  */
 
 import { collectGovUK, GOVUK_FEEDS } from '../lib/feeds/govuk';
+import { collectGovUKSearch } from '../lib/feeds/govuk-search';
 import { collectHansard } from '../lib/feeds/hansard';
+import { collectParliament } from '../lib/feeds/parliament';
+import { collectLegislation } from '../lib/feeds/legislation';
+
+interface Result {
+  inserted: number;
+  skipped: number;
+}
+
+async function runCollector(
+  name: string,
+  fn: () => Promise<Result>,
+): Promise<Result> {
+  try {
+    return await fn();
+  } catch (err) {
+    console.error(`${name} collection failed:`, err);
+    console.log('Continuing with next collector...\n');
+    return { inserted: 0, skipped: 0 };
+  }
+}
 
 async function main() {
   const start = Date.now();
 
-  console.log('╔══════════════════════════════════════════════════╗');
-  console.log('║       Whitehall — Full Feed Collection           ║');
-  console.log('╚══════════════════════════════════════════════════╝');
+  console.log('╔══════════════════════════════════════════════════════╗');
+  console.log('║       Whitehall — Full Feed Collection (12 months)   ║');
+  console.log('╚══════════════════════════════════════════════════════╝');
   console.log(`Started at: ${new Date().toISOString()}`);
   console.log(`GOV.UK orgs configured: ${GOVUK_FEEDS.length}\n`);
 
-  // ── Step 1: GOV.UK feeds ──────────────────────────────────────────────
-  let govukResult = { inserted: 0, skipped: 0 };
-  try {
-    govukResult = await collectGovUK();
-  } catch (err) {
-    console.error('GOV.UK collection failed:', err);
-    console.log('Continuing with Hansard...\n');
-  }
+  const results: Record<string, Result> = {};
 
-  // ── Step 2: Hansard feeds ─────────────────────────────────────────────
-  let hansardResult = { inserted: 0, skipped: 0 };
-  try {
-    hansardResult = await collectHansard();
-  } catch (err) {
-    console.error('Hansard collection failed:', err);
-  }
+  // ── Step 1: GOV.UK Atom feeds (recent items) ─────────────────────────
+  results.govukAtom = await runCollector('GOV.UK Atom', collectGovUK);
 
-  // ── Summary ───────────────────────────────────────────────────────────
+  // ── Step 2: GOV.UK Search API (12 months historical) ─────────────────
+  results.govukSearch = await runCollector('GOV.UK Search', collectGovUKSearch);
+
+  // ── Step 3: Hansard (12 months) ──────────────────────────────────────
+  results.hansard = await runCollector('Hansard', collectHansard);
+
+  // ── Step 4: Parliament APIs (bills, questions, divisions, statements) ─
+  results.parliament = await runCollector('Parliament', collectParliament);
+
+  // ── Step 5: Legislation.gov.uk ───────────────────────────────────────
+  results.legislation = await runCollector('Legislation', collectLegislation);
+
+  // ── Summary ──────────────────────────────────────────────────────────
   const elapsed = ((Date.now() - start) / 1000).toFixed(1);
-  const totalInserted = govukResult.inserted + hansardResult.inserted;
-  const totalSkipped = govukResult.skipped + hansardResult.skipped;
 
-  console.log('╔══════════════════════════════════════════════════╗');
-  console.log('║       Full Collection Summary                    ║');
-  console.log('╠══════════════════════════════════════════════════╣');
-  console.log(`║  GOV.UK inserted:   ${String(govukResult.inserted).padEnd(29)}║`);
-  console.log(`║  GOV.UK skipped:    ${String(govukResult.skipped).padEnd(29)}║`);
-  console.log(`║  Hansard inserted:  ${String(hansardResult.inserted).padEnd(29)}║`);
-  console.log(`║  Hansard skipped:   ${String(hansardResult.skipped).padEnd(29)}║`);
-  console.log('╠══════════════════════════════════════════════════╣');
-  console.log(`║  TOTAL inserted:    ${String(totalInserted).padEnd(29)}║`);
-  console.log(`║  TOTAL skipped:     ${String(totalSkipped).padEnd(29)}║`);
-  console.log(`║  Duration:          ${String(elapsed + 's').padEnd(29)}║`);
-  console.log('╚══════════════════════════════════════════════════╝');
+  let totalInserted = 0;
+  let totalSkipped = 0;
+
+  console.log('╔══════════════════════════════════════════════════════╗');
+  console.log('║       Full Collection Summary                        ║');
+  console.log('╠══════════════════════════════════════════════════════╣');
+
+  for (const [key, r] of Object.entries(results)) {
+    const label = key.padEnd(20);
+    console.log(`║  ${label} inserted: ${String(r.inserted).padEnd(19)}║`);
+    console.log(`║  ${label} skipped:  ${String(r.skipped).padEnd(19)}║`);
+    totalInserted += r.inserted;
+    totalSkipped += r.skipped;
+  }
+
+  console.log('╠══════════════════════════════════════════════════════╣');
+  console.log(`║  TOTAL inserted:    ${String(totalInserted).padEnd(31)}║`);
+  console.log(`║  TOTAL skipped:     ${String(totalSkipped).padEnd(31)}║`);
+  console.log(`║  Duration:          ${String(elapsed + 's').padEnd(31)}║`);
+  console.log('╚══════════════════════════════════════════════════════╝');
 
   if (totalInserted === 0 && totalSkipped === 0) {
     console.log('\nNo items collected. Check network connectivity and .env.local configuration.');

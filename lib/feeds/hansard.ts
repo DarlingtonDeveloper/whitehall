@@ -80,11 +80,14 @@ interface HansardContribution {
   ItemId?: string;
   MemberName?: string;
   HouseId?: number;
+  House?: string;
   DebateSection?: string;
+  DebateSectionExtId?: string;
   SittingDate?: string;
   AttributedTo?: string;
   ContributionText?: string;
   SectionTitle?: string;
+  Section?: string;
   Url?: string;
   ExternalId?: string;
 }
@@ -213,19 +216,32 @@ async function fetchContributions(
 
 // ── Build a Hansard URL from contribution data ───────────────────────────
 
+function slugify(text: string): string {
+  return text
+    .replace(/[^a-zA-Z0-9\s]/g, '')
+    .replace(/\s+/g, '')
+    .slice(0, 80);
+}
+
 function buildHansardUrl(contribution: HansardContribution): string {
   if (contribution.Url) {
-    // Ensure it's a full URL
     if (contribution.Url.startsWith('http')) return contribution.Url;
     return `https://hansard.parliament.uk${contribution.Url}`;
   }
 
-  // Fallback: construct from ExternalId
+  // Build from House, SittingDate, DebateSectionExtId, DebateSection
+  if (contribution.DebateSectionExtId && contribution.SittingDate && contribution.House) {
+    const house = contribution.House.toLowerCase().replace(/\s+/g, '');
+    const date = contribution.SittingDate.split('T')[0];
+    const slug = slugify(contribution.DebateSection || 'debate');
+    return `https://hansard.parliament.uk/${house}/${date}/debates/${contribution.DebateSectionExtId}/${slug}`;
+  }
+
   if (contribution.ExternalId) {
     return `https://hansard.parliament.uk/search/contributions/${contribution.ExternalId}`;
   }
 
-  return `https://hansard.parliament.uk/search?searchTerm=${encodeURIComponent(contribution.SectionTitle || '')}`;
+  return `https://hansard.parliament.uk/search?searchTerm=${encodeURIComponent(contribution.DebateSection || contribution.SectionTitle || '')}`;
 }
 
 // ── Build source name from house ID ──────────────────────────────────────
@@ -249,7 +265,7 @@ export async function collectHansard(): Promise<{ inserted: number; skipped: num
   let totalSkipped = 0;
   const seenFingerprints = new Set<string>();
 
-  const startDate = daysAgo(30);
+  const startDate = daysAgo(365);
   const endDate = daysAgo(0);
 
   console.log(`\n=== Hansard Feed Collector ===`);
