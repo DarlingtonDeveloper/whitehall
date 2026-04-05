@@ -11,6 +11,8 @@ import PulseView from '@/components/graph/PulseView';
 import FilterPanel from '@/components/sidebar/FilterPanel';
 import IntelligencePanel from '@/components/intelligence/IntelligencePanel';
 import EntityPanel from '@/components/entity/EntityPanel';
+import ClientPanel from '@/components/client/ClientPanel';
+import { getClientBySlug } from '@/data/clients';
 import { useGraphFilter } from '@/components/sidebar/useGraphFilter';
 import { usePanelStore, clearEntity } from '@/lib/panelStore';
 
@@ -108,6 +110,16 @@ export default function PulseContent() {
     };
   }, [panels.selectedEntityId]);
 
+  // Resolve selected client config
+  const clientData = useMemo(() => {
+    if (!panels.selectedClientId) return null;
+    return getClientBySlug(panels.selectedClientId) ?? null;
+  }, [panels.selectedClientId]);
+
+  // Show left panel: entity takes priority, then client
+  const showEntityPanel = !!entityData && panels.entityPanel;
+  const showClientPanel = !showEntityPanel && !!clientData && panels.entityPanel;
+
   const visibleCount = useMemo(() => {
     return ENTITY_LIST.filter((e) => graphFilter.isVisible(e)).length;
   }, [graphFilter]);
@@ -120,8 +132,8 @@ export default function PulseContent() {
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
-      {/* Left panel: Entity detail (when selected and toggled on) */}
-      {entityData && panels.entityPanel && (
+      {/* Left panel: Entity detail */}
+      {showEntityPanel && entityData && (
         <div
           className="relative flex shrink-0 flex-col border-r border-wh-border bg-wh-panel"
           style={{ width: leftWidth }}
@@ -146,6 +158,17 @@ export default function PulseContent() {
             budget={entityData.budget}
             staff={entityData.staff}
           />
+          <ResizeHandle side="right" onResize={handleLeftResize} />
+        </div>
+      )}
+
+      {/* Left panel: Client detail (when no entity selected) */}
+      {showClientPanel && clientData && (
+        <div
+          className="relative flex shrink-0 flex-col border-r border-wh-border bg-wh-panel"
+          style={{ width: leftWidth }}
+        >
+          <ClientPanel client={clientData} />
           <ResizeHandle side="right" onResize={handleLeftResize} />
         </div>
       )}

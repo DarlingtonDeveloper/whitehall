@@ -48,7 +48,7 @@ export default function ClientSwitcher() {
         aria-expanded={open}
       >
         <span className="h-2 w-2 rounded-full bg-wh-accent-teal" />
-        {currentClient ? currentClient.name : 'All Entities'}
+        {currentClient ? currentClient.name : 'No Client'}
         <ChevronDown />
       </button>
 
@@ -58,7 +58,7 @@ export default function ClientSwitcher() {
           className="absolute right-0 top-full z-50 mt-1 w-44 overflow-hidden rounded-lg border border-wh-border bg-wh-panel shadow-lg shadow-black/40"
         >
           <DropdownItem
-            label="All Entities"
+            label="No Client"
             selected={selectedClientId === null}
             onSelect={() => handleSelect(null)}
           />
