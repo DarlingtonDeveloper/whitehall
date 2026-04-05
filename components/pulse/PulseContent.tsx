@@ -156,7 +156,7 @@ export default function PulseContent() {
       {/* Left panel: Entity detail */}
       {showEntityPanel && entityData && (
         <div
-          className="relative flex shrink-0 flex-col border-r border-wh-border bg-wh-panel pt-12"
+          className="relative flex shrink-0 flex-col overflow-hidden border-r border-wh-border bg-wh-panel pt-12"
           style={{ width: leftWidth }}
         >
           <div className="flex shrink-0 items-center justify-end border-b border-wh-border px-3 py-1.5">
@@ -186,7 +186,7 @@ export default function PulseContent() {
       {/* Left panel: Client detail (when no entity selected) */}
       {showClientPanel && clientData && (
         <div
-          className="relative flex shrink-0 flex-col border-r border-wh-border bg-wh-panel pt-12"
+          className="relative flex shrink-0 flex-col overflow-hidden border-r border-wh-border bg-wh-panel pt-12"
           style={{ width: leftWidth }}
         >
           <ClientPanel client={clientData} />
@@ -215,11 +215,13 @@ export default function PulseContent() {
       {/* Intelligence panel (feed + chat) */}
       {panels.intelligence && (
         <div
-          className="relative flex shrink-0 flex-col border-l border-wh-border bg-wh-panel pt-12"
+          className="relative flex shrink-0 flex-col overflow-hidden border-l border-wh-border bg-wh-panel pt-12"
           style={{ width: rightWidth }}
         >
           <ResizeHandle side="left" onResize={handleRightResize} />
-          <IntelligencePanel />
+          <div className="min-h-0 flex-1">
+            <IntelligencePanel />
+          </div>
         </div>
       )}
     </div>
