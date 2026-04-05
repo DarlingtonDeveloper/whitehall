@@ -10,6 +10,7 @@ import {
   type KeywordEntry,
   type ThemeEntry,
 } from '@/lib/clientOverrides';
+import ExportButton from '@/components/export/ExportButton';
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
@@ -59,6 +60,9 @@ export default function ClientPanel({ client }: { client: ClientConfig }) {
         <p className="mt-2 text-[13px] leading-relaxed text-wh-text-secondary">
           {client.description}
         </p>
+        <div className="mt-3">
+          <ExportButton clientId={client.id} />
+        </div>
       </div>
 
       {/* Scrollable body */}
