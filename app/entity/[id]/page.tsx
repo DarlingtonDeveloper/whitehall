@@ -21,7 +21,7 @@ export default async function EntityPage({
     notFound();
   }
 
-  const colour = getEntityColour(entity.category, entity.subtype);
+  const colour = getEntityColour(entity.tags);
   const relationships = getRelationships(id);
   const powers = getPowers(id);
   const budget = getBudget(id);

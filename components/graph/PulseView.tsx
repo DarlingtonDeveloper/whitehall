@@ -48,7 +48,7 @@ function buildElements(
       data: {
         id: entity.id,
         label: entity.name,
-        colour: getEntityColour(entity.category, entity.subtype),
+        colour: getEntityColour(entity.tags),
         shape: getNodeShape(entity.category, entity.subtype),
         category: entity.category,
         subtype: entity.subtype,

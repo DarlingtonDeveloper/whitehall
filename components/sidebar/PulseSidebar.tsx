@@ -234,10 +234,7 @@ export default function PulseSidebar({
                 <span
                   className="h-2 w-2 shrink-0 rounded-sm"
                   style={{
-                    backgroundColor: getEntityColour(
-                      entity.category,
-                      entity.subtype,
-                    ),
+                    backgroundColor: getEntityColour(entity.tags),
                   }}
                 />
                 <span className="truncate text-[11px] text-wh-text-primary">

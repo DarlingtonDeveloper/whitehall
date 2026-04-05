@@ -1,7 +1,7 @@
 'use client';
 
 import { getEntity } from '@/data/entities';
-import { ENTITY_COLOURS } from '@/data/colours';
+import { ENTITY_COLOURS, getEntityColour } from '@/data/colours';
 
 interface GraphTooltipProps {
   entityId: string | null;
@@ -16,7 +16,7 @@ export default function GraphTooltip({ entityId, position }: GraphTooltipProps) 
 
   const colourEntry = ENTITY_COLOURS[entity.category]?.[entity.subtype];
   const badgeLabel = colourEntry?.label ?? entity.subtype;
-  const badgeColour = colourEntry?.hex ?? '#95a5a6';
+  const badgeColour = getEntityColour(entity.tags);
 
   const description =
     entity.description.length > 120

@@ -186,7 +186,7 @@ function buildConstellationElements(
       data: {
         id: p.entity.id,
         label: p.entity.name,
-        colour: getEntityColour(p.entity.category, p.entity.subtype),
+        colour: getEntityColour(p.entity.tags),
         shape: getNodeShape(p.entity.category, p.entity.subtype),
         category: p.entity.category,
         subtype: p.entity.subtype,
