@@ -82,9 +82,11 @@ export default function EntityGraph({
     // Fit everything with padding on mount.
     cy.fit(undefined, 40);
 
-    // In focused mode (non-preset), show all labels immediately.
+    // In focused mode (non-preset), show labels on key nodes only.
+    // Nodes with 'focus-root' (primary stakeholders / selected entity)
+    // get labels immediately; the rest are revealed on hover or zoom.
     if (layout !== 'preset') {
-      cy.nodes().addClass('show-label');
+      cy.nodes('.focus-root').addClass('show-label');
     }
 
     // ----- Node click -----
