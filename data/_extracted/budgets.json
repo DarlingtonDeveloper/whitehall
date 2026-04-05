@@ -1,0 +1,4266 @@
+{
+  "nsi": {
+    "elementId": "nsi",
+    "oscarDeptGroupCode": "DNS049.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 292344,
+        "totalGrossExpenditure": 326082,
+        "totalIncome": -33738,
+        "unit": "thousands",
+        "delAdmin": 284730,
+        "delProg": 42126,
+        "deptAme": 0,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Goods & Services",
+            "amount": 260895
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 42126
+          },
+          {
+            "label": "Pay",
+            "amount": 21774
+          },
+          {
+            "label": "Depreciation",
+            "amount": 1287
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Other",
+            "amount": -33738
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "Administration",
+            "amount": 326856
+          }
+        ],
+        "programmeIncomeLines": [],
+        "bodyLines": [],
+        "bodyIncomeLines": [],
+        "annualReportUrl": null,
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "hmland": {
+    "elementId": "hmland",
+    "oscarDeptGroupCode": "HML078.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 68623,
+        "totalGrossExpenditure": 455783,
+        "totalIncome": -387160,
+        "unit": "thousands",
+        "delAdmin": 0,
+        "delProg": 467477,
+        "deptAme": 540,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Pay",
+            "amount": 305696
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 70228
+          },
+          {
+            "label": "Depreciation",
+            "amount": 28589
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 27675
+          },
+          {
+            "label": "Other",
+            "amount": 23595
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Income & Receipts",
+            "amount": -387160
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "HMLR Core DEL Expenditure",
+            "amount": 467477
+          }
+        ],
+        "programmeIncomeLines": [],
+        "bodyLines": [],
+        "bodyIncomeLines": [],
+        "annualReportUrl": "https://www.gov.uk/government/collections/hm-land-registry-annual-report-and-accounts",
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "dcms": {
+    "elementId": "dcms",
+    "oscarDeptGroupCode": "DCM048.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 13162070,
+        "totalGrossExpenditure": 13765740,
+        "totalIncome": -603670,
+        "unit": "thousands",
+        "delAdmin": 203321,
+        "delProg": 1992484,
+        "deptAme": 5444232,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Other",
+            "amount": 4976764
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 3248024
+          },
+          {
+            "label": "Pay",
+            "amount": 2152384
+          },
+          {
+            "label": "Current Grants",
+            "amount": 1831797
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 944994
+          },
+          {
+            "label": "Depreciation",
+            "amount": 386638
+          },
+          {
+            "label": "Provisions",
+            "amount": 185554
+          },
+          {
+            "label": "Equity Investment",
+            "amount": 30131
+          },
+          {
+            "label": "Grants to Govt",
+            "amount": 7734
+          },
+          {
+            "label": "Subsidies",
+            "amount": 1720
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Income & Receipts",
+            "amount": -566121
+          },
+          {
+            "label": "Interest",
+            "amount": -25890
+          },
+          {
+            "label": "Loans",
+            "amount": -11659
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "British Broadcasting Corporation(net)",
+            "amount": 3890242
+          },
+          {
+            "label": "Lottery Grants",
+            "amount": 1471520
+          },
+          {
+            "label": "Museums and Galleries sponsored ALBs (net)",
+            "amount": 634211
+          },
+          {
+            "label": "Arts and culture ALBs (net)",
+            "amount": 582804
+          },
+          {
+            "label": "Sport sponsored ALBs (net)",
+            "amount": 304695
+          },
+          {
+            "label": "Civil Society and Youth",
+            "amount": 226158
+          },
+          {
+            "label": "Administration and Research",
+            "amount": 114822
+          },
+          {
+            "label": "Heritage sponsored ALBs (net)",
+            "amount": 113008
+          },
+          {
+            "label": "S4C (net)",
+            "amount": 90023
+          },
+          {
+            "label": "Support for the Sports sector",
+            "amount": 78487
+          },
+          {
+            "label": "Ceremonial and support for the Heritage sector",
+            "amount": 63235
+          },
+          {
+            "label": "Tourism sponsored ALBs (net)",
+            "amount": 52548
+          },
+          {
+            "label": "National Citizen Service",
+            "amount": 50118
+          },
+          {
+            "label": "Broadcasting and Media sponsored ALBs (net)",
+            "amount": 45134
+          },
+          {
+            "label": "Provisions, Impairments and other AME spend (ALB) (net)",
+            "amount": 43464
+          },
+          {
+            "label": "Gambling Commission(net)",
+            "amount": 32856
+          },
+          {
+            "label": "Support for the Museums and Galleries sector",
+            "amount": 28317
+          },
+          {
+            "label": "Support for the Digital, Broadcasting and Media sectors",
+            "amount": 24433
+          },
+          {
+            "label": "Libraries sponsored ALBs (net)",
+            "amount": 2561
+          },
+          {
+            "label": "Support for the Tourism sector",
+            "amount": 1662
+          }
+        ],
+        "programmeIncomeLines": [
+          {
+            "label": "Support for the Arts sector",
+            "amount": -130462
+          },
+          {
+            "label": "Channel Four Television",
+            "amount": -37525
+          },
+          {
+            "label": "Support for Horseracing and the Gambling sector",
+            "amount": -28782
+          },
+          {
+            "label": "Levy bodies",
+            "amount": -12892
+          }
+        ],
+        "bodyLines": [
+          {
+            "label": "Bristish Broadcasting Corporation",
+            "amount": 7726692
+          },
+          {
+            "label": "Arts Council",
+            "amount": 1151478
+          },
+          {
+            "label": "Big Lottery Fund",
+            "amount": 693793
+          },
+          {
+            "label": "Sport England",
+            "amount": 388718,
+            "elementId": "sport-england"
+          },
+          {
+            "label": "Heritage Lottery Fund",
+            "amount": 337470
+          },
+          {
+            "label": "Natural History Museum",
+            "amount": 211992,
+            "elementId": "nhm"
+          },
+          {
+            "label": "British Museum",
+            "amount": 176841,
+            "elementId": "british-museum"
+          },
+          {
+            "label": "English Heritage",
+            "amount": 173035
+          },
+          {
+            "label": "United Kingdom Sports Council",
+            "amount": 171577,
+            "elementId": "uk-sport"
+          },
+          {
+            "label": "National Museum of Science and Industry",
+            "amount": 164000,
+            "elementId": "science-museum-group"
+          },
+          {
+            "label": "Sport England Lottery",
+            "amount": 162006
+          },
+          {
+            "label": "Arts Council of England Lottery",
+            "amount": 154792
+          },
+          {
+            "label": "Libraries (Subgroup)",
+            "amount": 135792
+          },
+          {
+            "label": "Tate Gallery",
+            "amount": 131531,
+            "elementId": "tate"
+          },
+          {
+            "label": "Victoria and Albert Museum",
+            "amount": 123702,
+            "elementId": "vam"
+          },
+          {
+            "label": "National Citizen Service",
+            "amount": 99455
+          },
+          {
+            "label": "S4C",
+            "amount": 90023,
+            "elementId": "s4c"
+          },
+          {
+            "label": "British Film Institute",
+            "amount": 85043,
+            "elementId": "bfi"
+          },
+          {
+            "label": "National Gallery",
+            "amount": 83833,
+            "elementId": "national-gallery"
+          },
+          {
+            "label": "National Lottery: UK Sport Lottery",
+            "amount": 81500
+          },
+          {
+            "label": "Imperial War Museum",
+            "amount": 68240,
+            "elementId": "iwm"
+          },
+          {
+            "label": "National Museums Liverpool",
+            "amount": 61863,
+            "elementId": "national-museums-liverpool"
+          },
+          {
+            "label": "National Maritime Museum",
+            "amount": 60277,
+            "elementId": "rmg"
+          },
+          {
+            "label": "Visit Britain",
+            "amount": 52749,
+            "elementId": "visitbritain"
+          },
+          {
+            "label": "British Tourist Authority",
+            "amount": 51787
+          },
+          {
+            "label": "UK Film Council Lottery",
+            "amount": 41959
+          },
+          {
+            "label": "The Gambling Commission",
+            "amount": 32770,
+            "elementId": "gambling-commission"
+          },
+          {
+            "label": "Museums and Gallaries (Subgroup)",
+            "amount": 31250
+          },
+          {
+            "label": "National Lottery Commission",
+            "amount": 28865
+          },
+          {
+            "label": "United Kingdom Anti Doping",
+            "amount": 18776,
+            "elementId": "ukad"
+          },
+          {
+            "label": "Royal Armouries",
+            "amount": 14605,
+            "elementId": "royal-armouries"
+          },
+          {
+            "label": "British Library",
+            "amount": 8408,
+            "elementId": "british-library"
+          },
+          {
+            "label": "National Portrait Gallery",
+            "amount": 8208,
+            "elementId": "npg"
+          },
+          {
+            "label": "Horniman Museum",
+            "amount": 6287,
+            "elementId": "horniman-museum"
+          },
+          {
+            "label": "Churches Conservation Trust",
+            "amount": 5967
+          },
+          {
+            "label": "Football Licensing Authority",
+            "amount": 3464
+          },
+          {
+            "label": "Wallace Collection",
+            "amount": 2725,
+            "elementId": "wallace-collection"
+          },
+          {
+            "label": "Geffrye Museum",
+            "amount": 1759
+          },
+          {
+            "label": "Sir John Soane's Museum",
+            "amount": 1186
+          }
+        ],
+        "bodyIncomeLines": [
+          {
+            "label": "Channel Four Television Corporation",
+            "amount": -37525
+          },
+          {
+            "label": "Horserace Betting Levy Board",
+            "amount": -12892
+          },
+          {
+            "label": "National Heritage Memorial Fund",
+            "amount": -9201,
+            "elementId": "nhmf"
+          }
+        ],
+        "annualReportUrl": "https://www.gov.uk/government/collections/dcms-annual-report-and-accounts",
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "fcdo": {
+    "elementId": "fcdo",
+    "oscarDeptGroupCode": "DID030.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 12552874,
+        "totalGrossExpenditure": 12634230,
+        "totalIncome": -81356,
+        "unit": "thousands",
+        "delAdmin": 326313,
+        "delProg": 10931125,
+        "deptAme": 1229878,
+        "nonDeptAme": 22065,
+        "expenditureLines": [
+          {
+            "label": "Current Grants",
+            "amount": 6738093
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 1945862
+          },
+          {
+            "label": "Equity Investment",
+            "amount": 1141863
+          },
+          {
+            "label": "Pay",
+            "amount": 948280
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 723949
+          },
+          {
+            "label": "Other",
+            "amount": 631022
+          },
+          {
+            "label": "Depreciation",
+            "amount": 328658
+          },
+          {
+            "label": "Subsidies",
+            "amount": 166075
+          },
+          {
+            "label": "Interest",
+            "amount": 9241
+          },
+          {
+            "label": "Public Service Pensions",
+            "amount": 1187
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Loans",
+            "amount": -43837
+          },
+          {
+            "label": "Provisions",
+            "amount": -28502
+          },
+          {
+            "label": "Income & Receipts",
+            "amount": -9017
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "Regional bilateral programmes",
+            "amount": 3894113
+          },
+          {
+            "label": "Core multilateral programmes",
+            "amount": 2595356
+          },
+          {
+            "label": "Centrally managed programmes",
+            "amount": 1731684
+          },
+          {
+            "label": "Operating Costs, frontline diplomacy and overseas network",
+            "amount": 1430727
+          },
+          {
+            "label": "British International Investment",
+            "amount": 880000
+          },
+          {
+            "label": "Conflict, Stability and Security Fund",
+            "amount": 728060
+          },
+          {
+            "label": "International subscriptions, scholarships and BBC World Service",
+            "amount": 386195
+          },
+          {
+            "label": "Other central programme and technical costs",
+            "amount": 349878
+          },
+          {
+            "label": "European Union Attributed Aid",
+            "amount": 281735
+          },
+          {
+            "label": "British Council",
+            "amount": 166075
+          },
+          {
+            "label": "Funding for NDPBs within Departmental Group (Net)",
+            "amount": 43493
+          }
+        ],
+        "programmeIncomeLines": [],
+        "bodyLines": [
+          {
+            "label": "Commonwealth Scholarship Commission",
+            "amount": 56262,
+            "elementId": "csc-uk"
+          },
+          {
+            "label": "Westminster Foundation for Democracy",
+            "amount": 17000,
+            "elementId": "wfd"
+          },
+          {
+            "label": "Marshall Aid Commemoration Commission",
+            "amount": 8200,
+            "elementId": "macc"
+          },
+          {
+            "label": "Independent Commission for Aid Impact",
+            "amount": 4824,
+            "elementId": "icai"
+          }
+        ],
+        "bodyIncomeLines": [],
+        "annualReportUrl": "https://www.gov.uk/government/collections/foreign-commonwealth-development-office-annual-report-and-accounts",
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "ukef": {
+    "elementId": "ukef",
+    "oscarDeptGroupCode": "ECG025.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 2081,
+        "totalGrossExpenditure": 523235,
+        "totalIncome": -521154,
+        "unit": "thousands",
+        "delAdmin": 0,
+        "delProg": 2059,
+        "deptAme": -147728,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Other",
+            "amount": 230298
+          },
+          {
+            "label": "Provisions",
+            "amount": 228522
+          },
+          {
+            "label": "Pay",
+            "amount": 60448
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 2059
+          },
+          {
+            "label": "Depreciation",
+            "amount": 1908
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Goods & Services",
+            "amount": -400536
+          },
+          {
+            "label": "Interest",
+            "amount": -119264
+          },
+          {
+            "label": "Loans",
+            "amount": -1354
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "Export Credit Guarantees and Investments",
+            "amount": 2059
+          }
+        ],
+        "programmeIncomeLines": [
+          {
+            "label": "Export Credits",
+            "amount": -92916
+          },
+          {
+            "label": "Direct Lending",
+            "amount": -54812
+          }
+        ],
+        "bodyLines": [],
+        "bodyIncomeLines": [],
+        "annualReportUrl": null,
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "dwp": {
+    "elementId": "dwp",
+    "oscarDeptGroupCode": "DWP032.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 297406452,
+        "totalGrossExpenditure": 299140498,
+        "totalIncome": -1734046,
+        "unit": "thousands",
+        "delAdmin": 1004890,
+        "delProg": 8937056,
+        "deptAme": 287941636,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Current Grants",
+            "amount": 274795531
+          },
+          {
+            "label": "Grants to Govt",
+            "amount": 15933745
+          },
+          {
+            "label": "Pay",
+            "amount": 4466525
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 2538736
+          },
+          {
+            "label": "Loans",
+            "amount": 674205
+          },
+          {
+            "label": "Depreciation",
+            "amount": 512466
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 89987
+          },
+          {
+            "label": "Other",
+            "amount": 81866
+          },
+          {
+            "label": "Subsidies",
+            "amount": 35114
+          },
+          {
+            "label": "Interest",
+            "amount": 12323
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Provisions",
+            "amount": -1531735
+          },
+          {
+            "label": "Income & Receipts",
+            "amount": -202311
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "State Pension (Contributory)",
+            "amount": 136356969
+          },
+          {
+            "label": "Universal Credit",
+            "amount": 66812144
+          },
+          {
+            "label": "Personal Independence Payment",
+            "amount": 25897563
+          },
+          {
+            "label": "Housing Benefit",
+            "amount": 14677486
+          },
+          {
+            "label": "Attendance Allowance",
+            "amount": 7766559
+          },
+          {
+            "label": "Disability Living Allowance",
+            "amount": 7722582
+          },
+          {
+            "label": "Employment and Support Allowance (Income-Related)",
+            "amount": 7169361
+          },
+          {
+            "label": "Core Department",
+            "amount": 6816876
+          },
+          {
+            "label": "Pension Credit",
+            "amount": 6007695
+          },
+          {
+            "label": "Employment and Support Allowance (Contributory)",
+            "amount": 5168019
+          },
+          {
+            "label": "Carer's Allowance",
+            "amount": 4239297
+          },
+          {
+            "label": "Statutory Maternity Pay",
+            "amount": 3054000
+          },
+          {
+            "label": "Other Benefits",
+            "amount": 977036
+          },
+          {
+            "label": "Employment Programmes",
+            "amount": 765397
+          },
+          {
+            "label": "Industrial Injuries Benefits Scheme",
+            "amount": 752049
+          },
+          {
+            "label": "National Insurance Fund - Core Department",
+            "amount": 646686
+          },
+          {
+            "label": "Cash paid in to the Social Fund",
+            "amount": 412649
+          },
+          {
+            "label": "Maternity Allowance",
+            "amount": 402552
+          },
+          {
+            "label": "Bereavement Benefits",
+            "amount": 349439
+          },
+          {
+            "label": "Social Fund: Winter Fuel",
+            "amount": 301685
+          },
+          {
+            "label": "Income Support",
+            "amount": 279845
+          },
+          {
+            "label": "State Pension (Non-Contributory)",
+            "amount": 229446
+          },
+          {
+            "label": "Jobseekers Allowance (Contributory)",
+            "amount": 222372
+          },
+          {
+            "label": "Support for Local Authorities",
+            "amount": 212104
+          },
+          {
+            "label": "Health and Safety Executive (Net)",
+            "amount": 188644
+          },
+          {
+            "label": "Money and Pensions Service (Net)",
+            "amount": 175655
+          },
+          {
+            "label": "Financial Assistance Scheme",
+            "amount": 162371
+          },
+          {
+            "label": "Christmas Bonus (Contributory)",
+            "amount": 130278
+          },
+          {
+            "label": "Other Arm's Length Bodies (Net)",
+            "amount": 100590
+          },
+          {
+            "label": "Jobseekers Allowance (Income-Related)",
+            "amount": 91040
+          },
+          {
+            "label": "Social fund",
+            "amount": 79970
+          },
+          {
+            "label": "Severe Disablement Benefit",
+            "amount": 53809
+          },
+          {
+            "label": "Support for Mortgage Interest",
+            "amount": 50919
+          },
+          {
+            "label": "Christmas Bonus (Non-Contributory)",
+            "amount": 50570
+          },
+          {
+            "label": "Social Fund: Other",
+            "amount": 28889
+          }
+        ],
+        "programmeIncomeLines": [
+          {
+            "label": "Other Expenditure",
+            "amount": -32409
+          },
+          {
+            "label": "Funding for Public Corporations",
+            "amount": -21012
+          },
+          {
+            "label": "Cost of Living Support Payments",
+            "amount": -3905
+          }
+        ],
+        "bodyLines": [
+          {
+            "label": "Health and Safety Executive",
+            "amount": 426070,
+            "elementId": "hse"
+          },
+          {
+            "label": "Single Financial Guidance Body",
+            "amount": 359291,
+            "elementId": "maps"
+          },
+          {
+            "label": "The Pensions Regulator",
+            "amount": 191549,
+            "elementId": "pensions-regulator"
+          },
+          {
+            "label": "The Pensions Ombudsman",
+            "amount": 24563,
+            "elementId": "pensions-ombudsman"
+          }
+        ],
+        "bodyIncomeLines": [],
+        "annualReportUrl": "https://www.gov.uk/government/collections/dwp-annual-report-and-accounts",
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "dsit": {
+    "elementId": "dsit",
+    "oscarDeptGroupCode": "BIS084.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 14228982,
+        "totalGrossExpenditure": 14644576,
+        "totalIncome": -415594,
+        "unit": "thousands",
+        "delAdmin": 310255,
+        "delProg": 13711672,
+        "deptAme": 207055,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Current Grants",
+            "amount": 11147301
+          },
+          {
+            "label": "Pay",
+            "amount": 1212200
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 850688
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 809842
+          },
+          {
+            "label": "Depreciation",
+            "amount": 380494
+          },
+          {
+            "label": "Grants to Govt",
+            "amount": 121786
+          },
+          {
+            "label": "Provisions",
+            "amount": 94659
+          },
+          {
+            "label": "Loans",
+            "amount": 22412
+          },
+          {
+            "label": "Subsidies",
+            "amount": 5194
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Income & Receipts",
+            "amount": -215617
+          },
+          {
+            "label": "Other",
+            "amount": -159053
+          },
+          {
+            "label": "Equity Investment",
+            "amount": -26059
+          },
+          {
+            "label": "Interest",
+            "amount": -14865
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "Science and Research (ALB) net",
+            "amount": 10221929
+          },
+          {
+            "label": "Science and Research",
+            "amount": 2332115
+          },
+          {
+            "label": "Deliver an ambitious industrial strategy",
+            "amount": 463717
+          },
+          {
+            "label": "Building Digital UK",
+            "amount": 311827
+          },
+          {
+            "label": "Modernising and reforming the work of the Government Functions",
+            "amount": 273391
+          },
+          {
+            "label": "Support for the Digital, Broadcasting and Media sectors",
+            "amount": 270113
+          },
+          {
+            "label": "Capability",
+            "amount": 260182
+          },
+          {
+            "label": "Government as Shareholder",
+            "amount": 106406
+          },
+          {
+            "label": "Broadcasting and Media ALB (net)",
+            "amount": 17858
+          },
+          {
+            "label": "Capability (ALB) net",
+            "amount": 10519
+          },
+          {
+            "label": "Government as Shareholder (ALB) net",
+            "amount": 9079
+          },
+          {
+            "label": "Promote competitive markets and responsible business practices",
+            "amount": 6522
+          }
+        ],
+        "programmeIncomeLines": [
+          {
+            "label": "Deliver an ambitious industrial strategy (ALB) net",
+            "amount": -54676
+          }
+        ],
+        "bodyLines": [
+          {
+            "label": "UK Research and Innovation",
+            "amount": 9987450,
+            "elementId": "ukri"
+          },
+          {
+            "label": "Diamond Light Source Limited",
+            "amount": 167932
+          },
+          {
+            "label": "Knowledge Transfer Network Limited",
+            "amount": 35829
+          },
+          {
+            "label": "Advanced Research and Invention Agency",
+            "amount": 30718,
+            "elementId": "aria"
+          },
+          {
+            "label": "Information Commission",
+            "amount": 19109
+          },
+          {
+            "label": "RC UK Shared Services Centre Limited",
+            "amount": 10519
+          },
+          {
+            "label": "British Business Bank plc BEIS",
+            "amount": 9079
+          }
+        ],
+        "bodyIncomeLines": [
+          {
+            "label": "National Endowment for Science, Technology and the Arts",
+            "amount": -54676
+          },
+          {
+            "label": "Ofcom",
+            "amount": -1251,
+            "elementId": "ofcom"
+          }
+        ],
+        "annualReportUrl": "https://www.gov.uk/government/collections/department-for-science-innovation-and-technology-annual-report-and-accounts",
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "cps": {
+    "elementId": "cps",
+    "oscarDeptGroupCode": "CPS016.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 881976,
+        "totalGrossExpenditure": 931844,
+        "totalIncome": -49868,
+        "unit": "thousands",
+        "delAdmin": 44557,
+        "delProg": 834245,
+        "deptAme": 2668,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Pay",
+            "amount": 493551
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 361282
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 51325
+          },
+          {
+            "label": "Depreciation",
+            "amount": 20032
+          },
+          {
+            "label": "Other",
+            "amount": 3187
+          },
+          {
+            "label": "Interest",
+            "amount": 2467
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Income & Receipts",
+            "amount": -26810
+          },
+          {
+            "label": "Grants to Govt",
+            "amount": -23058
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "Crown Prosecutions and Legal Services",
+            "amount": 834245
+          },
+          {
+            "label": "Administration Costs in HQ and on Central Services",
+            "amount": 44557
+          },
+          {
+            "label": "CPS voted AME charges",
+            "amount": 2668
+          }
+        ],
+        "programmeIncomeLines": [],
+        "bodyLines": [],
+        "bodyIncomeLines": [],
+        "annualReportUrl": "https://www.gov.uk/government/collections/cps-annual-report",
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "dfe": {
+    "elementId": "dfe",
+    "oscarDeptGroupCode": "DFE022.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 140264791,
+        "totalGrossExpenditure": 183021897,
+        "totalIncome": -42757106,
+        "unit": "thousands",
+        "delAdmin": 546736,
+        "delProg": 109267873,
+        "deptAme": 28505599,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Grants to Govt",
+            "amount": 70188930
+          },
+          {
+            "label": "Pay",
+            "amount": 34769990
+          },
+          {
+            "label": "Loans",
+            "amount": 30859127
+          },
+          {
+            "label": "Depreciation",
+            "amount": 26645194
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 9192883
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 5751063
+          },
+          {
+            "label": "Current Grants",
+            "amount": 5579989
+          },
+          {
+            "label": "Equity Investment",
+            "amount": 34721
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Other",
+            "amount": -27360939
+          },
+          {
+            "label": "Interest",
+            "amount": -15023724
+          },
+          {
+            "label": "Income & Receipts",
+            "amount": -352081
+          },
+          {
+            "label": "Provisions",
+            "amount": -20362
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "Grants to Academies",
+            "amount": 40485008
+          },
+          {
+            "label": "Grants to LA  - Schools & Early Years",
+            "amount": 39652649
+          },
+          {
+            "label": "Higher Education AME",
+            "amount": 27023924
+          },
+          {
+            "label": "Higher Education",
+            "amount": 13684459
+          },
+          {
+            "label": "Further Education",
+            "amount": 7698021
+          },
+          {
+            "label": "Other School Funding (Department)",
+            "amount": 3057517
+          },
+          {
+            "label": "Apprenticeships",
+            "amount": 2786900
+          },
+          {
+            "label": "Higher Education (ALB) (net)",
+            "amount": 1898503
+          },
+          {
+            "label": "Families and Children Services (Department)",
+            "amount": 1203840
+          },
+          {
+            "label": "Activities to Support all Functions",
+            "amount": 614417
+          },
+          {
+            "label": "Standards and Testing Agency",
+            "amount": 55844
+          },
+          {
+            "label": "Activities to Support all Functions (Department)",
+            "amount": 49179
+          },
+          {
+            "label": "Education and Skills Funding Agency (ESFA)",
+            "amount": 35180
+          },
+          {
+            "label": "Further Education (ALB) (net)",
+            "amount": 29718
+          },
+          {
+            "label": "Families and Children Services (ALB) (Net)",
+            "amount": 17470
+          },
+          {
+            "label": "Teaching Regulation Agency",
+            "amount": 16769
+          },
+          {
+            "label": "Further Education (ALB) (net) AME",
+            "amount": 11992
+          },
+          {
+            "label": "Higher Education (ALB) (net) AME",
+            "amount": 5094
+          },
+          {
+            "label": "Further Education AME",
+            "amount": 3440
+          },
+          {
+            "label": "Activities to Support all Functions (ALB)",
+            "amount": 1204
+          }
+        ],
+        "programmeIncomeLines": [
+          {
+            "label": "Executive Agencies",
+            "amount": -5763
+          },
+          {
+            "label": "Other School Funding (ALB) (Net)",
+            "amount": -5157
+          }
+        ],
+        "bodyLines": [
+          {
+            "label": "Academies",
+            "amount": 40485007
+          },
+          {
+            "label": "Office for Students",
+            "amount": 3177884,
+            "elementId": "ofstu"
+          },
+          {
+            "label": "Student Loans Company",
+            "amount": 593857,
+            "elementId": "slc"
+          },
+          {
+            "label": "Institute for Apprenticeship",
+            "amount": 58269,
+            "elementId": "ifate"
+          },
+          {
+            "label": "Oak National Academy Limited",
+            "amount": 48665
+          },
+          {
+            "label": "Social Work England",
+            "amount": 26933,
+            "elementId": "social-work-england"
+          },
+          {
+            "label": "LocatED PLC",
+            "amount": 17103
+          },
+          {
+            "label": "Construction Industry Training Board",
+            "amount": 9652,
+            "elementId": "citb"
+          },
+          {
+            "label": "Children's Commissioner",
+            "amount": 5196
+          },
+          {
+            "label": "Engineering Construction Industry Training Board",
+            "amount": 2340,
+            "elementId": "ecitb"
+          }
+        ],
+        "bodyIncomeLines": [
+          {
+            "label": "Aggregator Vehicle PLC",
+            "amount": -39210
+          }
+        ],
+        "annualReportUrl": "https://www.gov.uk/government/collections/dfe-annual-reports",
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "dft": {
+    "elementId": "dft",
+    "oscarDeptGroupCode": "DFT004.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 41238230,
+        "totalGrossExpenditure": 46903723,
+        "totalIncome": -5665493,
+        "unit": "thousands",
+        "delAdmin": 370009,
+        "delProg": 38829783,
+        "deptAme": 2038438,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Capital Investment",
+            "amount": 20493903
+          },
+          {
+            "label": "Depreciation",
+            "amount": 10758288
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 6293557
+          },
+          {
+            "label": "Pay",
+            "amount": 3373528
+          },
+          {
+            "label": "Subsidies",
+            "amount": 2825737
+          },
+          {
+            "label": "Interest",
+            "amount": 1772221
+          },
+          {
+            "label": "Grants to Govt",
+            "amount": 832170
+          },
+          {
+            "label": "Provisions",
+            "amount": 489899
+          },
+          {
+            "label": "Current Grants",
+            "amount": 49995
+          },
+          {
+            "label": "Public Service Pensions",
+            "amount": 11793
+          },
+          {
+            "label": "Equity Investment",
+            "amount": 2632
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Income & Receipts",
+            "amount": -4161607
+          },
+          {
+            "label": "Other",
+            "amount": -1341104
+          },
+          {
+            "label": "Loans",
+            "amount": -162782
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "Network Rail (net)",
+            "amount": 17877206
+          },
+          {
+            "label": "National Highways (net)",
+            "amount": 7034697
+          },
+          {
+            "label": "High Speed Two Limited (net)",
+            "amount": 6921700
+          },
+          {
+            "label": "Support for Passenger Rail Services",
+            "amount": 2541974
+          },
+          {
+            "label": "Local Authority Transport",
+            "amount": 2042668
+          },
+          {
+            "label": "Bus Subsidies & Concessionary Fares",
+            "amount": 1303618
+          },
+          {
+            "label": "Transport Development Fund",
+            "amount": 1255369
+          },
+          {
+            "label": "Sustainable Travel",
+            "amount": 643539
+          },
+          {
+            "label": "Maritime and Coastguard Agency",
+            "amount": 501976
+          },
+          {
+            "label": "Other Railways",
+            "amount": 417438
+          },
+          {
+            "label": "Central Administration",
+            "amount": 344755
+          },
+          {
+            "label": "Aviation, Maritime, Security and Safety",
+            "amount": 297017
+          },
+          {
+            "label": "Motoring Agencies",
+            "amount": 154253
+          },
+          {
+            "label": "East West Rail Company Limited (net)",
+            "amount": 125574
+          },
+          {
+            "label": "GLA Transport Grants",
+            "amount": 83093
+          },
+          {
+            "label": "Science, Research and Support Functions",
+            "amount": 47179
+          },
+          {
+            "label": "Funding of Other ALBs (net)",
+            "amount": 27631
+          }
+        ],
+        "programmeIncomeLines": [
+          {
+            "label": "Crossrail",
+            "amount": -255759
+          },
+          {
+            "label": "Tolled Crossings",
+            "amount": -95424
+          },
+          {
+            "label": "High Speed Rail",
+            "amount": -30274
+          }
+        ],
+        "bodyLines": [
+          {
+            "label": "Network Rail",
+            "amount": 17877206,
+            "elementId": "network-rail"
+          },
+          {
+            "label": "National Highways",
+            "amount": 7034697,
+            "elementId": "national-highways"
+          },
+          {
+            "label": "High Speed 2",
+            "amount": 6921700,
+            "elementId": "hs2"
+          },
+          {
+            "label": "East West Rail",
+            "amount": 125574,
+            "elementId": "east-west-railway"
+          },
+          {
+            "label": "British Transport Police Authority",
+            "amount": 87843,
+            "elementId": "btpa"
+          },
+          {
+            "label": "Northern Lighthouse Board",
+            "amount": 8269,
+            "elementId": "nlb"
+          },
+          {
+            "label": "Transport Focus",
+            "amount": 6507,
+            "elementId": "transport-focus"
+          }
+        ],
+        "bodyIncomeLines": [
+          {
+            "label": "Air Travel Trust",
+            "amount": -76274
+          }
+        ],
+        "annualReportUrl": "https://www.gov.uk/government/collections/department-for-transport-annual-report-and-accounts",
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "charity-comm": {
+    "elementId": "charity-comm",
+    "oscarDeptGroupCode": "CHC009.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 36523,
+        "totalGrossExpenditure": 36523,
+        "totalIncome": 0,
+        "unit": "thousands",
+        "delAdmin": 32147,
+        "delProg": 4450,
+        "deptAme": 0,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Pay",
+            "amount": 25851
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 4450
+          },
+          {
+            "label": "Depreciation",
+            "amount": 3592
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 2630
+          }
+        ],
+        "incomeLines": [],
+        "programmeLines": [
+          {
+            "label": "Giving the public confidence in the integrity of charity",
+            "amount": 36597
+          }
+        ],
+        "programmeIncomeLines": [],
+        "bodyLines": [],
+        "bodyIncomeLines": [],
+        "annualReportUrl": null,
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "cma": {
+    "elementId": "cma",
+    "oscarDeptGroupCode": "CMA076.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 128560,
+        "totalGrossExpenditure": 146778,
+        "totalIncome": -18218,
+        "unit": "thousands",
+        "delAdmin": 26480,
+        "delProg": 117993,
+        "deptAme": -15465,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Pay",
+            "amount": 106780
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 22421
+          },
+          {
+            "label": "Depreciation",
+            "amount": 11076
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 6501
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Provisions",
+            "amount": -15465
+          },
+          {
+            "label": "Income & Receipts",
+            "amount": -2753
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "Competition Promotion",
+            "amount": 129008
+          }
+        ],
+        "programmeIncomeLines": [],
+        "bodyLines": [],
+        "bodyIncomeLines": [],
+        "annualReportUrl": null,
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "fsa": {
+    "elementId": "fsa",
+    "oscarDeptGroupCode": "FSA026.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 127863,
+        "totalGrossExpenditure": 127863,
+        "totalIncome": 0,
+        "unit": "thousands",
+        "delAdmin": 114590,
+        "delProg": 10075,
+        "deptAme": 72,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Pay",
+            "amount": 86213
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 31949
+          },
+          {
+            "label": "Depreciation",
+            "amount": 4163
+          },
+          {
+            "label": "Other",
+            "amount": 3620
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 1918
+          }
+        ],
+        "incomeLines": [],
+        "programmeLines": [
+          {
+            "label": "Food Standards Agency Westminster (DEL)",
+            "amount": 124665
+          }
+        ],
+        "programmeIncomeLines": [],
+        "bodyLines": [],
+        "bodyIncomeLines": [],
+        "annualReportUrl": null,
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "gad": {
+    "elementId": "gad",
+    "oscarDeptGroupCode": "GAD031.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": -2592,
+        "totalGrossExpenditure": 20681,
+        "totalIncome": -23273,
+        "unit": "thousands",
+        "delAdmin": -690,
+        "delProg": 312,
+        "deptAme": -25,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Pay",
+            "amount": 20681
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Goods & Services",
+            "amount": -22266
+          },
+          {
+            "label": "Other",
+            "amount": -1007
+          }
+        ],
+        "programmeLines": [],
+        "programmeIncomeLines": [],
+        "bodyLines": [],
+        "bodyIncomeLines": [],
+        "annualReportUrl": null,
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "ni-office": {
+    "elementId": "ni-office",
+    "oscarDeptGroupCode": "NIO097.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 25518598,
+        "totalGrossExpenditure": 25518598,
+        "totalIncome": 0,
+        "unit": "thousands",
+        "delAdmin": 22642,
+        "delProg": 46541,
+        "deptAme": 0,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Other",
+            "amount": 25449415
+          },
+          {
+            "label": "Pay",
+            "amount": 29996
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 21605
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 12342
+          },
+          {
+            "label": "Depreciation",
+            "amount": 5240
+          }
+        ],
+        "incomeLines": [],
+        "programmeLines": [
+          {
+            "label": "Grant Payable to The Northern Ireland Consolidated Fund",
+            "amount": 25380597
+          },
+          {
+            "label": "Northern Ireland Office",
+            "amount": 43712
+          },
+          {
+            "label": "Independent Commission for Reconciliation and Information Recovery DEL (net)",
+            "amount": 22430
+          },
+          {
+            "label": "NI Human Rights Commission (net)",
+            "amount": 1910
+          }
+        ],
+        "programmeIncomeLines": [],
+        "bodyLines": [
+          {
+            "label": "Independent Commission for Reconciliation and Information Recovery",
+            "amount": 44860,
+            "elementId": "icrir"
+          },
+          {
+            "label": "NI Human Rights Commission",
+            "amount": 3820,
+            "elementId": "nihrc"
+          },
+          {
+            "label": "NI Parades Commission",
+            "amount": 1580,
+            "elementId": "ni-parades-commission"
+          }
+        ],
+        "bodyIncomeLines": [],
+        "annualReportUrl": null,
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "ofqual": {
+    "elementId": "ofqual",
+    "oscarDeptGroupCode": "OFQ070.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 29477,
+        "totalGrossExpenditure": 29477,
+        "totalIncome": 0,
+        "unit": "thousands",
+        "delAdmin": 16359,
+        "delProg": 14471,
+        "deptAme": 282,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Pay",
+            "amount": 23029
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 6448
+          }
+        ],
+        "incomeLines": [],
+        "programmeLines": [
+          {
+            "label": "Regulation of qualifications and statutory assessments",
+            "amount": 31112
+          }
+        ],
+        "programmeIncomeLines": [],
+        "bodyLines": [],
+        "bodyIncomeLines": [],
+        "annualReportUrl": null,
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "ofgem": {
+    "elementId": "ofgem",
+    "oscarDeptGroupCode": "OGE020.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 45829,
+        "totalGrossExpenditure": 318704,
+        "totalIncome": -272875,
+        "unit": "thousands",
+        "delAdmin": 13684,
+        "delProg": 32649,
+        "deptAme": 0,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Pay",
+            "amount": 161565
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 103628
+          },
+          {
+            "label": "Provisions",
+            "amount": 40409
+          },
+          {
+            "label": "Depreciation",
+            "amount": 9013
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 4089
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Income & Receipts",
+            "amount": -153454
+          },
+          {
+            "label": "Other",
+            "amount": -119421
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "Ofgem Green Gas: Administration",
+            "amount": 27963
+          },
+          {
+            "label": "Gas and Electricity Markets Authority: Administration",
+            "amount": 12265
+          },
+          {
+            "label": "Ofgem Delivery & Schemes: Administration",
+            "amount": 6105
+          }
+        ],
+        "programmeIncomeLines": [],
+        "bodyLines": [],
+        "bodyIncomeLines": [],
+        "annualReportUrl": null,
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "uksa": {
+    "elementId": "uksa",
+    "oscarDeptGroupCode": "ONS005.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 400605,
+        "totalGrossExpenditure": 400605,
+        "totalIncome": 0,
+        "unit": "thousands",
+        "delAdmin": 0,
+        "delProg": 400605,
+        "deptAme": 160,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Pay",
+            "amount": 285321
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 84377
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 17492
+          },
+          {
+            "label": "Depreciation",
+            "amount": 13415
+          }
+        ],
+        "incomeLines": [],
+        "programmeLines": [
+          {
+            "label": "Programme Expenditure",
+            "amount": 400605
+          }
+        ],
+        "programmeIncomeLines": [],
+        "bodyLines": [],
+        "bodyIncomeLines": [],
+        "annualReportUrl": "https://www.gov.uk/government/collections/office-for-statistics-regulation-annual-report",
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "orr": {
+    "elementId": "orr",
+    "oscarDeptGroupCode": "ORR088.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": -1859,
+        "totalGrossExpenditure": 39766,
+        "totalIncome": -41625,
+        "unit": "thousands",
+        "delAdmin": -1740,
+        "delProg": 230,
+        "deptAme": 0,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Pay",
+            "amount": 31306
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 6710
+          },
+          {
+            "label": "Depreciation",
+            "amount": 1750
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Income & Receipts",
+            "amount": -38032
+          },
+          {
+            "label": "Other",
+            "amount": -3593
+          }
+        ],
+        "programmeLines": [],
+        "programmeIncomeLines": [
+          {
+            "label": "Other Regulation, admin and other expenditure",
+            "amount": -1127
+          }
+        ],
+        "bodyLines": [],
+        "bodyIncomeLines": [],
+        "annualReportUrl": null,
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "ofsted": {
+    "elementId": "ofsted",
+    "oscarDeptGroupCode": "OSE072.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 159604,
+        "totalGrossExpenditure": 211670,
+        "totalIncome": -52066,
+        "unit": "thousands",
+        "delAdmin": 17593,
+        "delProg": 141602,
+        "deptAme": 1419,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Pay",
+            "amount": 162540
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 36324
+          },
+          {
+            "label": "Depreciation",
+            "amount": 7685
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 3702
+          },
+          {
+            "label": "Provisions",
+            "amount": 1419
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Income & Receipts",
+            "amount": -52066
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "Administration and Inspection",
+            "amount": 159195
+          },
+          {
+            "label": "Activities to Support All Functions",
+            "amount": 1419
+          }
+        ],
+        "programmeIncomeLines": [],
+        "bodyLines": [],
+        "bodyIncomeLines": [],
+        "annualReportUrl": null,
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "scotland-office": {
+    "elementId": "scotland-office",
+    "oscarDeptGroupCode": "SCO042.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 48572577,
+        "totalGrossExpenditure": 48572577,
+        "totalIncome": 0,
+        "unit": "thousands",
+        "delAdmin": 12979,
+        "delProg": 920,
+        "deptAme": 0,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Other",
+            "amount": 48560242
+          },
+          {
+            "label": "Pay",
+            "amount": 12335
+          }
+        ],
+        "incomeLines": [],
+        "programmeLines": [
+          {
+            "label": "Grant Payable to The Scottish Consolidated Fund",
+            "amount": 28254958
+          },
+          {
+            "label": "Payover of Scottish Rate of Income Tax to Scottish Consolidated Fund",
+            "amount": 20305182
+          },
+          {
+            "label": "Scotland Office and Office of The Advocate General",
+            "amount": 13618
+          }
+        ],
+        "programmeIncomeLines": [],
+        "bodyLines": [],
+        "bodyIncomeLines": [],
+        "annualReportUrl": null,
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "supreme-court": {
+    "elementId": "supreme-court",
+    "oscarDeptGroupCode": "TSC068.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 8616,
+        "totalGrossExpenditure": 12752,
+        "totalIncome": -4136,
+        "unit": "thousands",
+        "delAdmin": 596,
+        "delProg": 8020,
+        "deptAme": 0,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Pay",
+            "amount": 9207
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 2097
+          },
+          {
+            "label": "Depreciation",
+            "amount": 1448
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Goods & Services",
+            "amount": -4136
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "United Kingdom Supreme Court",
+            "amount": 4923
+          },
+          {
+            "label": "UK Supreme Court Non-Voted",
+            "amount": 3693
+          }
+        ],
+        "programmeIncomeLines": [],
+        "bodyLines": [],
+        "bodyIncomeLines": [],
+        "annualReportUrl": null,
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "ofwat": {
+    "elementId": "ofwat",
+    "oscarDeptGroupCode": "WSR057.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": -2392,
+        "totalGrossExpenditure": 61483,
+        "totalIncome": -63875,
+        "unit": "thousands",
+        "delAdmin": -2083,
+        "delProg": 378,
+        "deptAme": 0,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Pay",
+            "amount": 33206
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 25194
+          },
+          {
+            "label": "Provisions",
+            "amount": 2070
+          },
+          {
+            "label": "Depreciation",
+            "amount": 1013
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Income & Receipts",
+            "amount": -63875
+          }
+        ],
+        "programmeLines": [],
+        "programmeIncomeLines": [
+          {
+            "label": "Water Services Regulation Authority",
+            "amount": -1705
+          }
+        ],
+        "bodyLines": [],
+        "bodyIncomeLines": [],
+        "annualReportUrl": null,
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "mod": {
+    "elementId": "mod",
+    "oscarDeptGroupCode": "MOD017.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 71896106,
+        "totalGrossExpenditure": 71934626,
+        "totalIncome": -38520,
+        "unit": "thousands",
+        "delAdmin": 2014863,
+        "delProg": 63164992,
+        "deptAme": 6498582,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Goods & Services",
+            "amount": 18534862
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 18144519
+          },
+          {
+            "label": "Pay",
+            "amount": 16512882
+          },
+          {
+            "label": "Depreciation",
+            "amount": 9441020
+          },
+          {
+            "label": "Provisions",
+            "amount": 5374995
+          },
+          {
+            "label": "Other",
+            "amount": 2517272
+          },
+          {
+            "label": "Current Grants",
+            "amount": 939552
+          },
+          {
+            "label": "Interest",
+            "amount": 281380
+          },
+          {
+            "label": "Loans",
+            "amount": 188144
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Income & Receipts",
+            "amount": -38520
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "Provision of Defence Capability Service Personnel Costs",
+            "amount": 11998846
+          },
+          {
+            "label": "Defence Capability Defence Nuclear Enterprise DEL Cost",
+            "amount": 10631500
+          },
+          {
+            "label": "Provision of Defence Capability Depreciation and Impairments Costs",
+            "amount": 8313732
+          },
+          {
+            "label": "Provision of Defence Capability Equipment Support Costs",
+            "amount": 6196275
+          },
+          {
+            "label": "Provision of Defence Capability Provisions Costs",
+            "amount": 5609259
+          },
+          {
+            "label": "Provision of Defence Capability Other Capital (Fiscal)",
+            "amount": 5605619
+          },
+          {
+            "label": "Provision of Defence Capability Infrastructure costs",
+            "amount": 5386195
+          },
+          {
+            "label": "Provision of Defence Capability Capital Single Use Military Equipment",
+            "amount": 4997568
+          },
+          {
+            "label": "Provision of Defence Capability Other Costs and Services",
+            "amount": 2958281
+          },
+          {
+            "label": "Provision of Defence Capability Research and Development Costs",
+            "amount": 2809511
+          },
+          {
+            "label": "Provision of Defence Capability Civilian Personnel Costs",
+            "amount": 1797890
+          },
+          {
+            "label": "Provision of Defence Capability Inventory Consumption",
+            "amount": 1422885
+          },
+          {
+            "label": "Defence Capability  DE&S DEL Costs",
+            "amount": 1301696
+          },
+          {
+            "label": "Provision of Defence Capability Depreciation and Impairment Costs",
+            "amount": 1127288
+          },
+          {
+            "label": "Defence Capability  Admin Serivce Pers Costs",
+            "amount": 919207
+          },
+          {
+            "label": "War Pension Benefits  Programme Costs",
+            "amount": 653981
+          },
+          {
+            "label": "Provision of Defence CapabilityAdministration Civilian Personnel Costs",
+            "amount": 614929
+          },
+          {
+            "label": "Non Departmental Public Bodies Costs",
+            "amount": 280203
+          },
+          {
+            "label": "Defence Capability  Defence Nuclear Enterprise Admin DEL  Costs",
+            "amount": 250096
+          },
+          {
+            "label": "Provision of Defence Capability Administration  Other Costs and Services",
+            "amount": 226168
+          },
+          {
+            "label": "Provision of Defence Capability Cash Release of Provisions Costs",
+            "amount": 195314
+          },
+          {
+            "label": "Movement On Fair Value of Financial Instruments",
+            "amount": 131888
+          },
+          {
+            "label": "Integrated Security Fund",
+            "amount": 51537
+          },
+          {
+            "label": "Cash Release of Provisions Admin Costs",
+            "amount": 4463
+          },
+          {
+            "label": "Provision of Defence Capability AME Capital Fiscal",
+            "amount": 3899
+          }
+        ],
+        "programmeIncomeLines": [
+          {
+            "label": "Provision of Defence Capability Receipts and other Income",
+            "amount": -1338395
+          },
+          {
+            "label": "Provision of Defence Cash Release of Provisions Costs",
+            "amount": -373752
+          },
+          {
+            "label": "Provision of Defence Capability Fiscal Assets / Estate Disposal",
+            "amount": -97646
+          }
+        ],
+        "bodyLines": [
+          {
+            "label": "Territorial, Auxiliary and Volunteer Reserve Associations established under s 110 of the Reserve Act",
+            "amount": 200657
+          },
+          {
+            "label": "Commonwealth War Graves Commission",
+            "amount": 118660,
+            "elementId": "cwgc"
+          },
+          {
+            "label": "Royal Hospital, Chelsea",
+            "amount": 34740
+          },
+          {
+            "label": "Royal Air Force Museum",
+            "amount": 21954,
+            "elementId": "raf-museum"
+          },
+          {
+            "label": "Armed Forces Covenant Fund Trustee Ltd",
+            "amount": 21710
+          },
+          {
+            "label": "Atomic Weapons Establishment (AWE) plc",
+            "amount": 18582
+          },
+          {
+            "label": "National Army Museum",
+            "amount": 15222,
+            "elementId": "national-army-museum"
+          },
+          {
+            "label": "Single Source Regulations Office",
+            "amount": 13118,
+            "elementId": "ssro"
+          },
+          {
+            "label": "National Museum of the Royal Navy",
+            "amount": 9278,
+            "elementId": "nmrn"
+          }
+        ],
+        "bodyIncomeLines": [],
+        "annualReportUrl": "https://www.gov.uk/government/collections/mod-annual-reports-and-accounts",
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "co": {
+    "elementId": "co",
+    "oscarDeptGroupCode": "CAB010.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 15805899,
+        "totalGrossExpenditure": 16320539,
+        "totalIncome": -514640,
+        "unit": "thousands",
+        "delAdmin": 502103,
+        "delProg": 541910,
+        "deptAme": 14761000,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Provisions",
+            "amount": 14700012
+          },
+          {
+            "label": "Pay",
+            "amount": 745293
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 329576
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 328907
+          },
+          {
+            "label": "Depreciation",
+            "amount": 151543
+          },
+          {
+            "label": "Interest",
+            "amount": 63473
+          },
+          {
+            "label": "Current Grants",
+            "amount": 1735
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Income & Receipts",
+            "amount": -271872
+          },
+          {
+            "label": "Other",
+            "amount": -242768
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "Cabinet Office AME",
+            "amount": 14761000
+          },
+          {
+            "label": "Executive Agency - Government Property Agency",
+            "amount": 338100
+          },
+          {
+            "label": "Support the design and implementation of HM Government's policies and the Prime Minister's priorities",
+            "amount": 272533
+          },
+          {
+            "label": "Increase the efficiency, effectiveness and accountability of government through modernising and reforming the work of the Government Functions.",
+            "amount": 193926
+          },
+          {
+            "label": "Secure a safe, prosperous and resilient UK by coordinating national security and crisis response, realising strategic advantage through science and technology, and the implementation of the Integrated Review.",
+            "amount": 103066
+          },
+          {
+            "label": "Ensure the effective running of the Department and contribute to the Government's cross-cutting priorities",
+            "amount": 71734
+          },
+          {
+            "label": "Arm's Length Bodies (NET)",
+            "amount": 54527
+          },
+          {
+            "label": "Advance equality of opportunity across the UK.",
+            "amount": 10121
+          }
+        ],
+        "programmeIncomeLines": [],
+        "bodyLines": [
+          {
+            "label": "Infected Blood Compensation Authority",
+            "amount": 14761000,
+            "elementId": "ibca"
+          }
+        ],
+        "bodyIncomeLines": [],
+        "annualReportUrl": "https://www.gov.uk/government/collections/cabinet-office-annual-report-and-accounts",
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "dluhc": {
+    "elementId": "dluhc",
+    "oscarDeptGroupCode": "CLG085.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 46138928,
+        "totalGrossExpenditure": 48563825,
+        "totalIncome": -2424897,
+        "unit": "thousands",
+        "delAdmin": 130193,
+        "delProg": 23218548,
+        "deptAme": 22844729,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Grants to Govt",
+            "amount": 21237328
+          },
+          {
+            "label": "Other",
+            "amount": 18030066
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 7971867
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 621122
+          },
+          {
+            "label": "Pay",
+            "amount": 468209
+          },
+          {
+            "label": "Loans",
+            "amount": 209163
+          },
+          {
+            "label": "Public Service Pensions",
+            "amount": 26070
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Equity Investment",
+            "amount": -1908987
+          },
+          {
+            "label": "Depreciation",
+            "amount": -210165
+          },
+          {
+            "label": "Interest",
+            "amount": -128240
+          },
+          {
+            "label": "Provisions",
+            "amount": -72285
+          },
+          {
+            "label": "Current Grants",
+            "amount": -52687
+          },
+          {
+            "label": "Income & Receipts",
+            "amount": -52533
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "Business Rates Retention",
+            "amount": 17618416
+          },
+          {
+            "label": "Other Grants and Payments",
+            "amount": 14693852
+          },
+          {
+            "label": "Local Growth & Devolution",
+            "amount": 4252692
+          },
+          {
+            "label": "Housing & Planning (ALB)(Net)",
+            "amount": 3349854
+          },
+          {
+            "label": "Housing & Planning",
+            "amount": 2987129
+          },
+          {
+            "label": "Revenue Support Grant",
+            "amount": 2117962
+          },
+          {
+            "label": "Local Government & Public Services",
+            "amount": 418054
+          },
+          {
+            "label": "MHCLG Staff, Building and Infrastructure Costs",
+            "amount": 376459
+          },
+          {
+            "label": "Elections",
+            "amount": 275106
+          },
+          {
+            "label": "Elections, Union and Constitution",
+            "amount": 55936
+          },
+          {
+            "label": "Research, Data & Trading Funds",
+            "amount": 24708
+          },
+          {
+            "label": "Local Government & Public Services (ALB)(Net)",
+            "amount": 18121
+          },
+          {
+            "label": "Non-Domestic Rates Outturn Adjustments",
+            "amount": 5181
+          }
+        ],
+        "programmeIncomeLines": [],
+        "bodyLines": [
+          {
+            "label": "Homes England",
+            "amount": 3269478,
+            "elementId": "homes-england"
+          },
+          {
+            "label": "Commission for Local Administration CLG Main",
+            "amount": 25205
+          },
+          {
+            "label": "Valuation Tribunal Service CLG Main",
+            "amount": 10987
+          },
+          {
+            "label": "Regulator of Social Housing",
+            "amount": 6146,
+            "elementId": "rsh"
+          },
+          {
+            "label": "Leasehold Advisory Service",
+            "amount": 3938,
+            "elementId": "lease"
+          },
+          {
+            "label": "The Office for Place",
+            "amount": 3596
+          }
+        ],
+        "bodyIncomeLines": [
+          {
+            "label": "The Housing Ombudsman",
+            "amount": -3792,
+            "elementId": "housing-ombudsman"
+          }
+        ],
+        "annualReportUrl": "https://www.gov.uk/government/collections/mhclg-annual-report-and-accounts",
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "sfo": {
+    "elementId": "sfo",
+    "oscarDeptGroupCode": "SFO019.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 84904,
+        "totalGrossExpenditure": 84904,
+        "totalIncome": 0,
+        "unit": "thousands",
+        "delAdmin": 9246,
+        "delProg": 75861,
+        "deptAme": 0,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Pay",
+            "amount": 45141
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 33673
+          },
+          {
+            "label": "Depreciation",
+            "amount": 3690
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 2400
+          }
+        ],
+        "incomeLines": [],
+        "programmeLines": [
+          {
+            "label": "Investigations and Prosecution",
+            "amount": 85107
+          }
+        ],
+        "programmeIncomeLines": [],
+        "bodyLines": [],
+        "bodyIncomeLines": [],
+        "annualReportUrl": "https://www.gov.uk/government/collections/serious-fraud-office-annual-reports-and-accounts",
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "desnz": {
+    "elementId": "desnz",
+    "oscarDeptGroupCode": "DEC066.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 22108931,
+        "totalGrossExpenditure": 28718078,
+        "totalIncome": -6609147,
+        "unit": "thousands",
+        "delAdmin": 399650,
+        "delProg": 6303714,
+        "deptAme": 9046487,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Capital Investment",
+            "amount": 6589832
+          },
+          {
+            "label": "Other",
+            "amount": 6581583
+          },
+          {
+            "label": "Provisions",
+            "amount": 5078930
+          },
+          {
+            "label": "Depreciation",
+            "amount": 4818959
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 2605375
+          },
+          {
+            "label": "Subsidies",
+            "amount": 1112443
+          },
+          {
+            "label": "Pay",
+            "amount": 736587
+          },
+          {
+            "label": "Equity Investment",
+            "amount": 729956
+          },
+          {
+            "label": "Current Grants",
+            "amount": 429893
+          },
+          {
+            "label": "Grants to Govt",
+            "amount": 34520
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Income & Receipts",
+            "amount": -3658818
+          },
+          {
+            "label": "Loans",
+            "amount": -2903616
+          },
+          {
+            "label": "Interest",
+            "amount": -46713
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "Nuclear Decommissioning Authority (ALB) net",
+            "amount": 5573594
+          },
+          {
+            "label": "NDA and SLC expenditure (ALB) net",
+            "amount": 4121794
+          },
+          {
+            "label": "Climate change and decarbonisation (ALB) net",
+            "amount": 2900978
+          },
+          {
+            "label": "Energy system (ALB) net",
+            "amount": 1755061
+          },
+          {
+            "label": "Affordable energy",
+            "amount": 1375572
+          },
+          {
+            "label": "Renewable Heat Incentive",
+            "amount": 1213370
+          },
+          {
+            "label": "Climate change and decarbonisation",
+            "amount": 891367
+          },
+          {
+            "label": "Capability",
+            "amount": 407497
+          },
+          {
+            "label": "Science and Research (ALB) net",
+            "amount": 390601
+          },
+          {
+            "label": "Energy legacy (ALB) net",
+            "amount": 210793
+          },
+          {
+            "label": "Science and Research",
+            "amount": 92429
+          },
+          {
+            "label": "Energy legacy",
+            "amount": 25566
+          }
+        ],
+        "programmeIncomeLines": [
+          {
+            "label": "Energy system",
+            "amount": -1978303
+          },
+          {
+            "label": "Nuclear Decommissioning Authority Income (CFER)",
+            "amount": -1146899
+          },
+          {
+            "label": "Government as Shareholder (ALB) net",
+            "amount": -83569
+          }
+        ],
+        "bodyLines": [
+          {
+            "label": "Nuclear Decommissioning Authority",
+            "amount": 13489078,
+            "elementId": "nda"
+          },
+          {
+            "label": "Low Carbon Contracts Company",
+            "amount": 2523063,
+            "elementId": "low-carbon-contracts"
+          },
+          {
+            "label": "Sizewell C (Holding) Limited",
+            "amount": 2025000
+          },
+          {
+            "label": "Sizewell C Limited",
+            "amount": 1728412
+          },
+          {
+            "label": "United Kingdom Atomic Energy Authority",
+            "amount": 675681,
+            "elementId": "ukaea"
+          },
+          {
+            "label": "Net Zero North Sea Storage Limited",
+            "amount": 354061
+          },
+          {
+            "label": "Coal Authority",
+            "amount": 268013,
+            "elementId": "mining-rem-auth"
+          },
+          {
+            "label": "Salix",
+            "amount": 63916,
+            "elementId": "salix"
+          },
+          {
+            "label": "Great British Nuclear Limited",
+            "amount": 30231,
+            "elementId": "gbe-nuclear"
+          },
+          {
+            "label": "Civil Nuclear Police Authority and Constabulary",
+            "amount": 16315,
+            "elementId": "civil-nuclear-police"
+          },
+          {
+            "label": "Committee on Climate Change",
+            "amount": 15022,
+            "elementId": "ccc"
+          },
+          {
+            "label": "Oil & Gas Authority",
+            "amount": 9940,
+            "elementId": "nsta"
+          }
+        ],
+        "bodyIncomeLines": [
+          {
+            "label": "Enrichment Holdings Ltd",
+            "amount": -83569
+          },
+          {
+            "label": "Electricity Settlements Company",
+            "amount": -3582
+          }
+        ],
+        "annualReportUrl": "https://www.gov.uk/government/collections/department-for-energy-security-and-net-zero-annual-report-and-accounts",
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "dhsc": {
+    "elementId": "dhsc",
+    "oscarDeptGroupCode": "DOH033.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 214211030,
+        "totalGrossExpenditure": 214217847,
+        "totalIncome": -6817,
+        "unit": "thousands",
+        "delAdmin": 2552705,
+        "delProg": 207081319,
+        "deptAme": 4576171,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Pay",
+            "amount": 98052880
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 83152195
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 10471240
+          },
+          {
+            "label": "Depreciation",
+            "amount": 7445771
+          },
+          {
+            "label": "Other",
+            "amount": 5887730
+          },
+          {
+            "label": "Grants to Govt",
+            "amount": 4674205
+          },
+          {
+            "label": "Current Grants",
+            "amount": 3137457
+          },
+          {
+            "label": "Provisions",
+            "amount": 1282722
+          },
+          {
+            "label": "Interest",
+            "amount": 113647
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Loans",
+            "amount": -6817
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "NHS Providers (net)",
+            "amount": 135538307
+          },
+          {
+            "label": "NHS England (net)",
+            "amount": 32711600
+          },
+          {
+            "label": "NHS England financed from NI contributions",
+            "amount": 30164029
+          },
+          {
+            "label": "Special Health Authorities expenditure",
+            "amount": 5298174
+          },
+          {
+            "label": "DHSC Programme and Admin expenditure",
+            "amount": 3481164
+          },
+          {
+            "label": "Local Authorities (Public Health)",
+            "amount": 3425797
+          },
+          {
+            "label": "Executive Agencies",
+            "amount": 2134921
+          },
+          {
+            "label": "Arm’s Length and Other Bodies (Net)",
+            "amount": 1141777
+          },
+          {
+            "label": "Non-Departmental Public Bodies (net)",
+            "amount": 222544
+          },
+          {
+            "label": "Arm’s Length and Other Bodies (net)",
+            "amount": 91882
+          }
+        ],
+        "programmeIncomeLines": [],
+        "bodyLines": [
+          {
+            "label": "NHS Trusts",
+            "amount": 135538307
+          },
+          {
+            "label": "NHS Commissioning Board (NHS England)",
+            "amount": 62875629
+          },
+          {
+            "label": "NHS Property Services",
+            "amount": 738189,
+            "elementId": "nhs-property-services"
+          },
+          {
+            "label": "Community Health Partnership",
+            "amount": 329634
+          },
+          {
+            "label": "Genomics England Limited",
+            "amount": 136920
+          },
+          {
+            "label": "Care Quality Commission",
+            "amount": 124455,
+            "elementId": "cqc"
+          },
+          {
+            "label": "National Institute for Health and Care Excellence",
+            "amount": 64306,
+            "elementId": "nice"
+          },
+          {
+            "label": "Nursing and Midwifery Council",
+            "amount": 32154,
+            "elementId": "nmc"
+          },
+          {
+            "label": "Health Research Authority",
+            "amount": 22795,
+            "elementId": "hra"
+          },
+          {
+            "label": "Health Services Safety Investigations Body",
+            "amount": 5617,
+            "elementId": "hssib"
+          },
+          {
+            "label": "Human Tissue Authority",
+            "amount": 3289,
+            "elementId": "hta"
+          },
+          {
+            "label": "Human Fertilisation and Embryology Authority",
+            "amount": 2082,
+            "elementId": "hfea"
+          }
+        ],
+        "bodyIncomeLines": [
+          {
+            "label": "Health and Care Professions Council",
+            "amount": -3314
+          }
+        ],
+        "annualReportUrl": "https://www.gov.uk/government/collections/department-of-health-annual-report-and-accounts",
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "defra": {
+    "elementId": "defra",
+    "oscarDeptGroupCode": "EFR003.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 8869851,
+        "totalGrossExpenditure": 9778545,
+        "totalIncome": -908694,
+        "unit": "thousands",
+        "delAdmin": 1025845,
+        "delProg": 6814813,
+        "deptAme": -1223770,
+        "nonDeptAme": 5318,
+        "expenditureLines": [
+          {
+            "label": "Other",
+            "amount": 2390510
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 1962397
+          },
+          {
+            "label": "Pay",
+            "amount": 1665970
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 1218120
+          },
+          {
+            "label": "Current Grants",
+            "amount": 1211272
+          },
+          {
+            "label": "Depreciation",
+            "amount": 662916
+          },
+          {
+            "label": "Subsidies",
+            "amount": 287035
+          },
+          {
+            "label": "Grants to Govt",
+            "amount": 281325
+          },
+          {
+            "label": "Public Service Pensions",
+            "amount": 99000
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Provisions",
+            "amount": -659811
+          },
+          {
+            "label": "Income & Receipts",
+            "amount": -218883
+          },
+          {
+            "label": "Equity Investment",
+            "amount": -30000
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "Protect the country from floods (ALB) (net)",
+            "amount": 1651231
+          },
+          {
+            "label": "Food and farming",
+            "amount": 1436067
+          },
+          {
+            "label": "Improve the environment and rural services",
+            "amount": 1036180
+          },
+          {
+            "label": "Departmental operating costs",
+            "amount": 924089
+          },
+          {
+            "label": "Animal, marine and plant health",
+            "amount": 863481
+          },
+          {
+            "label": "Improve the environment and rural services (ALB) (net)",
+            "amount": 667036
+          },
+          {
+            "label": "Animal, marine and plant health (ALB) (net)",
+            "amount": 43048
+          },
+          {
+            "label": "Protect the country from floods",
+            "amount": 4193
+          },
+          {
+            "label": "Food and farming (ALB) (net)",
+            "amount": 1563
+          }
+        ],
+        "programmeIncomeLines": [],
+        "bodyLines": [
+          {
+            "label": "Environment Agency",
+            "amount": 3789763,
+            "elementId": "environment-agency"
+          },
+          {
+            "label": "Natural England",
+            "amount": 561463,
+            "elementId": "natural-england"
+          },
+          {
+            "label": "Royal Botanic Gardens, Kew",
+            "amount": 109714,
+            "elementId": "kew-gardens"
+          },
+          {
+            "label": "Marine Management Organisation",
+            "amount": 85962,
+            "elementId": "mmo"
+          },
+          {
+            "label": "Joint Nature Conservation Committee",
+            "amount": 48067,
+            "elementId": "jncc"
+          },
+          {
+            "label": "Office for Environmental Protection",
+            "amount": 21005,
+            "elementId": "oep"
+          },
+          {
+            "label": "Consumer Council for Water",
+            "amount": 14723,
+            "elementId": "consumer-council-water"
+          },
+          {
+            "label": "National Forest Company",
+            "amount": 12981
+          },
+          {
+            "label": "Covent Garden Market Authority",
+            "amount": 5318
+          },
+          {
+            "label": "Agriculture & Horticulture Development Board",
+            "amount": 1563,
+            "elementId": "ahdb"
+          }
+        ],
+        "bodyIncomeLines": [
+          {
+            "label": "Flood Re",
+            "amount": -45155
+          }
+        ],
+        "annualReportUrl": "https://www.gov.uk/government/collections/defra-annual-report-and-accounts",
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "hmrc": {
+    "elementId": "hmrc",
+    "oscarDeptGroupCode": "HMR041.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 34336350,
+        "totalGrossExpenditure": 34359406,
+        "totalIncome": -23056,
+        "unit": "thousands",
+        "delAdmin": 1066756,
+        "delProg": 5494333,
+        "deptAme": 27775261,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Current Grants",
+            "amount": 17453941
+          },
+          {
+            "label": "Subsidies",
+            "amount": 10122209
+          },
+          {
+            "label": "Pay",
+            "amount": 3613969
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 1423834
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 728073
+          },
+          {
+            "label": "Depreciation",
+            "amount": 706446
+          },
+          {
+            "label": "Other",
+            "amount": 158104
+          },
+          {
+            "label": "Provisions",
+            "amount": 101884
+          },
+          {
+            "label": "Grants to Govt",
+            "amount": 50946
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Income & Receipts",
+            "amount": -23056
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "Child Benefit",
+            "amount": 13302823
+          },
+          {
+            "label": "Corporation Tax Reliefs",
+            "amount": 10123349
+          },
+          {
+            "label": "HMRC",
+            "amount": 6161643
+          },
+          {
+            "label": "Personal Tax Credit",
+            "amount": 2669737
+          },
+          {
+            "label": "Lifetime ISA",
+            "amount": 624403
+          },
+          {
+            "label": "Tax Free Childcare",
+            "amount": 617876
+          },
+          {
+            "label": "National Insurance Fund",
+            "amount": 274510
+          },
+          {
+            "label": "VOA",
+            "amount": 243672
+          },
+          {
+            "label": "Stakeholder Pensions",
+            "amount": 157610
+          },
+          {
+            "label": "VOA – Business Rates for Diplomatic Missions & Organisations",
+            "amount": 82778
+          },
+          {
+            "label": "Help to Save",
+            "amount": 45031
+          },
+          {
+            "label": "Gift Aid Small Donations Scheme",
+            "amount": 35000
+          },
+          {
+            "label": "Guardian's Allowance",
+            "amount": 4306
+          }
+        ],
+        "programmeIncomeLines": [
+          {
+            "label": "Cost of Living",
+            "amount": -5248
+          },
+          {
+            "label": "COVID-19",
+            "amount": -1140
+          }
+        ],
+        "bodyLines": [],
+        "bodyIncomeLines": [],
+        "annualReportUrl": "https://www.gov.uk/government/collections/hm-revenue-and-customs-annual-report-and-accounts",
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "treasury": {
+    "elementId": "treasury",
+    "oscarDeptGroupCode": "HMT087.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 63483048,
+        "totalGrossExpenditure": 75418343,
+        "totalIncome": -11935295,
+        "unit": "thousands",
+        "delAdmin": 328007,
+        "delProg": 776840,
+        "deptAme": 64040617,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Capital Investment",
+            "amount": 36464127
+          },
+          {
+            "label": "Depreciation",
+            "amount": 34442757
+          },
+          {
+            "label": "Current Grants",
+            "amount": 2218226
+          },
+          {
+            "label": "Loans",
+            "amount": 2036213
+          },
+          {
+            "label": "Pay",
+            "amount": 220628
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 36392
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Equity Investment",
+            "amount": -8439070
+          },
+          {
+            "label": "Provisions",
+            "amount": -1682617
+          },
+          {
+            "label": "Other",
+            "amount": -1125707
+          },
+          {
+            "label": "Income & Receipts",
+            "amount": -687901
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "Assistance to financial institutions, businesses and individuals",
+            "amount": 71012467
+          },
+          {
+            "label": "National Wealth Fund Limited (Net)",
+            "amount": 1271569
+          },
+          {
+            "label": "Core Treasury",
+            "amount": 984462
+          },
+          {
+            "label": "Reclaim Fund Ltd (Net)",
+            "amount": 122032
+          },
+          {
+            "label": "Help to Buy schemes",
+            "amount": 103201
+          },
+          {
+            "label": "Royal Household (Net)",
+            "amount": 95885
+          },
+          {
+            "label": "EU Withdrawal Agreement Financial Settlement",
+            "amount": 72865
+          },
+          {
+            "label": "Debt Management Office",
+            "amount": 20135
+          },
+          {
+            "label": "UK Government Investments Limited (Net)",
+            "amount": 17675
+          },
+          {
+            "label": "Office for Budget Responsibility (Net)",
+            "amount": 5129
+          },
+          {
+            "label": "Royal Household Pensions",
+            "amount": 5065
+          },
+          {
+            "label": "United Kingdom Asset Resolution Limited (Net)",
+            "amount": 5047
+          },
+          {
+            "label": "National Infrastructure Commission",
+            "amount": 4742
+          },
+          {
+            "label": "UK Asset Resolution Limited (Net)",
+            "amount": 3929
+          },
+          {
+            "label": "UK circulating coinage",
+            "amount": 3376
+          },
+          {
+            "label": "Banking and gilts registration services",
+            "amount": 2345
+          }
+        ],
+        "programmeIncomeLines": [
+          {
+            "label": "Sale of shares",
+            "amount": -8155898
+          },
+          {
+            "label": "Pool Reinsurance Company Limited (Net)",
+            "amount": -233892
+          },
+          {
+            "label": "Provisions",
+            "amount": -193021
+          },
+          {
+            "label": "Government Internal Audit Agency",
+            "amount": -1867
+          }
+        ],
+        "bodyLines": [
+          {
+            "label": "National Wealth Fund Limited",
+            "amount": 1260448
+          },
+          {
+            "label": "Royal Household (HMT087.GROUP)",
+            "amount": 183723
+          },
+          {
+            "label": "Reclaim Fund Ltd",
+            "amount": 122032,
+            "elementId": "reclaim-fund"
+          },
+          {
+            "label": "UK Asset Resolution (net)",
+            "amount": 45936
+          },
+          {
+            "label": "United Kingdom Government Investments Limited",
+            "amount": 29406
+          },
+          {
+            "label": "Office for Budget Responsibility",
+            "amount": 9605,
+            "elementId": "obr"
+          }
+        ],
+        "bodyIncomeLines": [
+          {
+            "label": "Pool Reinsurance Company Limited",
+            "amount": -233892
+          }
+        ],
+        "annualReportUrl": "https://www.gov.uk/government/collections/hm-treasury-annual-report-and-accounts",
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "home-office": {
+    "elementId": "home-office",
+    "oscarDeptGroupCode": "HOF034.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 17407555,
+        "totalGrossExpenditure": 28935193,
+        "totalIncome": -11527638,
+        "unit": "thousands",
+        "delAdmin": 426271,
+        "delProg": 14534809,
+        "deptAme": 2446326,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Grants to Govt",
+            "amount": 16183750
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 7057424
+          },
+          {
+            "label": "Pay",
+            "amount": 3463109
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 1484691
+          },
+          {
+            "label": "Depreciation",
+            "amount": 416712
+          },
+          {
+            "label": "Current Grants",
+            "amount": 284400
+          },
+          {
+            "label": "Provisions",
+            "amount": 25095
+          },
+          {
+            "label": "Interest",
+            "amount": 20012
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Income & Receipts",
+            "amount": -7175866
+          },
+          {
+            "label": "Other",
+            "amount": -4351772
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "Public Safety Group",
+            "amount": 12599515
+          },
+          {
+            "label": "Asylum Support, Resettlement and Accommodation",
+            "amount": 4535252
+          },
+          {
+            "label": "Police and Fire Superannuation",
+            "amount": 2408569
+          },
+          {
+            "label": "Homeland Security Group",
+            "amount": 1591530
+          },
+          {
+            "label": "Border Force",
+            "amount": 1543365
+          },
+          {
+            "label": "Corporate and Delivery",
+            "amount": 1098683
+          },
+          {
+            "label": "Immigration Enforcement",
+            "amount": 946379
+          },
+          {
+            "label": "Digital, Data and Technology",
+            "amount": 637101
+          },
+          {
+            "label": "Migration and Borders Group",
+            "amount": 565233
+          },
+          {
+            "label": "Arm's Length Bodies (Net)",
+            "amount": 142067
+          },
+          {
+            "label": "Science, Technology, Analysis and Research",
+            "amount": 96273
+          },
+          {
+            "label": "Strategy",
+            "amount": 87028
+          },
+          {
+            "label": "Border Security Command",
+            "amount": 61580
+          },
+          {
+            "label": "AME Charges",
+            "amount": 37757
+          },
+          {
+            "label": "Strategic Operations for Illegal Migration",
+            "amount": 15585
+          },
+          {
+            "label": "Communications",
+            "amount": 13991
+          },
+          {
+            "label": "Legal Advisors",
+            "amount": 8395
+          }
+        ],
+        "programmeIncomeLines": [
+          {
+            "label": "Customer Services (Visas & Passports)",
+            "amount": -8980897
+          }
+        ],
+        "bodyLines": [
+          {
+            "label": "Independent Police Complaints Commission",
+            "amount": 75115
+          },
+          {
+            "label": "College of Policing",
+            "amount": 56536,
+            "elementId": "college-of-policing"
+          },
+          {
+            "label": "Disclosure and Barring Service (DBS)",
+            "amount": 8085,
+            "elementId": "dbs"
+          },
+          {
+            "label": "Office of the Immigration Services Commissioner",
+            "amount": 6702
+          },
+          {
+            "label": "Gangmasters Licensing Authority HOF034",
+            "amount": 6195
+          },
+          {
+            "label": "Security Industry Authority",
+            "amount": 4607,
+            "elementId": "sia"
+          }
+        ],
+        "bodyIncomeLines": [],
+        "annualReportUrl": "https://www.gov.uk/government/collections/home-office-annual-report-and-accounts",
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "nca-non-min": {
+    "elementId": "nca-non-min",
+    "oscarDeptGroupCode": "NCA073.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 855119,
+        "totalGrossExpenditure": 997758,
+        "totalIncome": -142639,
+        "unit": "thousands",
+        "delAdmin": 39007,
+        "delProg": 785599,
+        "deptAme": 31106,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Pay",
+            "amount": 475379
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 279490
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 125611
+          },
+          {
+            "label": "Depreciation",
+            "amount": 117278
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Grants to Govt",
+            "amount": -134964
+          },
+          {
+            "label": "Income & Receipts",
+            "amount": -7675
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "National Crime Agency",
+            "amount": 824606
+          },
+          {
+            "label": "National Crime Agency AME",
+            "amount": 31106
+          }
+        ],
+        "programmeIncomeLines": [],
+        "bodyLines": [],
+        "bodyIncomeLines": [],
+        "annualReportUrl": "https://www.gov.uk/government/collections/national-crime-agency-annual-report-and-accounts",
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "moj": {
+    "elementId": "moj",
+    "oscarDeptGroupCode": "MOJ047.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 14322449,
+        "totalGrossExpenditure": 15792814,
+        "totalIncome": -1470365,
+        "unit": "thousands",
+        "delAdmin": 547496,
+        "delProg": 13017236,
+        "deptAme": 758054,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Pay",
+            "amount": 6020130
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 5830417
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 1523700
+          },
+          {
+            "label": "Depreciation",
+            "amount": 1457609
+          },
+          {
+            "label": "Other",
+            "amount": 436758
+          },
+          {
+            "label": "Grants to Govt",
+            "amount": 253292
+          },
+          {
+            "label": "Provisions",
+            "amount": 203789
+          },
+          {
+            "label": "Current Grants",
+            "amount": 36079
+          },
+          {
+            "label": "Interest",
+            "amount": 31040
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Income & Receipts",
+            "amount": -1470365
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "HM Prison and Probation Service",
+            "amount": 6721783
+          },
+          {
+            "label": "Policy, Corporate Services and Associated Offices",
+            "amount": 2644439
+          },
+          {
+            "label": "Legal Aid Agency",
+            "amount": 2326740
+          },
+          {
+            "label": "HM Courts and Tribunals Service",
+            "amount": 1779003
+          },
+          {
+            "label": "Criminal Injuries Compensation Authority Agency",
+            "amount": 330173
+          },
+          {
+            "label": "Higher Judiciary Judicial Salaries",
+            "amount": 193382
+          },
+          {
+            "label": "Children and Family Court Advisory and Support Service (ALB)(Net)",
+            "amount": 185639
+          },
+          {
+            "label": "Youth Justice Board (ALB)(Net)",
+            "amount": 105000
+          },
+          {
+            "label": "Parole Board (ALB)(Net)",
+            "amount": 32353
+          },
+          {
+            "label": "Judicial Appointments Commission (ALB)(Net)",
+            "amount": 9649
+          },
+          {
+            "label": "Criminal Cases Review Commission (ALB)(Net)",
+            "amount": 9613
+          },
+          {
+            "label": "Independent Monitoring Authority for the Citizens' Rights Agreements (ALB)(Net)",
+            "amount": 5366
+          }
+        ],
+        "programmeIncomeLines": [
+          {
+            "label": "Office of the Public Guardian",
+            "amount": -20799
+          }
+        ],
+        "bodyLines": [
+          {
+            "label": "Children and Family Court Advisory and Support Service",
+            "amount": 185639,
+            "elementId": "cafcass"
+          },
+          {
+            "label": "Youth Justice Board for England and Wales",
+            "amount": 105000,
+            "elementId": "yjb"
+          },
+          {
+            "label": "Parole Board for England and Wales",
+            "amount": 32353,
+            "elementId": "parole-board"
+          },
+          {
+            "label": "Judicial Appointments Commission",
+            "amount": 9649,
+            "elementId": "jac"
+          },
+          {
+            "label": "Criminal Cases Review Commission",
+            "amount": 9613,
+            "elementId": "ccrc"
+          },
+          {
+            "label": "Independent Monitoring Authority for the Citizens’ Rights Agreements",
+            "amount": 5366
+          }
+        ],
+        "bodyIncomeLines": [],
+        "annualReportUrl": "https://www.gov.uk/government/collections/moj-annual-report-and-accounts",
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "dbt": {
+    "elementId": "dbt",
+    "oscarDeptGroupCode": "UKT013.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 2667389,
+        "totalGrossExpenditure": 4472854,
+        "totalIncome": -1805465,
+        "unit": "thousands",
+        "delAdmin": 440897,
+        "delProg": 2143150,
+        "deptAme": -76273,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Current Grants",
+            "amount": 1075552
+          },
+          {
+            "label": "Pay",
+            "amount": 913865
+          },
+          {
+            "label": "Capital Investment",
+            "amount": 741596
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 613510
+          },
+          {
+            "label": "Equity Investment",
+            "amount": 404261
+          },
+          {
+            "label": "Subsidies",
+            "amount": 391631
+          },
+          {
+            "label": "Depreciation",
+            "amount": 192295
+          },
+          {
+            "label": "Other",
+            "amount": 121955
+          },
+          {
+            "label": "Grants to Govt",
+            "amount": 18189
+          }
+        ],
+        "incomeLines": [
+          {
+            "label": "Provisions",
+            "amount": -1031424
+          },
+          {
+            "label": "Income & Receipts",
+            "amount": -541218
+          },
+          {
+            "label": "Interest",
+            "amount": -128994
+          },
+          {
+            "label": "Loans",
+            "amount": -103829
+          }
+        ],
+        "programmeLines": [
+          {
+            "label": "DBT - Department for Business and Trade (DEL)",
+            "amount": 1989564
+          },
+          {
+            "label": "DBT - Arm's Length Bodies (ALB) (Net) (DEL)",
+            "amount": 594483
+          }
+        ],
+        "programmeIncomeLines": [
+          {
+            "label": "DBT - Arm's Length Bodies (ALB) (Net) (AME)",
+            "amount": -70205
+          },
+          {
+            "label": "DBT - Department for Business and Trade (AME)",
+            "amount": -6068
+          }
+        ],
+        "bodyLines": [
+          {
+            "label": "British Business Bank plc",
+            "amount": 610121
+          },
+          {
+            "label": "Advisory, Conciliation and Arbitration Service",
+            "amount": 63432,
+            "elementId": "acas"
+          },
+          {
+            "label": "Trade Remedies Authority (TRA)",
+            "amount": 16374,
+            "elementId": "tra-body"
+          },
+          {
+            "label": "Competition Service",
+            "amount": 7099,
+            "elementId": "competition-service"
+          },
+          {
+            "label": "BIS (Postal Services Act 2011) Company Limited",
+            "amount": 5275
+          },
+          {
+            "label": "Financial Reporting Council Limited",
+            "amount": 3967
+          },
+          {
+            "label": "Cornwall and Isles of Scilly Investments Limited",
+            "amount": 1050
+          }
+        ],
+        "bodyIncomeLines": [
+          {
+            "label": "Fleetbank Funding Limited",
+            "amount": -128409
+          },
+          {
+            "label": "Northern Powerhouse Investments Limited",
+            "amount": -48729
+          },
+          {
+            "label": "Midlands Engine Investments Limited",
+            "amount": -5902
+          }
+        ],
+        "annualReportUrl": "https://www.gov.uk/government/collections/department-for-business-and-trade-annual-report-and-accounts",
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  },
+  "wales-office": {
+    "elementId": "wales-office",
+    "oscarDeptGroupCode": "WOF091.GROUP",
+    "budgets": [
+      {
+        "financialYear": "2024-25",
+        "totalNetExpenditure": 20520444,
+        "totalGrossExpenditure": 20520444,
+        "totalIncome": 0,
+        "unit": "thousands",
+        "delAdmin": 5596,
+        "delProg": 29,
+        "deptAme": 0,
+        "nonDeptAme": 0,
+        "expenditureLines": [
+          {
+            "label": "Other",
+            "amount": 20515247
+          },
+          {
+            "label": "Pay",
+            "amount": 4159
+          },
+          {
+            "label": "Goods & Services",
+            "amount": 1038
+          }
+        ],
+        "incomeLines": [],
+        "programmeLines": [
+          {
+            "label": "Grant Payable to the Welsh Consolidated Fund",
+            "amount": 20515247
+          },
+          {
+            "label": "Wales Office",
+            "amount": 5625
+          }
+        ],
+        "programmeIncomeLines": [],
+        "bodyLines": [],
+        "bodyIncomeLines": [],
+        "annualReportUrl": null,
+        "sourceLabel": "HM Treasury OSCAR Final Outturn 2024-25"
+      }
+    ]
+  }
+}

@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+:root {
+  --wh-bg: #0a0a0f;
+  --wh-panel: #12121a;
+  --wh-border: #1e1e2e;
+  --wh-accent-teal: #2dd4bf;
+  --wh-accent-amber: #f59e0b;
+  --wh-text-primary: #e2e8f0;
+  --wh-text-secondary: #94a3b8;
+}
+
+@theme inline {
+  --color-wh-bg: var(--wh-bg);
+  --color-wh-panel: var(--wh-panel);
+  --color-wh-border: var(--wh-border);
+  --color-wh-accent-teal: var(--wh-accent-teal);
+  --color-wh-accent-amber: var(--wh-accent-amber);
+  --color-wh-text-primary: var(--wh-text-primary);
+  --color-wh-text-secondary: var(--wh-text-secondary);
+  --font-sans: var(--font-inter);
+}
+
+body {
+  background: var(--wh-bg);
+  color: var(--wh-text-primary);
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+/* Pulse animation for graph nodes */
+@keyframes node-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.15);
+    opacity: 0.8;
+  }
+}
+
+@keyframes node-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 4px 0 var(--wh-accent-teal);
+  }
+  50% {
+    box-shadow: 0 0 12px 2px var(--wh-accent-teal);
+  }
+}
+
+@keyframes ring-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+.animate-node-pulse {
+  animation: node-pulse 2s ease-in-out infinite;
+}
+
+.animate-node-glow {
+  animation: node-glow 2s ease-in-out infinite;
+}
+
+.animate-ring-pulse {
+  animation: ring-pulse 1.5s ease-out infinite;
+}
+
+/* Scrollbar styling for the dark theme */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--wh-bg);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--wh-border);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--wh-text-secondary);
+}

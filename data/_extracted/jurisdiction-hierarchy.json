@@ -1,0 +1,41 @@
+{
+  "uk": [
+    "uk"
+  ],
+  "gb": [
+    "uk",
+    "gb"
+  ],
+  "england-wales": [
+    "uk",
+    "gb",
+    "england-wales"
+  ],
+  "england": [
+    "uk",
+    "gb",
+    "england-wales",
+    "england"
+  ],
+  "scotland": [
+    "uk",
+    "gb",
+    "scotland"
+  ],
+  "wales": [
+    "uk",
+    "gb",
+    "england-wales",
+    "wales"
+  ],
+  "northern-ireland": [
+    "uk",
+    "northern-ireland"
+  ],
+  "crown-dependencies": [
+    "crown-dependencies"
+  ],
+  "overseas-territories": [
+    "overseas-territories"
+  ]
+}

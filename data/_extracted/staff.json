@@ -1,0 +1,2248 @@
+{
+  "co": {
+    "elementId": "co",
+    "year": "2024-25",
+    "grades": {
+      "scs": 770,
+      "g67": 4460,
+      "sheo": 5060,
+      "eo": 855,
+      "aaao": 370,
+      "other": 0,
+      "total": 11510
+    },
+    "coreGrades": {
+      "scs": 530,
+      "g67": 2745,
+      "sheo": 2510,
+      "eo": 755,
+      "aaao": 355,
+      "other": 0,
+      "total": 6890
+    },
+    "orgs": [
+      {
+        "orgId": "co",
+        "label": "Cabinet Office (excl. agencies)",
+        "grades": {
+          "scs": 530,
+          "g67": 2745,
+          "sheo": 2510,
+          "eo": 755,
+          "aaao": 355,
+          "other": 0,
+          "total": 6890
+        }
+      },
+      {
+        "orgId": "",
+        "label": "Fast Stream",
+        "grades": {
+          "scs": 0,
+          "g67": 0,
+          "sheo": 1975,
+          "eo": 0,
+          "aaao": 0,
+          "other": 0,
+          "total": 1980
+        }
+      },
+      {
+        "orgId": "",
+        "label": "Crown Commercial Service",
+        "grades": {
+          "scs": 25,
+          "g67": 185,
+          "sheo": 405,
+          "eo": 85,
+          "aaao": 10,
+          "other": 0,
+          "total": 715
+        }
+      },
+      {
+        "orgId": "",
+        "label": "Government Commercial Organisation",
+        "grades": {
+          "scs": 185,
+          "g67": 1305,
+          "sheo": 45,
+          "eo": 0,
+          "aaao": 0,
+          "other": 0,
+          "total": 1535
+        }
+      },
+      {
+        "orgId": "",
+        "label": "Government Property Agency",
+        "grades": {
+          "scs": 30,
+          "g67": 220,
+          "sheo": 125,
+          "eo": 10,
+          "aaao": 0,
+          "other": 0,
+          "total": 390
+        }
+      }
+    ],
+    "professions": {
+      "Commercial": 2165,
+      "Human Resources": 1370,
+      "Digital and Data": 1335,
+      "Project Delivery": 735,
+      "Finance": 635,
+      "Security": 625,
+      "Policy": 585,
+      "Legal": 390,
+      "Communications": 340,
+      "Property": 255,
+      "Operational Delivery": 150,
+      "Statistics": 135,
+      "Science and Engineering": 115,
+      "Intelligence Analysis": 105,
+      "Economics": 80,
+      "Knowledge and Information Management": 60,
+      "Counter Fraud": 50,
+      "Operational Research": 45,
+      "Planning": 20,
+      "Social Research": 20,
+      "Other": 15,
+      "No reported profession": 2270
+    },
+    "coreProfessions": {
+      "Commercial": 200,
+      "Human Resources": 1250,
+      "Digital and Data": 980,
+      "Project Delivery": 625,
+      "Finance": 445,
+      "Security": 420,
+      "Policy": 530,
+      "Legal": 320,
+      "Communications": 270,
+      "Economics": 20,
+      "Operational Delivery": 130,
+      "Statistics": 120,
+      "Intelligence Analysis": 100,
+      "Counter Fraud": 50,
+      "Operational Research": 35,
+      "Social Research": 15
+    }
+  },
+  "dbt": {
+    "elementId": "dbt",
+    "year": "2024-25",
+    "grades": {
+      "scs": 345,
+      "g67": 2875,
+      "sheo": 4905,
+      "eo": 1400,
+      "aaao": 1195,
+      "other": 0,
+      "total": 10720
+    },
+    "coreGrades": {
+      "scs": 320,
+      "g67": 2480,
+      "sheo": 2685,
+      "eo": 400,
+      "aaao": 50,
+      "other": 0,
+      "total": 5935
+    },
+    "orgs": [
+      {
+        "orgId": "dbt",
+        "label": "DBT (excl. agencies)",
+        "grades": {
+          "scs": 320,
+          "g67": 2480,
+          "sheo": 2685,
+          "eo": 400,
+          "aaao": 50,
+          "other": 0,
+          "total": 5935
+        }
+      },
+      {
+        "orgId": "acas",
+        "label": "ACAS",
+        "grades": {
+          "scs": 5,
+          "g67": 60,
+          "sheo": 650,
+          "eo": 305,
+          "aaao": 40,
+          "other": 0,
+          "total": 1060
+        }
+      },
+      {
+        "orgId": "companies-house",
+        "label": "Companies House",
+        "grades": {
+          "scs": 10,
+          "g67": 160,
+          "sheo": 595,
+          "eo": 500,
+          "aaao": 600,
+          "other": 0,
+          "total": 1865
+        }
+      },
+      {
+        "orgId": "insolvency-service",
+        "label": "The Insolvency Service",
+        "grades": {
+          "scs": 10,
+          "g67": 175,
+          "sheo": 975,
+          "eo": 195,
+          "aaao": 500,
+          "other": 0,
+          "total": 1855
+        }
+      }
+    ],
+    "professions": {
+      "Operational Delivery": 3755,
+      "Policy": 3560,
+      "Digital and Data": 820,
+      "Counter Fraud": 380,
+      "Human Resources": 335,
+      "Finance": 325,
+      "Project Delivery": 305,
+      "Economics": 220,
+      "Communications": 200,
+      "Commercial": 110,
+      "Statistics": 90,
+      "Security": 65,
+      "Legal": 60,
+      "Knowledge and Information Management": 60,
+      "Science and Engineering": 25,
+      "Intelligence Analysis": 25,
+      "Social Research": 20,
+      "Property": 15,
+      "Operational Research": 10,
+      "Other": 275,
+      "No reported profession": 30
+    },
+    "coreProfessions": {
+      "Policy": 3295,
+      "Operational Delivery": 465,
+      "Digital and Data": 325,
+      "Economics": 220,
+      "Human Resources": 175,
+      "Finance": 145,
+      "Project Delivery": 235,
+      "Communications": 125,
+      "Commercial": 60,
+      "Statistics": 75,
+      "Legal": 50,
+      "Security": 45,
+      "Knowledge and Information Management": 50,
+      "Science and Engineering": 25,
+      "Intelligence Analysis": 25,
+      "Social Research": 15
+    }
+  },
+  "dcms": {
+    "elementId": "dcms",
+    "year": "2024-25",
+    "grades": {
+      "scs": 70,
+      "g67": 485,
+      "sheo": 405,
+      "eo": 95,
+      "aaao": 0,
+      "other": 0,
+      "total": 1060
+    },
+    "orgs": [],
+    "professions": {
+      "Policy": 585,
+      "Operational Delivery": 105,
+      "Finance": 70,
+      "Human Resources": 60,
+      "Communications": 50,
+      "Digital and Data": 40,
+      "Economics": 40,
+      "Commercial": 25,
+      "Social Research": 25,
+      "Statistics": 20,
+      "Project Delivery": 15,
+      "Property": 10,
+      "Security": 10,
+      "Knowledge and Information Management": 5,
+      "Science and Engineering": 5
+    }
+  },
+  "defra": {
+    "elementId": "defra",
+    "year": "2024-25",
+    "grades": {
+      "scs": 240,
+      "g67": 3445,
+      "sheo": 5675,
+      "eo": 2190,
+      "aaao": 2390,
+      "other": 10,
+      "total": 13950
+    },
+    "coreGrades": {
+      "scs": 215,
+      "g67": 2710,
+      "sheo": 3390,
+      "eo": 430,
+      "aaao": 85,
+      "other": 10,
+      "total": 6840
+    },
+    "orgs": [
+      {
+        "orgId": "defra",
+        "label": "Defra (excl. agencies)",
+        "grades": {
+          "scs": 215,
+          "g67": 2710,
+          "sheo": 3390,
+          "eo": 430,
+          "aaao": 85,
+          "other": 10,
+          "total": 6840
+        }
+      },
+      {
+        "orgId": "apha",
+        "label": "Animal and Plant Health Agency",
+        "grades": {
+          "scs": 5,
+          "g67": 320,
+          "sheo": 1215,
+          "eo": 905,
+          "aaao": 925,
+          "other": 0,
+          "total": 3370
+        }
+      },
+      {
+        "orgId": "cefas",
+        "label": "Centre for Environment, Fisheries and Aquaculture Science",
+        "grades": {
+          "scs": 5,
+          "g67": 155,
+          "sheo": 360,
+          "eo": 120,
+          "aaao": 15,
+          "other": 0,
+          "total": 655
+        }
+      },
+      {
+        "orgId": "rpa",
+        "label": "Rural Payments Agency",
+        "grades": {
+          "scs": 10,
+          "g67": 185,
+          "sheo": 640,
+          "eo": 715,
+          "aaao": 1345,
+          "other": 0,
+          "total": 2895
+        }
+      },
+      {
+        "orgId": "vmd",
+        "label": "Veterinary Medicines Directorate",
+        "grades": {
+          "scs": 0,
+          "g67": 70,
+          "sheo": 65,
+          "eo": 25,
+          "aaao": 25,
+          "other": 0,
+          "total": 190
+        }
+      }
+    ],
+    "professions": {
+      "Operational Delivery": 4705,
+      "Policy": 2795,
+      "Science and Engineering": 1350,
+      "Digital and Data": 1105,
+      "Project Delivery": 645,
+      "Finance": 540,
+      "Veterinarian": 495,
+      "Communications": 375,
+      "Human Resources": 335,
+      "Commercial": 330,
+      "Economics": 215,
+      "Property": 190,
+      "Social Research": 110,
+      "Knowledge and Information Management": 85,
+      "Statistics": 80,
+      "Security": 65,
+      "Corporate Finance": 60,
+      "Intelligence Analysis": 40,
+      "Operational Research": 40,
+      "Planning": 40,
+      "Counter Fraud": 30,
+      "Geography": 30,
+      "Risk Management": 30,
+      "Internal Audit": 10,
+      "Clinical": 5,
+      "Other": 200,
+      "No reported profession": 50
+    },
+    "coreProfessions": {
+      "Policy": 2575,
+      "Operational Delivery": 770,
+      "Science and Engineering": 915,
+      "Digital and Data": 915,
+      "Project Delivery": 475,
+      "Finance": 430,
+      "Communications": 300,
+      "Human Resources": 320,
+      "Commercial": 170,
+      "Economics": 215,
+      "Statistics": 60,
+      "Social Research": 105,
+      "Knowledge and Information Management": 70,
+      "Security": 50,
+      "Corporate Finance": 60,
+      "Intelligence Analysis": 40,
+      "Operational Research": 40,
+      "Planning": 40,
+      "Counter Fraud": 30,
+      "Geography": 15,
+      "Risk Management": 30
+    }
+  },
+  "desnz": {
+    "elementId": "desnz",
+    "year": "2024-25",
+    "grades": {
+      "scs": 235,
+      "g67": 2275,
+      "sheo": 2030,
+      "eo": 205,
+      "aaao": 30,
+      "other": 0,
+      "total": 4780
+    },
+    "orgs": [],
+    "professions": {
+      "Policy": 2900,
+      "Statistics": 630,
+      "Operational Delivery": 390,
+      "Project Delivery": 145,
+      "Human Resources": 140,
+      "Digital and Data": 130,
+      "Science and Engineering": 130,
+      "Finance": 110,
+      "Communications": 85,
+      "Knowledge and Information Management": 35,
+      "Commercial": 30,
+      "Security": 25,
+      "Property": 20,
+      "Counter Fraud": 10
+    }
+  },
+  "dfe": {
+    "elementId": "dfe",
+    "year": "2024-25",
+    "grades": {
+      "scs": 275,
+      "g67": 3255,
+      "sheo": 3875,
+      "eo": 705,
+      "aaao": 80,
+      "other": 0,
+      "total": 8185
+    },
+    "coreGrades": {
+      "scs": 245,
+      "g67": 2910,
+      "sheo": 3355,
+      "eo": 625,
+      "aaao": 70,
+      "other": 0,
+      "total": 7215
+    },
+    "orgs": [
+      {
+        "orgId": "dfe",
+        "label": "DfE (excl. agencies)",
+        "grades": {
+          "scs": 245,
+          "g67": 2910,
+          "sheo": 3355,
+          "eo": 625,
+          "aaao": 70,
+          "other": 0,
+          "total": 7215
+        }
+      },
+      {
+        "orgId": "esfa",
+        "label": "Education and Skills Funding Agency",
+        "grades": {
+          "scs": 10,
+          "g67": 135,
+          "sheo": 295,
+          "eo": 15,
+          "aaao": 0,
+          "other": 0,
+          "total": 460
+        }
+      },
+      {
+        "orgId": "ifate",
+        "label": "Institute for Apprenticeships and Technical Education",
+        "grades": {
+          "scs": 10,
+          "g67": 155,
+          "sheo": 95,
+          "eo": 10,
+          "aaao": 0,
+          "other": 0,
+          "total": 270
+        }
+      },
+      {
+        "orgId": "",
+        "label": "Standards and Testing Agency",
+        "grades": {
+          "scs": 0,
+          "g67": 40,
+          "sheo": 80,
+          "eo": 15,
+          "aaao": 0,
+          "other": 0,
+          "total": 140
+        }
+      },
+      {
+        "orgId": "",
+        "label": "Teaching Regulation Agency",
+        "grades": {
+          "scs": 0,
+          "g67": 10,
+          "sheo": 45,
+          "eo": 35,
+          "aaao": 10,
+          "other": 0,
+          "total": 100
+        }
+      }
+    ],
+    "professions": {
+      "Operational Delivery": 2125,
+      "Policy": 1925,
+      "Project Delivery": 1075,
+      "Digital and Data": 920,
+      "Finance": 465,
+      "Statistics": 250,
+      "Communications": 230,
+      "Commercial": 185,
+      "Human Resources": 150,
+      "Social Research": 145,
+      "Operational Research": 110,
+      "Economics": 105,
+      "Property": 100,
+      "Legal": 50,
+      "Knowledge and Information Management": 35,
+      "Counter Fraud": 30,
+      "Science and Engineering": 15,
+      "Security": 15,
+      "No reported profession": 260
+    },
+    "coreProfessions": {
+      "Policy": 1835,
+      "Operational Delivery": 1560,
+      "Project Delivery": 965,
+      "Digital and Data": 775,
+      "Finance": 350,
+      "Statistics": 205,
+      "Communications": 205,
+      "Commercial": 165,
+      "Human Resources": 145,
+      "Social Research": 135,
+      "Operational Research": 110,
+      "Economics": 105,
+      "Property": 100,
+      "Legal": 40,
+      "Knowledge and Information Management": 35,
+      "Counter Fraud": 30,
+      "Security": 15
+    }
+  },
+  "dft": {
+    "elementId": "dft",
+    "year": "2024-25",
+    "grades": {
+      "scs": 295,
+      "g67": 2395,
+      "sheo": 4375,
+      "eo": 4050,
+      "aaao": 5415,
+      "other": 0,
+      "total": 16535
+    },
+    "coreGrades": {
+      "scs": 265,
+      "g67": 1670,
+      "sheo": 1510,
+      "eo": 275,
+      "aaao": 140,
+      "other": 0,
+      "total": 3855
+    },
+    "orgs": [
+      {
+        "orgId": "dft",
+        "label": "DfT (excl. agencies)",
+        "grades": {
+          "scs": 265,
+          "g67": 1670,
+          "sheo": 1510,
+          "eo": 275,
+          "aaao": 140,
+          "other": 0,
+          "total": 3855
+        }
+      },
+      {
+        "orgId": "dvla",
+        "label": "Driver and Vehicle Licensing Agency",
+        "grades": {
+          "scs": 10,
+          "g67": 330,
+          "sheo": 1070,
+          "eo": 885,
+          "aaao": 3855,
+          "other": 0,
+          "total": 6150
+        }
+      },
+      {
+        "orgId": "dvsa",
+        "label": "Driver and Vehicle Standards Agency",
+        "grades": {
+          "scs": 10,
+          "g67": 160,
+          "sheo": 1085,
+          "eo": 2610,
+          "aaao": 1095,
+          "other": 0,
+          "total": 4955
+        }
+      },
+      {
+        "orgId": "maritime-coastguard",
+        "label": "Maritime and Coastguard Agency",
+        "grades": {
+          "scs": 10,
+          "g67": 180,
+          "sheo": 575,
+          "eo": 205,
+          "aaao": 280,
+          "other": 0,
+          "total": 1250
+        }
+      },
+      {
+        "orgId": "",
+        "label": "Vehicle Certification Agency",
+        "grades": {
+          "scs": 0,
+          "g67": 20,
+          "sheo": 105,
+          "eo": 75,
+          "aaao": 40,
+          "other": 0,
+          "total": 235
+        }
+      },
+      {
+        "orgId": "",
+        "label": "Active Travel England",
+        "grades": {
+          "scs": 0,
+          "g67": 45,
+          "sheo": 35,
+          "eo": 5,
+          "aaao": 0,
+          "other": 0,
+          "total": 85
+        }
+      }
+    ],
+    "professions": {
+      "Operational Delivery": 9440,
+      "Policy": 1510,
+      "Digital and Data": 1295,
+      "Project Delivery": 560,
+      "Human Resources": 465,
+      "Finance": 380,
+      "Security": 325,
+      "Commercial": 255,
+      "Communications": 235,
+      "Science and Engineering": 210,
+      "Economics": 175,
+      "Property": 170,
+      "Counter Fraud": 105,
+      "Statistics": 90,
+      "Planning": 80,
+      "Social Research": 55,
+      "Clinical": 50,
+      "Knowledge and Information Management": 50,
+      "Operational Research": 40,
+      "Corporate Finance": 15,
+      "Legal": 5,
+      "Other": 40,
+      "No reported profession": 965
+    },
+    "coreProfessions": {
+      "Policy": 1200,
+      "Operational Delivery": 185,
+      "Project Delivery": 395,
+      "Digital and Data": 360,
+      "Economics": 175,
+      "Finance": 155,
+      "Human Resources": 135,
+      "Communications": 150,
+      "Commercial": 115,
+      "Security": 80,
+      "Science and Engineering": 100,
+      "Statistics": 60,
+      "Property": 55,
+      "Social Research": 40,
+      "Operational Research": 30,
+      "Planning": 30,
+      "Corporate Finance": 15
+    }
+  },
+  "dhsc": {
+    "elementId": "dhsc",
+    "year": "2024-25",
+    "grades": {
+      "scs": 700,
+      "g67": 4105,
+      "sheo": 4480,
+      "eo": 1225,
+      "aaao": 600,
+      "other": 0,
+      "total": 11115
+    },
+    "coreGrades": {
+      "scs": 235,
+      "g67": 1675,
+      "sheo": 1455,
+      "eo": 305,
+      "aaao": 30,
+      "other": 0,
+      "total": 3695
+    },
+    "orgs": [
+      {
+        "orgId": "dhsc",
+        "label": "DHSC (excl. agencies)",
+        "grades": {
+          "scs": 235,
+          "g67": 1675,
+          "sheo": 1455,
+          "eo": 305,
+          "aaao": 30,
+          "other": 0,
+          "total": 3695
+        }
+      },
+      {
+        "orgId": "mhra",
+        "label": "Medicines and Healthcare Products Regulatory Agency",
+        "grades": {
+          "scs": 145,
+          "g67": 545,
+          "sheo": 560,
+          "eo": 210,
+          "aaao": 25,
+          "other": 0,
+          "total": 1480
+        }
+      },
+      {
+        "orgId": "uk-health-security",
+        "label": "UK Health Security Agency",
+        "grades": {
+          "scs": 325,
+          "g67": 1885,
+          "sheo": 2465,
+          "eo": 715,
+          "aaao": 550,
+          "other": 0,
+          "total": 5935
+        }
+      }
+    ],
+    "professions": {
+      "Science and Engineering": 3160,
+      "Operational Delivery": 1895,
+      "Policy": 690,
+      "Digital and Data": 560,
+      "Clinical": 505,
+      "Finance": 340,
+      "Human Resources": 300,
+      "Project Delivery": 285,
+      "Communications": 245,
+      "Statistics": 210,
+      "Commercial": 185,
+      "Economics": 125,
+      "Knowledge and Information Management": 120,
+      "Operational Research": 105,
+      "Property": 90,
+      "Social Research": 75,
+      "Internal Audit": 50,
+      "Legal": 40,
+      "Security": 30,
+      "Corporate Finance": 20,
+      "Intelligence Analysis": 20,
+      "Planning": 20,
+      "Counter Fraud": 10,
+      "Geography": 10,
+      "Other": 75,
+      "No reported profession": 1930
+    },
+    "coreProfessions": {
+      "Policy": 545,
+      "Operational Delivery": 285,
+      "Digital and Data": 290,
+      "Finance": 165,
+      "Communications": 120,
+      "Human Resources": 140,
+      "Project Delivery": 165,
+      "Statistics": 75,
+      "Economics": 100,
+      "Knowledge and Information Management": 75,
+      "Social Research": 50,
+      "Legal": 25,
+      "Security": 20,
+      "Commercial": 60,
+      "Operational Research": 30,
+      "Property": 25
+    }
+  },
+  "dluhc": {
+    "elementId": "dluhc",
+    "year": "2024-25",
+    "grades": {
+      "scs": 190,
+      "g67": 2375,
+      "sheo": 1790,
+      "eo": 380,
+      "aaao": 210,
+      "other": 0,
+      "total": 4945
+    },
+    "coreGrades": {
+      "scs": 180,
+      "g67": 1850,
+      "sheo": 1560,
+      "eo": 260,
+      "aaao": 45,
+      "other": 0,
+      "total": 3900
+    },
+    "orgs": [
+      {
+        "orgId": "dluhc",
+        "label": "MHCLG (excl. agencies)",
+        "grades": {
+          "scs": 180,
+          "g67": 1850,
+          "sheo": 1560,
+          "eo": 260,
+          "aaao": 45,
+          "other": 0,
+          "total": 3900
+        }
+      },
+      {
+        "orgId": "planning-inspectorate",
+        "label": "Planning Inspectorate",
+        "grades": {
+          "scs": 5,
+          "g67": 520,
+          "sheo": 200,
+          "eo": 105,
+          "aaao": 160,
+          "other": 0,
+          "total": 995
+        }
+      },
+      {
+        "orgId": "",
+        "label": "Queen Elizabeth II Centre",
+        "grades": {
+          "scs": 0,
+          "g67": 0,
+          "sheo": 30,
+          "eo": 15,
+          "aaao": 0,
+          "other": 0,
+          "total": 50
+        }
+      }
+    ],
+    "professions": {
+      "Policy": 2045,
+      "Operational Delivery": 650,
+      "Planning Inspectors": 485,
+      "Digital and Data": 470,
+      "Project Delivery": 260,
+      "Finance": 155,
+      "Planning": 140,
+      "Human Resources": 130,
+      "Communications": 120,
+      "Statistics": 120,
+      "Economics": 80,
+      "Social Research": 60,
+      "Commercial": 55,
+      "Knowledge and Information Management": 55,
+      "Operational Research": 15,
+      "Security": 15,
+      "Property": 10,
+      "Corporate Finance": 5,
+      "Counter Fraud": 5,
+      "Other": 65
+    },
+    "coreProfessions": {
+      "Policy": 1985,
+      "Operational Delivery": 140,
+      "Digital and Data": 440,
+      "Project Delivery": 245,
+      "Finance": 145,
+      "Planning": 130,
+      "Human Resources": 125,
+      "Communications": 110,
+      "Statistics": 110,
+      "Economics": 80,
+      "Social Research": 55,
+      "Commercial": 50,
+      "Knowledge and Information Management": 50,
+      "Operational Research": 15,
+      "Security": 15,
+      "Property": 10
+    }
+  },
+  "dsit": {
+    "elementId": "dsit",
+    "year": "2024-25",
+    "grades": {
+      "scs": 185,
+      "g67": 2605,
+      "sheo": 3220,
+      "eo": 905,
+      "aaao": 220,
+      "other": 0,
+      "total": 7135
+    },
+    "coreGrades": {
+      "scs": 140,
+      "g67": 1135,
+      "sheo": 940,
+      "eo": 95,
+      "aaao": 10,
+      "other": 0,
+      "total": 2320
+    },
+    "orgs": [
+      {
+        "orgId": "dsit",
+        "label": "DSIT (excl. agencies)",
+        "grades": {
+          "scs": 140,
+          "g67": 1135,
+          "sheo": 940,
+          "eo": 95,
+          "aaao": 10,
+          "other": 0,
+          "total": 2320
+        }
+      },
+      {
+        "orgId": "",
+        "label": "Building Digital UK",
+        "grades": {
+          "scs": 10,
+          "g67": 125,
+          "sheo": 110,
+          "eo": 10,
+          "aaao": 0,
+          "other": 0,
+          "total": 260
+        }
+      },
+      {
+        "orgId": "ipo",
+        "label": "Intellectual Property Office",
+        "grades": {
+          "scs": 20,
+          "g67": 465,
+          "sheo": 655,
+          "eo": 485,
+          "aaao": 125,
+          "other": 0,
+          "total": 1755
+        }
+      },
+      {
+        "orgId": "met-office",
+        "label": "Met Office",
+        "grades": {
+          "scs": 10,
+          "g67": 725,
+          "sheo": 1360,
+          "eo": 305,
+          "aaao": 80,
+          "other": 0,
+          "total": 2480
+        }
+      },
+      {
+        "orgId": "uksa",
+        "label": "UK Space Agency",
+        "grades": {
+          "scs": 10,
+          "g67": 150,
+          "sheo": 150,
+          "eo": 10,
+          "aaao": 0,
+          "other": 0,
+          "total": 325
+        }
+      }
+    ],
+    "professions": {
+      "Science and Engineering": 1470,
+      "Operational Delivery": 1355,
+      "Policy": 1240,
+      "Digital and Data": 925,
+      "Project Delivery": 580,
+      "Human Resources": 225,
+      "Communications": 215,
+      "Finance": 180,
+      "Economics": 125,
+      "Commercial": 95,
+      "Statistics": 95,
+      "Legal": 70,
+      "Security": 50,
+      "Social Research": 50,
+      "Intelligence Analysis": 40,
+      "Knowledge and Information Management": 30,
+      "Operational Research": 20,
+      "Property": 20,
+      "Internal Audit": 15,
+      "Other": 325,
+      "No reported profession": 15
+    },
+    "coreProfessions": {
+      "Policy": 760,
+      "Digital and Data": 355,
+      "Science and Engineering": 205,
+      "Project Delivery": 240,
+      "Communications": 145,
+      "Economics": 120,
+      "Human Resources": 90,
+      "Finance": 90,
+      "Statistics": 60,
+      "Commercial": 50,
+      "Legal": 45,
+      "Security": 35,
+      "Social Research": 40,
+      "Intelligence Analysis": 35,
+      "Operational Delivery": 40,
+      "Operational Research": 20
+    }
+  },
+  "dwp": {
+    "elementId": "dwp",
+    "year": "2024-25",
+    "grades": {
+      "scs": 360,
+      "g67": 5490,
+      "sheo": 16980,
+      "eo": 50100,
+      "aaao": 23960,
+      "other": 0,
+      "total": 96890
+    },
+    "coreGrades": {
+      "scs": 320,
+      "g67": 4850,
+      "sheo": 15375,
+      "eo": 49570,
+      "aaao": 23690,
+      "other": 0,
+      "total": 93805
+    },
+    "orgs": [
+      {
+        "orgId": "dwp",
+        "label": "DWP (excl. agencies)",
+        "grades": {
+          "scs": 320,
+          "g67": 4850,
+          "sheo": 15375,
+          "eo": 49570,
+          "aaao": 23690,
+          "other": 0,
+          "total": 93805
+        }
+      },
+      {
+        "orgId": "hse",
+        "label": "Health and Safety Executive",
+        "grades": {
+          "scs": 40,
+          "g67": 640,
+          "sheo": 1605,
+          "eo": 530,
+          "aaao": 270,
+          "other": 0,
+          "total": 3085
+        }
+      }
+    ],
+    "professions": {
+      "Operational Delivery": 75180,
+      "Counter Fraud": 6745,
+      "Digital and Data": 4050,
+      "Human Resources": 1880,
+      "Project Delivery": 1370,
+      "Finance": 1305,
+      "Policy": 1235,
+      "Science and Engineering": 545,
+      "Security": 465,
+      "Commercial": 305,
+      "Property": 270,
+      "Statistics": 245,
+      "Economics": 230,
+      "Social Research": 195,
+      "Communications": 185,
+      "Knowledge and Information Management": 165,
+      "Operational Research": 160,
+      "Clinical": 50,
+      "Legal": 50,
+      "Risk Management": 45,
+      "Intelligence Analysis": 35,
+      "Internal Audit": 10,
+      "Other": 1775,
+      "No reported profession": 305
+    },
+    "coreProfessions": {
+      "Operational Delivery": 72525,
+      "Counter Fraud": 6590,
+      "Digital and Data": 3730,
+      "Human Resources": 1750,
+      "Project Delivery": 1270,
+      "Finance": 1195,
+      "Policy": 1145,
+      "Science and Engineering": 430,
+      "Security": 430,
+      "Commercial": 280,
+      "Property": 240,
+      "Statistics": 230,
+      "Economics": 215,
+      "Social Research": 180,
+      "Communications": 170,
+      "Knowledge and Information Management": 155,
+      "Operational Research": 145,
+      "Risk Management": 35,
+      "Intelligence Analysis": 30
+    }
+  },
+  "fcdo": {
+    "elementId": "fcdo",
+    "year": "2024-25",
+    "grades": {
+      "scs": 575,
+      "g67": 3620,
+      "sheo": 3710,
+      "eo": 1025,
+      "aaao": 505,
+      "other": 0,
+      "total": 9435
+    },
+    "coreGrades": {
+      "scs": 565,
+      "g67": 3365,
+      "sheo": 3160,
+      "eo": 705,
+      "aaao": 360,
+      "other": 0,
+      "total": 8150
+    },
+    "orgs": [
+      {
+        "orgId": "fcdo",
+        "label": "FCDO (excl. agencies)",
+        "grades": {
+          "scs": 565,
+          "g67": 3365,
+          "sheo": 3160,
+          "eo": 705,
+          "aaao": 360,
+          "other": 0,
+          "total": 8150
+        }
+      },
+      {
+        "orgId": "",
+        "label": "FCDO Services",
+        "grades": {
+          "scs": 10,
+          "g67": 240,
+          "sheo": 520,
+          "eo": 290,
+          "aaao": 135,
+          "other": 0,
+          "total": 1195
+        }
+      },
+      {
+        "orgId": "",
+        "label": "Wilton Park",
+        "grades": {
+          "scs": 0,
+          "g67": 15,
+          "sheo": 30,
+          "eo": 25,
+          "aaao": 15,
+          "other": 0,
+          "total": 90
+        }
+      }
+    ],
+    "professions": {
+      "Policy": 2460,
+      "Project Delivery": 1175,
+      "Operational Delivery": 1050,
+      "Security": 985,
+      "Human Resources": 745,
+      "Digital and Data": 370,
+      "Finance": 300,
+      "Property": 230,
+      "Commercial": 220,
+      "Economics": 220,
+      "Communications": 180,
+      "Knowledge and Information Management": 175,
+      "Internal Audit": 85,
+      "Risk Management": 65,
+      "Corporate Finance": 60,
+      "Legal": 55,
+      "Social Research": 45,
+      "Science and Engineering": 35,
+      "Other": 290,
+      "No reported profession": 700
+    },
+    "coreProfessions": {
+      "Policy": 2310,
+      "Project Delivery": 1045,
+      "Operational Delivery": 810,
+      "Security": 885,
+      "Human Resources": 665,
+      "Digital and Data": 290,
+      "Finance": 265,
+      "Property": 195,
+      "Commercial": 195,
+      "Economics": 210,
+      "Communications": 160,
+      "Knowledge and Information Management": 165,
+      "Internal Audit": 75,
+      "Risk Management": 60,
+      "Corporate Finance": 55,
+      "Legal": 50,
+      "Social Research": 40,
+      "Science and Engineering": 30
+    }
+  },
+  "home-office": {
+    "elementId": "home-office",
+    "year": "2024-25",
+    "grades": {
+      "scs": 370,
+      "g67": 5095,
+      "sheo": 13940,
+      "eo": 21155,
+      "aaao": 9950,
+      "other": 140,
+      "total": 50655
+    },
+    "orgs": [],
+    "professions": {
+      "Operational Delivery": 37360,
+      "Policy": 2660,
+      "Digital and Data": 2325,
+      "Project Delivery": 2080,
+      "Intelligence Analysis": 1490,
+      "Human Resources": 730,
+      "Security": 365,
+      "Finance": 360,
+      "Counter Fraud": 205,
+      "Social Research": 205,
+      "Communications": 180,
+      "Economics": 180,
+      "Commercial": 165,
+      "Statistics": 140,
+      "Operational Research": 120,
+      "Science and Engineering": 115,
+      "Knowledge and Information Management": 105,
+      "Property": 85,
+      "Other": 1660,
+      "No reported profession": 125
+    }
+  },
+  "mod": {
+    "elementId": "mod",
+    "year": "2024-25",
+    "grades": {
+      "scs": 560,
+      "g67": 9130,
+      "sheo": 23675,
+      "eo": 8255,
+      "aaao": 14455,
+      "other": 1425,
+      "total": 57500
+    },
+    "coreGrades": {
+      "scs": 405,
+      "g67": 3940,
+      "sheo": 12960,
+      "eo": 6475,
+      "aaao": 12570,
+      "other": 25,
+      "total": 36375
+    },
+    "orgs": [
+      {
+        "orgId": "mod",
+        "label": "MoD (excl. agencies)",
+        "grades": {
+          "scs": 405,
+          "g67": 3940,
+          "sheo": 12960,
+          "eo": 6475,
+          "aaao": 12570,
+          "other": 25,
+          "total": 36375
+        }
+      },
+      {
+        "orgId": "dstl",
+        "label": "Defence Science and Technology Laboratory",
+        "grades": {
+          "scs": 5,
+          "g67": 2420,
+          "sheo": 2285,
+          "eo": 265,
+          "aaao": 60,
+          "other": 50,
+          "total": 5085
+        }
+      },
+      {
+        "orgId": "des",
+        "label": "Defence Equipment and Support",
+        "grades": {
+          "scs": 105,
+          "g67": 2010,
+          "sheo": 6390,
+          "eo": 925,
+          "aaao": 1525,
+          "other": 0,
+          "total": 10950
+        }
+      },
+      {
+        "orgId": "",
+        "label": "Royal Fleet Auxiliary",
+        "grades": {
+          "scs": 0,
+          "g67": 30,
+          "sheo": 150,
+          "eo": 160,
+          "aaao": 155,
+          "other": 1135,
+          "total": 1635
+        }
+      },
+      {
+        "orgId": "sda",
+        "label": "Submarine Delivery Agency",
+        "grades": {
+          "scs": 40,
+          "g67": 605,
+          "sheo": 1370,
+          "eo": 155,
+          "aaao": 100,
+          "other": 215,
+          "total": 2480
+        }
+      },
+      {
+        "orgId": "uk-hydrographic",
+        "label": "UK Hydrographic Office",
+        "grades": {
+          "scs": 5,
+          "g67": 125,
+          "sheo": 525,
+          "eo": 275,
+          "aaao": 45,
+          "other": 0,
+          "total": 975
+        }
+      }
+    ],
+    "professions": {
+      "Operational Delivery": 14245,
+      "Science and Engineering": 7310,
+      "Security": 6320,
+      "Project Delivery": 5920,
+      "Digital and Data": 3030,
+      "Property": 2795,
+      "Finance": 2375,
+      "Commercial": 2170,
+      "Clinical": 1665,
+      "Policy": 1595,
+      "Human Resources": 1390,
+      "Intelligence Analysis": 1230,
+      "Communications": 905,
+      "Knowledge and Information Management": 860,
+      "Geography": 500,
+      "Statistics": 270,
+      "Operational Research": 55,
+      "Legal": 50,
+      "Counter Fraud": 25,
+      "Social Research": 15,
+      "Internal Audit": 10,
+      "Corporate Finance": 5,
+      "Other": 3365,
+      "No reported profession": 1380
+    },
+    "coreProfessions": {
+      "Operational Delivery": 10785,
+      "Security": 4450,
+      "Science and Engineering": 3020,
+      "Project Delivery": 2915,
+      "Property": 2095,
+      "Finance": 1705,
+      "Commercial": 955,
+      "Digital and Data": 2125,
+      "Clinical": 1665,
+      "Policy": 1250,
+      "Human Resources": 1085,
+      "Intelligence Analysis": 900,
+      "Communications": 540,
+      "Knowledge and Information Management": 680,
+      "Geography": 0,
+      "Statistics": 215,
+      "Operational Research": 35,
+      "Legal": 40,
+      "Counter Fraud": 25,
+      "Social Research": 10
+    }
+  },
+  "moj": {
+    "elementId": "moj",
+    "year": "2024-25",
+    "grades": {
+      "scs": 320,
+      "g67": 4565,
+      "sheo": 15680,
+      "eo": 12055,
+      "aaao": 40555,
+      "other": 23040,
+      "total": 96210
+    },
+    "coreGrades": {
+      "scs": 180,
+      "g67": 2680,
+      "sheo": 4210,
+      "eo": 770,
+      "aaao": 335,
+      "other": 30,
+      "total": 8210
+    },
+    "orgs": [
+      {
+        "orgId": "moj",
+        "label": "MoJ (excl. agencies)",
+        "grades": {
+          "scs": 180,
+          "g67": 2680,
+          "sheo": 4210,
+          "eo": 770,
+          "aaao": 335,
+          "other": 30,
+          "total": 8210
+        }
+      },
+      {
+        "orgId": "cica",
+        "label": "Criminal Injuries Compensation Authority",
+        "grades": {
+          "scs": 0,
+          "g67": 10,
+          "sheo": 85,
+          "eo": 90,
+          "aaao": 140,
+          "other": 0,
+          "total": 325
+        }
+      },
+      {
+        "orgId": "hmcts",
+        "label": "HM Courts and Tribunals Service",
+        "grades": {
+          "scs": 70,
+          "g67": 825,
+          "sheo": 3080,
+          "eo": 2825,
+          "aaao": 9060,
+          "other": 0,
+          "total": 15860
+        }
+      },
+      {
+        "orgId": "legal-aid",
+        "label": "Legal Aid Agency",
+        "grades": {
+          "scs": 10,
+          "g67": 95,
+          "sheo": 355,
+          "eo": 385,
+          "aaao": 470,
+          "other": 0,
+          "total": 1315
+        }
+      },
+      {
+        "orgId": "hmpps",
+        "label": "HM Prison and Probation Service",
+        "grades": {
+          "scs": 55,
+          "g67": 900,
+          "sheo": 7760,
+          "eo": 7505,
+          "aaao": 29465,
+          "other": 23005,
+          "total": 68690
+        }
+      },
+      {
+        "orgId": "opg",
+        "label": "Office of the Public Guardian",
+        "grades": {
+          "scs": 0,
+          "g67": 55,
+          "sheo": 190,
+          "eo": 475,
+          "aaao": 1085,
+          "other": 0,
+          "total": 1810
+        }
+      }
+    ],
+    "professions": {
+      "Operational Delivery": 84150,
+      "Digital and Data": 2270,
+      "Policy": 1340,
+      "Legal": 1330,
+      "Occupational Psychology": 1315,
+      "Human Resources": 1160,
+      "Finance": 835,
+      "Commercial": 645,
+      "Project Delivery": 495,
+      "Property": 440,
+      "Intelligence Analysis": 380,
+      "Communications": 310,
+      "Statistics": 160,
+      "Social Research": 115,
+      "Operational Research": 85,
+      "Economics": 65,
+      "Knowledge and Information Management": 195,
+      "Security": 175,
+      "Other": 200,
+      "No reported profession": 540
+    },
+    "coreProfessions": {
+      "Policy": 1075,
+      "Operational Delivery": 1515,
+      "Digital and Data": 1105,
+      "Legal": 705,
+      "Human Resources": 570,
+      "Finance": 360,
+      "Commercial": 295,
+      "Project Delivery": 315,
+      "Property": 260,
+      "Communications": 155,
+      "Intelligence Analysis": 175,
+      "Statistics": 100,
+      "Operational Research": 50,
+      "Economics": 55,
+      "Knowledge and Information Management": 105,
+      "Security": 120
+    }
+  },
+  "ni-office": {
+    "elementId": "ni-office",
+    "year": "2024-25",
+    "grades": {
+      "scs": 15,
+      "g67": 55,
+      "sheo": 80,
+      "eo": 15,
+      "aaao": 5,
+      "other": 0,
+      "total": 175
+    },
+    "orgs": [],
+    "professions": {
+      "Policy": 55,
+      "Operational Delivery": 45,
+      "Communications": 10,
+      "Finance": 5,
+      "Human Resources": 5,
+      "Knowledge and Information Management": 5,
+      "Other": 35
+    }
+  },
+  "scotland-office": {
+    "elementId": "scotland-office",
+    "year": "2024-25",
+    "grades": {
+      "scs": 15,
+      "g67": 55,
+      "sheo": 45,
+      "eo": 10,
+      "aaao": 5,
+      "other": 0,
+      "total": 135
+    },
+    "orgs": [],
+    "professions": {
+      "Legal": 35,
+      "Operational Delivery": 20,
+      "Communications": 5,
+      "Policy": 5,
+      "No reported profession": 60
+    }
+  },
+  "treasury": {
+    "elementId": "treasury",
+    "year": "2024-25",
+    "grades": {
+      "scs": 180,
+      "g67": 1215,
+      "sheo": 1050,
+      "eo": 240,
+      "aaao": 35,
+      "other": 0,
+      "total": 2720
+    },
+    "coreGrades": {
+      "scs": 140,
+      "g67": 910,
+      "sheo": 725,
+      "eo": 205,
+      "aaao": 30,
+      "other": 0,
+      "total": 2015
+    },
+    "orgs": [
+      {
+        "orgId": "treasury",
+        "label": "HM Treasury (excl. agencies)",
+        "grades": {
+          "scs": 140,
+          "g67": 910,
+          "sheo": 725,
+          "eo": 205,
+          "aaao": 30,
+          "other": 0,
+          "total": 2015
+        }
+      },
+      {
+        "orgId": "ukdmo",
+        "label": "UK Debt Management Office",
+        "grades": {
+          "scs": 0,
+          "g67": 45,
+          "sheo": 60,
+          "eo": 10,
+          "aaao": 0,
+          "other": 0,
+          "total": 120
+        }
+      },
+      {
+        "orgId": "giaa",
+        "label": "Government Internal Audit Agency",
+        "grades": {
+          "scs": 25,
+          "g67": 205,
+          "sheo": 240,
+          "eo": 15,
+          "aaao": 0,
+          "other": 0,
+          "total": 485
+        }
+      },
+      {
+        "orgId": "nista",
+        "label": "National Infrastructure and Service Transformation Authority",
+        "grades": {
+          "scs": 0,
+          "g67": 25,
+          "sheo": 15,
+          "eo": 5,
+          "aaao": 0,
+          "other": 0,
+          "total": 50
+        }
+      },
+      {
+        "orgId": "obr",
+        "label": "Office for Budget Responsibility",
+        "grades": {
+          "scs": 0,
+          "g67": 30,
+          "sheo": 15,
+          "eo": 0,
+          "aaao": 0,
+          "other": 0,
+          "total": 50
+        }
+      }
+    ],
+    "professions": {
+      "Policy": 1455,
+      "Internal Audit": 355,
+      "Economics": 230,
+      "Operational Delivery": 170,
+      "Human Resources": 120,
+      "Finance": 105,
+      "Communications": 60,
+      "Digital and Data": 50,
+      "Project Delivery": 35,
+      "Corporate Finance": 25,
+      "Knowledge and Information Management": 25,
+      "Statistics": 15,
+      "Risk Management": 10,
+      "Commercial": 5,
+      "Planning": 5,
+      "Other": 45
+    },
+    "coreProfessions": {
+      "Policy": 1215,
+      "Economics": 215,
+      "Operational Delivery": 90,
+      "Human Resources": 90,
+      "Finance": 95,
+      "Communications": 50,
+      "Digital and Data": 40,
+      "Project Delivery": 30,
+      "Corporate Finance": 20,
+      "Statistics": 10,
+      "Risk Management": 10
+    }
+  },
+  "ukef": {
+    "elementId": "ukef",
+    "year": "2024-25",
+    "grades": {
+      "scs": 50,
+      "g67": 265,
+      "sheo": 210,
+      "eo": 55,
+      "aaao": 0,
+      "other": 0,
+      "total": 585
+    },
+    "orgs": [],
+    "professions": {
+      "Operational Delivery": 285,
+      "Digital and Data": 70,
+      "Legal": 45,
+      "Finance": 35,
+      "Human Resources": 30,
+      "Knowledge and Information Management": 30,
+      "Policy": 30,
+      "Project Delivery": 20,
+      "Communications": 15,
+      "Security": 10,
+      "Economics": 5
+    }
+  },
+  "wales-office": {
+    "elementId": "wales-office",
+    "year": "2024-25",
+    "grades": {
+      "scs": 5,
+      "g67": 15,
+      "sheo": 15,
+      "eo": 10,
+      "aaao": 0,
+      "other": 0,
+      "total": 45
+    },
+    "orgs": [],
+    "professions": {
+      "Policy": 35,
+      "Communications": 10
+    }
+  },
+  "charity-comm": {
+    "elementId": "charity-comm",
+    "year": "2024-25",
+    "grades": {
+      "scs": 5,
+      "g67": 80,
+      "sheo": 250,
+      "eo": 110,
+      "aaao": 10,
+      "other": 0,
+      "total": 455
+    },
+    "orgs": [],
+    "professions": {
+      "Operational Delivery": 245,
+      "Digital and Data": 55,
+      "Intelligence Analysis": 25,
+      "Legal": 25,
+      "Communications": 25,
+      "Human Resources": 15,
+      "Knowledge and Information Management": 15,
+      "Finance": 10,
+      "Policy": 10,
+      "Project Delivery": 10,
+      "Statistics": 5,
+      "Other": 10
+    }
+  },
+  "cma": {
+    "elementId": "cma",
+    "year": "2024-25",
+    "grades": {
+      "scs": 140,
+      "g67": 570,
+      "sheo": 320,
+      "eo": 80,
+      "aaao": 30,
+      "other": 0,
+      "total": 1140
+    },
+    "orgs": [],
+    "professions": {
+      "Project Delivery": 420,
+      "Legal": 175,
+      "Economics": 155,
+      "Digital and Data": 110,
+      "Human Resources": 50,
+      "Communications": 40,
+      "Intelligence Analysis": 30,
+      "Policy": 25,
+      "Finance": 20,
+      "Commercial": 15,
+      "Property": 10,
+      "Security": 10,
+      "Other": 75
+    }
+  },
+  "fsa": {
+    "elementId": "fsa",
+    "year": "2024-25",
+    "grades": {
+      "scs": 30,
+      "g67": 310,
+      "sheo": 855,
+      "eo": 380,
+      "aaao": 5,
+      "other": 0,
+      "total": 1580
+    },
+    "orgs": [],
+    "professions": {
+      "Operational Delivery": 635,
+      "Policy": 350,
+      "Science and Engineering": 140,
+      "Veterinarian": 70,
+      "Counter Fraud": 55,
+      "Digital and Data": 55,
+      "Communications": 45,
+      "Finance": 40,
+      "Project Delivery": 40,
+      "Human Resources": 35,
+      "Legal": 30,
+      "Intelligence Analysis": 20,
+      "Commercial": 15,
+      "Economics": 15,
+      "Corporate Finance": 5,
+      "Internal Audit": 5,
+      "Social Research": 5
+    }
+  },
+  "hmland": {
+    "elementId": "hmland",
+    "year": "2024-25",
+    "grades": {
+      "scs": 30,
+      "g67": 335,
+      "sheo": 2550,
+      "eo": 2555,
+      "aaao": 1390,
+      "other": 0,
+      "total": 6865
+    },
+    "orgs": [],
+    "professions": {
+      "Operational Delivery": 5195,
+      "Digital and Data": 695,
+      "Project Delivery": 250,
+      "Legal": 135,
+      "Human Resources": 85,
+      "Finance": 45,
+      "Operational Research": 40,
+      "Commercial": 35,
+      "Communications": 30,
+      "Counter Fraud": 30,
+      "Policy": 25,
+      "Knowledge and Information Management": 15,
+      "Security": 10,
+      "Internal Audit": 5,
+      "Property": 5,
+      "Other": 250
+    }
+  },
+  "hmrc": {
+    "elementId": "hmrc",
+    "year": "2024-25",
+    "grades": {
+      "scs": 540,
+      "g67": 9800,
+      "sheo": 26070,
+      "eo": 16000,
+      "aaao": 18515,
+      "other": 0,
+      "total": 70925
+    },
+    "coreGrades": {
+      "scs": 520,
+      "g67": 9270,
+      "sheo": 24330,
+      "eo": 15125,
+      "aaao": 17700,
+      "other": 0,
+      "total": 66945
+    },
+    "orgs": [
+      {
+        "orgId": "hmrc",
+        "label": "HMRC (excl. agencies)",
+        "grades": {
+          "scs": 520,
+          "g67": 9270,
+          "sheo": 24330,
+          "eo": 15125,
+          "aaao": 17700,
+          "other": 0,
+          "total": 66945
+        }
+      },
+      {
+        "orgId": "voa",
+        "label": "Valuation Office Agency",
+        "grades": {
+          "scs": 20,
+          "g67": 530,
+          "sheo": 1740,
+          "eo": 875,
+          "aaao": 815,
+          "other": 0,
+          "total": 3980
+        }
+      }
+    ],
+    "professions": {
+      "Operational Delivery": 32365,
+      "Tax": 15425,
+      "Digital and Data": 3205,
+      "Project Delivery": 3160,
+      "Counter Fraud": 3120,
+      "Property": 2550,
+      "Policy": 1370,
+      "Finance": 1150,
+      "Human Resources": 1025,
+      "Legal": 480,
+      "Statistics": 385,
+      "Security": 275,
+      "Communications": 270,
+      "Intelligence Analysis": 210,
+      "Operational Research": 210,
+      "Economics": 180,
+      "Social Research": 145,
+      "Knowledge and Information Management": 70,
+      "Commercial": 55,
+      "Internal Audit": 45,
+      "Other": 1515,
+      "No reported profession": 3705
+    },
+    "coreProfessions": {
+      "Operational Delivery": 30265,
+      "Tax": 15335,
+      "Digital and Data": 2965,
+      "Project Delivery": 2995,
+      "Counter Fraud": 2985,
+      "Property": 2390,
+      "Policy": 1275,
+      "Finance": 1045,
+      "Human Resources": 935,
+      "Legal": 410,
+      "Statistics": 340,
+      "Security": 265,
+      "Communications": 245,
+      "Intelligence Analysis": 190,
+      "Operational Research": 195,
+      "Economics": 165,
+      "Social Research": 135,
+      "Knowledge and Information Management": 65,
+      "Commercial": 50,
+      "Internal Audit": 40
+    }
+  },
+  "nats": {
+    "elementId": "nats",
+    "year": "2024-25",
+    "grades": {
+      "scs": 10,
+      "g67": 110,
+      "sheo": 320,
+      "eo": 100,
+      "aaao": 105,
+      "other": 0,
+      "total": 645
+    },
+    "orgs": [],
+    "professions": {
+      "Operational Delivery": 145,
+      "Knowledge and Information Management": 115,
+      "Digital and Data": 95,
+      "Commercial": 20,
+      "Communications": 20,
+      "Human Resources": 20,
+      "Finance": 15,
+      "Project Delivery": 15,
+      "Property": 10,
+      "Security": 10,
+      "Other": 175
+    }
+  },
+  "nca-non-min": {
+    "elementId": "nca-non-min",
+    "year": "2024-25",
+    "grades": {
+      "scs": 50,
+      "g67": 575,
+      "sheo": 2795,
+      "eo": 2320,
+      "aaao": 200,
+      "other": 0,
+      "total": 5945
+    },
+    "orgs": [],
+    "professions": {
+      "Operational Delivery": 4650,
+      "Human Resources": 260,
+      "Digital and Data": 205,
+      "Intelligence Analysis": 150,
+      "Security": 150,
+      "Project Delivery": 125,
+      "Knowledge and Information Management": 95,
+      "Policy": 75,
+      "Finance": 60,
+      "Legal": 55,
+      "Commercial": 40,
+      "Communications": 35,
+      "Property": 35
+    }
+  },
+  "ofgem": {
+    "elementId": "ofgem",
+    "year": "2024-25",
+    "grades": {
+      "scs": 95,
+      "g67": 1010,
+      "sheo": 650,
+      "eo": 455,
+      "aaao": 10,
+      "other": 0,
+      "total": 2225
+    },
+    "orgs": [],
+    "professions": {
+      "Policy": 490,
+      "Operational Delivery": 470,
+      "Digital and Data": 300,
+      "Project Delivery": 110,
+      "Legal": 105,
+      "Communications": 90,
+      "Finance": 55,
+      "Human Resources": 55,
+      "Economics": 45,
+      "Science and Engineering": 20,
+      "Other": 485
+    }
+  },
+  "ofqual": {
+    "elementId": "ofqual",
+    "year": "2024-25",
+    "grades": {
+      "scs": 20,
+      "g67": 135,
+      "sheo": 170,
+      "eo": 20,
+      "aaao": 5,
+      "other": 0,
+      "total": 360
+    },
+    "orgs": [],
+    "professions": {
+      "Operational Delivery": 115,
+      "Policy": 95,
+      "Digital and Data": 30,
+      "Project Delivery": 25,
+      "Social Research": 20,
+      "Finance": 15,
+      "Human Resources": 15,
+      "Legal": 15,
+      "Communications": 10,
+      "Statistics": 10
+    }
+  },
+  "ofsted": {
+    "elementId": "ofsted",
+    "year": "2024-25",
+    "grades": {
+      "scs": 35,
+      "g67": 740,
+      "sheo": 860,
+      "eo": 195,
+      "aaao": 195,
+      "other": 0,
+      "total": 2020
+    },
+    "orgs": [],
+    "professions": {
+      "Inspector of Education and Training": 930,
+      "Operational Delivery": 165,
+      "Policy": 155,
+      "Digital and Data": 125,
+      "Statistics": 120,
+      "Human Resources": 50,
+      "Social Research": 40,
+      "Communications": 35,
+      "Finance": 35,
+      "Legal": 20,
+      "Commercial": 15,
+      "Property": 10,
+      "Other": 325
+    }
+  },
+  "ofwat": {
+    "elementId": "ofwat",
+    "year": "2024-25",
+    "grades": {
+      "scs": 10,
+      "g67": 100,
+      "sheo": 240,
+      "eo": 50,
+      "aaao": 10,
+      "other": 0,
+      "total": 410
+    },
+    "orgs": [],
+    "professions": {
+      "Policy": 75,
+      "Economics": 60,
+      "Science and Engineering": 50,
+      "Digital and Data": 45,
+      "Operational Delivery": 45,
+      "Communications": 30,
+      "Finance": 30,
+      "Human Resources": 25,
+      "Legal": 20,
+      "Project Delivery": 20
+    }
+  },
+  "ons": {
+    "elementId": "ons",
+    "year": "2024-25",
+    "grades": {
+      "scs": 90,
+      "g67": 1180,
+      "sheo": 2390,
+      "eo": 730,
+      "aaao": 1245,
+      "other": 0,
+      "total": 5630
+    },
+    "orgs": [],
+    "professions": {
+      "Operational Delivery": 2540,
+      "Digital and Data": 955,
+      "Statistics": 635,
+      "Social Research": 560,
+      "Project Delivery": 260,
+      "Economics": 150,
+      "Human Resources": 150,
+      "Communications": 85,
+      "Policy": 70,
+      "Security": 65,
+      "Finance": 60,
+      "Operational Research": 30,
+      "Commercial": 20,
+      "Knowledge and Information Management": 20,
+      "Geography": 15,
+      "Property": 15
+    }
+  },
+  "orr": {
+    "elementId": "orr",
+    "year": "2024-25",
+    "grades": {
+      "scs": 20,
+      "g67": 200,
+      "sheo": 95,
+      "eo": 35,
+      "aaao": 15,
+      "other": 0,
+      "total": 365
+    },
+    "orgs": [],
+    "professions": {
+      "Operational Delivery": 135,
+      "Policy": 85,
+      "Economics": 35,
+      "Science and Engineering": 25,
+      "Communications": 20,
+      "Statistics": 20,
+      "Finance": 10,
+      "Human Resources": 10,
+      "Legal": 10,
+      "Digital and Data": 5
+    }
+  }
+}
