@@ -4,7 +4,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import ClientSwitcher from '@/components/client/ClientSwitcher';
 
-export default function NavBar() {
+interface NavBarProps {
+  onChatToggle: () => void;
+  isChatOpen: boolean;
+}
+
+export default function NavBar({ onChatToggle, isChatOpen }: NavBarProps) {
   const pathname = usePathname();
 
   const isOnPulse = pathname === '/';
@@ -49,7 +54,7 @@ export default function NavBar() {
       {/* Right: Client Switcher + Chat */}
       <div className="ml-auto flex items-center gap-3">
         <ClientSwitcher />
-        <ChatToggle />
+        <ChatToggle isActive={isChatOpen} onClick={onChatToggle} />
       </div>
     </header>
   );
@@ -88,12 +93,24 @@ function NavLink({
   );
 }
 
-function ChatToggle() {
+function ChatToggle({
+  isActive,
+  onClick,
+}: {
+  isActive: boolean;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
-      className="flex h-8 w-8 items-center justify-center rounded-md border border-wh-border text-wh-text-secondary transition-colors hover:border-wh-accent-teal/50 hover:text-wh-accent-teal"
+      onClick={onClick}
+      className={`flex h-8 w-8 items-center justify-center rounded-md border transition-colors ${
+        isActive
+          ? 'border-wh-accent-teal/50 bg-wh-accent-teal/10 text-wh-accent-teal'
+          : 'border-wh-border text-wh-text-secondary hover:border-wh-accent-teal/50 hover:text-wh-accent-teal'
+      }`}
       aria-label="Toggle chat"
+      aria-expanded={isActive}
     >
       <svg
         className="h-4 w-4"

@@ -74,10 +74,6 @@ export async function POST(request: Request) {
             tools: toolDefinitions,
           });
 
-          // Collect tool use blocks to handle after streaming
-          let toolUseBlocks: Array<{ id: string; name: string; input: Record<string, unknown> }> = [];
-          let hasToolUse = false;
-
           for await (const event of stream) {
             if (
               event.type === 'content_block_delta' &&
@@ -85,41 +81,25 @@ export async function POST(request: Request) {
             ) {
               controller.enqueue(encoder.encode(event.delta.text));
             }
-
-            if (
-              event.type === 'content_block_start' &&
-              event.delta.type === 'tool_use'
-            ) {
-              hasToolUse = true;
-            }
           }
 
-          // Get the final message to check for tool use
           const finalMessage = await stream.finalMessage();
 
           if (finalMessage.stop_reason === 'tool_use') {
-            // Extract tool use blocks from the response
-            toolUseBlocks = finalMessage.content
-              .filter((block): block is Anthropic.ToolUseBlock => block.type === 'tool_use')
-              .map((block) => ({
-                id: block.id,
-                name: block.name,
-                input: block.input as Record<string, unknown>,
-              }));
+            const toolBlocks = finalMessage.content
+              .filter((block): block is Anthropic.ToolUseBlock => block.type === 'tool_use');
 
-            if (toolUseBlocks.length > 0) {
-              // Add assistant message with all content blocks
+            if (toolBlocks.length > 0) {
               currentMessages.push({
                 role: 'assistant',
                 content: finalMessage.content,
               });
 
-              // Build tool results
-              const toolResults: Anthropic.ToolResultBlockParam[] = toolUseBlocks.map(
-                (tool) => ({
+              const toolResults: Anthropic.ToolResultBlockParam[] = toolBlocks.map(
+                (block) => ({
                   type: 'tool_result' as const,
-                  tool_use_id: tool.id,
-                  content: handleToolCall(tool.name, tool.input),
+                  tool_use_id: block.id,
+                  content: handleToolCall(block.name, block.input as Record<string, unknown>),
                 }),
               );
 
@@ -128,7 +108,6 @@ export async function POST(request: Request) {
                 content: toolResults,
               });
 
-              // Continue the loop to get the model's response with tool results
               continueLoop = true;
             }
           }
