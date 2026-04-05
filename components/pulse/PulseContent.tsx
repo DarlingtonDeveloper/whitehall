@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useCallback, useRef } from 'react';
+import { useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { ENTITY_LIST, getEntity } from '@/data/entities';
 import { getEntityColour } from '@/data/colours';
 import { getRelationships } from '@/data/relationships';
@@ -14,7 +14,8 @@ import EntityPanel from '@/components/entity/EntityPanel';
 import ClientPanel from '@/components/client/ClientPanel';
 import { getClientBySlug } from '@/data/clients';
 import { useGraphFilter } from '@/components/sidebar/useGraphFilter';
-import { usePanelStore, clearEntity } from '@/lib/panelStore';
+import { usePanelStore, clearEntity, selectEntity } from '@/lib/panelStore';
+import { subscribeToGraphCommands } from '@/lib/graphCommands';
 
 /* ------------------------------------------------------------------ */
 /*  Resize handle                                                      */
@@ -129,6 +130,26 @@ export default function PulseContent() {
     filter.activeTags.size > 0 ||
     filter.jurisdiction !== null ||
     filter.hiddenTypes.size > 0;
+
+  // Subscribe to graph commands dispatched from chat
+  useEffect(() => {
+    return subscribeToGraphCommands((cmd) => {
+      switch (cmd.type) {
+        case 'select_entity':
+          selectEntity(cmd.entityId);
+          break;
+        case 'search':
+          setSearch(cmd.query);
+          break;
+        case 'reset':
+          resetFilters();
+          break;
+        case 'focus_mode':
+          if (filter.focusMode !== cmd.enabled) toggleFocusMode();
+          break;
+      }
+    });
+  }, [setSearch, resetFilters, toggleFocusMode, filter.focusMode]);
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">

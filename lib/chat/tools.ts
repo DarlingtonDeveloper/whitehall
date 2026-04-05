@@ -3,6 +3,7 @@ import { searchEntities, getEntity, ENTITY_LIST } from '@/data/entities';
 import { getClientBySlug, ALL_CLIENTS } from '@/data/clients';
 import { getPowers } from '@/data/powers';
 import { getRelationships } from '@/data/relationships';
+import { supabase } from '@/lib/db';
 
 // ---------------------------------------------------------------------------
 // Tool definitions (sent to the Anthropic API)
@@ -60,6 +61,34 @@ export const toolDefinitions: Tool[] = [
       required: [],
     },
   },
+  {
+    name: 'graph_action',
+    description:
+      'Manipulate the interactive graph visualisation. Use this when the user asks to show, focus on, filter, or highlight entities on the graph. Actions: select_entity (opens entity panel and centres graph), search (filters graph nodes by text), reset (clears all filters), focus_mode (toggle focus mode which hides non-matching nodes).',
+    input_schema: {
+      type: 'object' as const,
+      properties: {
+        action: {
+          type: 'string',
+          enum: ['select_entity', 'search', 'reset', 'focus_mode'],
+          description: 'The graph action to perform.',
+        },
+        entityId: {
+          type: 'string',
+          description: 'Entity ID for select_entity action (e.g. "desnz", "ofgem").',
+        },
+        query: {
+          type: 'string',
+          description: 'Search query for search action.',
+        },
+        enabled: {
+          type: 'boolean',
+          description: 'Whether to enable or disable focus mode.',
+        },
+      },
+      required: ['action'],
+    },
+  },
 ];
 
 // ---------------------------------------------------------------------------
@@ -81,9 +110,22 @@ export function handleToolCall(
       return handleFeedSearch(toolInput);
     case 'stakeholder_map':
       return handleStakeholderMap(toolInput);
+    case 'graph_action':
+      return handleGraphAction(toolInput);
     default:
       return JSON.stringify({ error: `Unknown tool: ${toolName}` });
   }
+}
+
+/** Async variant for tools that need database access */
+export async function handleToolCallAsync(
+  toolName: string,
+  toolInput: ToolInput,
+): Promise<string> {
+  if (toolName === 'feed_search') {
+    return handleFeedSearchAsync(toolInput);
+  }
+  return handleToolCall(toolName, toolInput);
 }
 
 function handleEntityLookup(input: ToolInput): string {
@@ -146,39 +188,104 @@ function handleEntityLookup(input: ToolInput): string {
 }
 
 function handleFeedSearch(input: ToolInput): string {
+  // Synchronous fallback — returns a note to use async version
+  return JSON.stringify({ note: 'Querying feed database...', query: String(input.query ?? '') });
+}
+
+async function handleFeedSearchAsync(input: ToolInput): Promise<string> {
   const query = String(input.query ?? '');
-  const limit = Number(input.limit ?? 5);
+  const limit = Math.min(Number(input.limit ?? 10), 20);
 
-  // Mock feed data — in production this would query a database
-  const mockItems = [
-    {
-      title: `Parliamentary question on ${query}`,
-      source: 'House of Commons',
-      date: '2026-04-03',
-      summary: `Written question tabled regarding ${query} policy and implementation timelines.`,
-      type: 'parliamentary',
-    },
-    {
-      title: `Consultation: ${query} regulatory framework review`,
-      source: 'GOV.UK',
-      date: '2026-04-01',
-      summary: `Open consultation on proposed changes to the ${query} regulatory framework. Closing date: 2026-05-15.`,
-      type: 'consultation',
-    },
-    {
-      title: `Select committee evidence session on ${query}`,
-      source: 'Parliament',
-      date: '2026-03-28',
-      summary: `The relevant select committee took oral evidence on ${query} from industry stakeholders and departmental officials.`,
-      type: 'committee',
-    },
-  ];
+  try {
+    const escaped = query.replace(/[%_]/g, '\\$&');
+    const { data, error } = await supabase
+      .from('feed_items')
+      .select('id, title, url, source_type, source_name, published_at, entity_ids')
+      .or(`title.ilike.%${escaped}%,source_name.ilike.%${escaped}%`)
+      .order('published_at', { ascending: false })
+      .limit(limit);
 
-  return JSON.stringify({
-    note: 'Feed search returns mock data — live feed integration is pending.',
-    query,
-    results: mockItems.slice(0, limit),
-  });
+    if (error) {
+      return JSON.stringify({ error: error.message, query });
+    }
+
+    if (!data || data.length === 0) {
+      // Try entity-based search as fallback
+      const entities = searchEntities(query).slice(0, 5);
+      if (entities.length > 0) {
+        const entityIds = entities.map((e) => e.id);
+        const { data: entityData } = await supabase
+          .from('feed_items')
+          .select('id, title, url, source_type, source_name, published_at, entity_ids')
+          .overlaps('entity_ids', entityIds)
+          .order('published_at', { ascending: false })
+          .limit(limit);
+
+        if (entityData && entityData.length > 0) {
+          return JSON.stringify({
+            query,
+            matchedVia: 'entity_ids',
+            results: entityData.map((item) => ({
+              title: item.title,
+              url: item.url,
+              source: item.source_name,
+              type: item.source_type,
+              date: item.published_at,
+              entities: item.entity_ids,
+            })),
+          });
+        }
+      }
+
+      return JSON.stringify({ query, results: [], message: 'No feed items found matching this query.' });
+    }
+
+    return JSON.stringify({
+      query,
+      results: data.map((item) => ({
+        title: item.title,
+        url: item.url,
+        source: item.source_name,
+        type: item.source_type,
+        date: item.published_at,
+        entities: item.entity_ids,
+      })),
+    });
+  } catch (err) {
+    return JSON.stringify({ error: err instanceof Error ? err.message : 'Feed search failed', query });
+  }
+}
+
+function handleGraphAction(input: ToolInput): string {
+  const action = String(input.action ?? '');
+  switch (action) {
+    case 'select_entity': {
+      const entityId = String(input.entityId ?? '');
+      const entity = getEntity(entityId);
+      if (!entity) {
+        // Try fuzzy match
+        const matches = searchEntities(entityId);
+        if (matches.length > 0) {
+          return JSON.stringify({
+            success: true,
+            resolved: true,
+            entityId: matches[0].id,
+            message: `Selected ${matches[0].name} on the graph.`,
+          });
+        }
+        return JSON.stringify({ error: `Entity "${entityId}" not found.` });
+      }
+      return JSON.stringify({ success: true, entityId: entity.id, message: `Selected ${entity.name} on the graph.` });
+    }
+    case 'search':
+      return JSON.stringify({ success: true, message: `Filtering graph for: "${input.query}"` });
+    case 'reset':
+      return JSON.stringify({ success: true, message: 'Graph filters cleared.' });
+    case 'focus_mode':
+      return JSON.stringify({ success: true, message: `Focus mode ${input.enabled ? 'enabled' : 'disabled'}.` });
+    default:
+      return JSON.stringify({ error: `Unknown graph action: ${action}` });
+  }
 }
 
 function handleStakeholderMap(input: ToolInput): string {

@@ -28,7 +28,9 @@ Guidelines:
 - Present information in a structured, scannable format — use bullet points and bold for key terms.
 - Keep answers concise but thorough. Analysts are experienced and prefer density over fluff.
 - When discussing powers, cite the source legislation where available.
-- When discussing stakeholders, note their priority level (primary, secondary, tertiary) and relevance.`);
+- When discussing stakeholders, note their priority level (primary, secondary, tertiary) and relevance.
+- When mentioning feed items or sources, always include clickable links using markdown format: [title](url).
+- You can manipulate the interactive graph using the graph_action tool. Use it when the user asks to "show me", "focus on", "find on the graph", "filter to", or "highlight" entities. For example, if the user says "show me DESNZ on the graph", call graph_action with action=select_entity. If they say "filter the graph to regulators", use action=search with query="regulator".`);
 
   // Client context
   if (opts.clientId) {

@@ -10,6 +10,7 @@ import {
 } from 'react';
 import ChatMessage from './ChatMessage';
 import SuggestedQuestions from './SuggestedQuestions';
+import { dispatchGraphCommand, type GraphCommand } from '@/lib/graphCommands';
 
 /* -------------------------------------------------------------------------- */
 /*  Types                                                                     */
@@ -155,23 +156,36 @@ export default function ChatDrawer({
         const reader = res.body?.getReader();
         const decoder = new TextDecoder();
         let accumulated = '';
+        const dispatchedCmds = new Set<string>();
 
         while (reader) {
           const { done, value } = await reader.read();
           if (done) break;
           accumulated += decoder.decode(value, { stream: true });
 
-          // Update the streaming assistant message
-          const snapshot = accumulated;
+          // Parse and dispatch graph commands
+          const cmdRegex = /<!--GRAPH_CMD:(.*?)-->/g;
+          let cmdMatch;
+          while ((cmdMatch = cmdRegex.exec(accumulated)) !== null) {
+            const raw = cmdMatch[1];
+            if (!dispatchedCmds.has(raw)) {
+              dispatchedCmds.add(raw);
+              try {
+                dispatchGraphCommand(JSON.parse(raw) as GraphCommand);
+              } catch { /* ignore */ }
+            }
+          }
+
+          const displayText = accumulated.replace(/\n?<!--GRAPH_CMD:.*?-->\n?/g, '');
           setMessages((prev) =>
             prev.map((m) =>
-              m.id === assistantId ? { ...m, content: snapshot } : m,
+              m.id === assistantId ? { ...m, content: displayText } : m,
             ),
           );
         }
 
-        // If the response was empty, remove the assistant message
-        if (!accumulated.trim()) {
+        const finalText = accumulated.replace(/\n?<!--GRAPH_CMD:.*?-->\n?/g, '');
+        if (!finalText.trim()) {
           setMessages((prev) => prev.filter((m) => m.id !== assistantId));
         }
       } catch (err) {

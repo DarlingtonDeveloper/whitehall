@@ -2,6 +2,7 @@
 
 import { useMemo } from 'react';
 import { ENTITY_LIST } from '@/data/entities';
+import { selectEntity } from '@/lib/panelStore';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
@@ -161,15 +162,18 @@ function highlightEntities(text: string, keyPrefix: string): React.ReactNode[] {
           idx++;
         }
 
-        // Add the entity name as a teal-coloured span
+        // Add the entity name as a clickable button
+        const entityId = entity.id;
         parts.push(
-          <span
+          <button
             key={`${keyPrefix}-e-${idx}`}
-            className="text-wh-accent-teal font-medium"
-            title={`Entity: ${entity.name} (${entity.id})`}
+            type="button"
+            onClick={() => selectEntity(entityId)}
+            className="text-wh-accent-teal font-medium hover:underline decoration-wh-accent-teal/40 cursor-pointer"
+            title={`View ${entity.name}`}
           >
             {remaining.slice(pos, pos + entity.name.length)}
-          </span>,
+          </button>,
         );
         idx++;
 

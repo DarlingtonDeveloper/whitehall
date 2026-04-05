@@ -11,6 +11,7 @@ import {
 import { usePanelStore } from '@/lib/panelStore';
 import { getEntity } from '@/data/entities';
 import { getClientBySlug } from '@/data/clients';
+import { dispatchGraphCommand, type GraphCommand } from '@/lib/graphCommands';
 import FeedPanel from '@/components/feed/FeedPanel';
 import ChatMessage from '@/components/chat/ChatMessage';
 import SuggestedQuestions from '@/components/chat/SuggestedQuestions';
@@ -133,18 +134,37 @@ export default function IntelligencePanel() {
         const reader = res.body?.getReader();
         const decoder = new TextDecoder();
         let accumulated = '';
+        const dispatchedCmds = new Set<string>();
 
         while (reader) {
           const { done, value } = await reader.read();
           if (done) break;
           accumulated += decoder.decode(value, { stream: true });
-          const snapshot = accumulated;
+
+          // Parse and dispatch graph commands embedded as <!--GRAPH_CMD:{...}-->
+          const cmdRegex = /<!--GRAPH_CMD:(.*?)-->/g;
+          let cmdMatch;
+          while ((cmdMatch = cmdRegex.exec(accumulated)) !== null) {
+            const raw = cmdMatch[1];
+            if (!dispatchedCmds.has(raw)) {
+              dispatchedCmds.add(raw);
+              try {
+                const parsed = JSON.parse(raw) as GraphCommand;
+                dispatchGraphCommand(parsed);
+              } catch { /* ignore parse errors */ }
+            }
+          }
+
+          // Strip command markers from displayed text
+          const displayText = accumulated.replace(/\n?<!--GRAPH_CMD:.*?-->\n?/g, '');
           setMessages((prev) =>
-            prev.map((m) => (m.id === assistantId ? { ...m, content: snapshot } : m)),
+            prev.map((m) => (m.id === assistantId ? { ...m, content: displayText } : m)),
           );
         }
 
-        if (!accumulated.trim()) {
+        // Final strip
+        const finalText = accumulated.replace(/\n?<!--GRAPH_CMD:.*?-->\n?/g, '');
+        if (!finalText.trim()) {
           setMessages((prev) => prev.filter((m) => m.id !== assistantId));
         }
       } catch (err) {

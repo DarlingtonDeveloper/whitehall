@@ -1,6 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { buildSystemPrompt } from '@/lib/chat/systemPrompt';
-import { toolDefinitions, handleToolCall } from '@/lib/chat/tools';
+import { toolDefinitions, handleToolCallAsync } from '@/lib/chat/tools';
 
 export const dynamic = 'force-dynamic';
 
@@ -90,17 +90,38 @@ export async function POST(request: Request) {
               .filter((block): block is Anthropic.ToolUseBlock => block.type === 'tool_use');
 
             if (toolBlocks.length > 0) {
+              // Emit graph action markers before tool results
+              for (const block of toolBlocks) {
+                if (block.name === 'graph_action') {
+                  const input = block.input as Record<string, unknown>;
+                  // For select_entity with fuzzy match, resolve first
+                  const result = await handleToolCallAsync(block.name, input);
+                  const parsed = JSON.parse(result);
+                  if (parsed.success) {
+                    const cmd: Record<string, unknown> = { type: input.action };
+                    if (input.action === 'select_entity') {
+                      cmd.entityId = parsed.entityId ?? input.entityId;
+                    } else if (input.action === 'search') {
+                      cmd.query = input.query;
+                    } else if (input.action === 'focus_mode') {
+                      cmd.enabled = input.enabled;
+                    }
+                    controller.enqueue(encoder.encode(`<!--GRAPH_CMD:${JSON.stringify(cmd)}-->`));
+                  }
+                }
+              }
+
               currentMessages.push({
                 role: 'assistant',
                 content: finalMessage.content,
               });
 
-              const toolResults: Anthropic.ToolResultBlockParam[] = toolBlocks.map(
-                (block) => ({
+              const toolResults: Anthropic.ToolResultBlockParam[] = await Promise.all(
+                toolBlocks.map(async (block) => ({
                   type: 'tool_result' as const,
                   tool_use_id: block.id,
-                  content: handleToolCall(block.name, block.input as Record<string, unknown>),
-                }),
+                  content: await handleToolCallAsync(block.name, block.input as Record<string, unknown>),
+                })),
               );
 
               currentMessages.push({
