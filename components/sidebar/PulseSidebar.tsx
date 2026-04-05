@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { ENTITY_LIST } from '@/data/entities';
 import { TAGS } from '@/data/tags';
@@ -25,7 +25,19 @@ export default function PulseSidebar({
   visibleCount,
   onCollapse,
 }: PulseSidebarProps) {
-  const [expandedSection, setExpandedSection] = useState<'tags' | 'entities' | null>('entities');
+  // Each section independently collapsible; only entities open by default
+  const [openSections, setOpenSections] = useState<Set<string>>(
+    () => new Set(['entities']),
+  );
+
+  const toggle = useCallback((section: string) => {
+    setOpenSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(section)) next.delete(section);
+      else next.add(section);
+      return next;
+    });
+  }, []);
 
   const typeTags = useMemo(
     () => Object.values(TAGS).filter((t) => t.tagCategory === 'type'),
@@ -36,7 +48,6 @@ export default function PulseSidebar({
     [],
   );
 
-  // Count entities per tag
   const tagCounts = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const entity of ENTITY_LIST) {
@@ -47,7 +58,6 @@ export default function PulseSidebar({
     return counts;
   }, []);
 
-  // Filtered entity list for the bottom section
   const filteredEntities = useMemo(() => {
     const q = filter.search.toLowerCase();
     let list = ENTITY_LIST;
@@ -67,13 +77,12 @@ export default function PulseSidebar({
       );
     }
 
-    // Sort alphabetically
     return [...list].sort((a, b) => a.name.localeCompare(b.name));
   }, [filter.search, filter.activeTags]);
 
   return (
     <div className="flex h-full w-72 shrink-0 flex-col border-r border-wh-border bg-wh-panel">
-      {/* Search + close button */}
+      {/* Search + close */}
       <div className="shrink-0 border-b border-wh-border p-3">
         <div className="flex items-center gap-2">
           <div className="flex flex-1 items-center gap-2 rounded-md border border-wh-border bg-wh-bg px-2.5 py-1.5">
@@ -124,62 +133,45 @@ export default function PulseSidebar({
         </p>
       </div>
 
-      {/* Jurisdiction filter */}
-      <div className="shrink-0 border-b border-wh-border px-3 py-2">
-        <label className="text-[10px] font-semibold uppercase tracking-wider text-wh-text-secondary/70">
-          Jurisdiction
-        </label>
-        <div className="mt-1.5 flex flex-wrap gap-1">
-          <JurisdictionPill
-            label="All"
-            active={filter.jurisdiction === null}
-            onClick={() => onSetJurisdiction(null)}
-          />
-          {Object.entries(JURISDICTIONS).map(([key, j]) => (
+      {/* Jurisdiction — collapsible, closed by default */}
+      <div className="shrink-0 border-b border-wh-border">
+        <SectionHeader
+          label="Jurisdiction"
+          badge={filter.jurisdiction ? JURISDICTIONS[filter.jurisdiction]?.shortLabel : null}
+          open={openSections.has('jurisdiction')}
+          onToggle={() => toggle('jurisdiction')}
+        />
+        {openSections.has('jurisdiction') && (
+          <div className="flex flex-wrap gap-1 px-3 pb-2">
             <JurisdictionPill
-              key={key}
-              label={j.shortLabel}
-              active={filter.jurisdiction === key}
-              onClick={() =>
-                onSetJurisdiction(filter.jurisdiction === key ? null : key)
-              }
+              label="All"
+              active={filter.jurisdiction === null}
+              onClick={() => onSetJurisdiction(null)}
             />
-          ))}
-        </div>
+            {Object.entries(JURISDICTIONS).map(([key, j]) => (
+              <JurisdictionPill
+                key={key}
+                label={j.shortLabel}
+                active={filter.jurisdiction === key}
+                onClick={() =>
+                  onSetJurisdiction(filter.jurisdiction === key ? null : key)
+                }
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Tags section */}
+      {/* Tags — collapsible, closed by default */}
       <div className="shrink-0 border-b border-wh-border">
-        <button
-          onClick={() =>
-            setExpandedSection(expandedSection === 'tags' ? null : 'tags')
-          }
-          className="flex w-full items-center justify-between px-3 py-2 text-left"
-        >
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-wh-text-secondary/70">
-            Tags
-            {filter.activeTags.size > 0 && (
-              <span className="ml-1 text-wh-accent-teal">
-                ({filter.activeTags.size})
-              </span>
-            )}
-          </span>
-          <svg
-            className={`h-3 w-3 text-wh-text-secondary/40 transition-transform ${
-              expandedSection === 'tags' ? 'rotate-180' : ''
-            }`}
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-          </svg>
-        </button>
-
-        {expandedSection === 'tags' && (
+        <SectionHeader
+          label="Tags"
+          badge={filter.activeTags.size > 0 ? String(filter.activeTags.size) : null}
+          open={openSections.has('tags')}
+          onToggle={() => toggle('tags')}
+        />
+        {openSections.has('tags') && (
           <div className="max-h-48 overflow-y-auto px-3 pb-2">
-            {/* Type tags */}
             <p className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-wh-text-secondary/50">
               Type
             </p>
@@ -194,7 +186,6 @@ export default function PulseSidebar({
                 />
               ))}
             </div>
-            {/* Sector tags */}
             <p className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-wh-text-secondary/50">
               Sector
             </p>
@@ -213,31 +204,14 @@ export default function PulseSidebar({
         )}
       </div>
 
-      {/* Entity list */}
+      {/* Entities — collapsible, open by default */}
       <div className="flex min-h-0 flex-1 flex-col">
-        <button
-          onClick={() =>
-            setExpandedSection(expandedSection === 'entities' ? null : 'entities')
-          }
-          className="flex shrink-0 w-full items-center justify-between px-3 py-2 text-left"
-        >
-          <span className="text-[10px] font-semibold uppercase tracking-wider text-wh-text-secondary/70">
-            Entities ({filteredEntities.length})
-          </span>
-          <svg
-            className={`h-3 w-3 text-wh-text-secondary/40 transition-transform ${
-              expandedSection === 'entities' ? 'rotate-180' : ''
-            }`}
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={2}
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
-          </svg>
-        </button>
-
-        {expandedSection === 'entities' && (
+        <SectionHeader
+          label={`Entities (${filteredEntities.length})`}
+          open={openSections.has('entities')}
+          onToggle={() => toggle('entities')}
+        />
+        {openSections.has('entities') && (
           <div className="flex-1 overflow-y-auto">
             {filteredEntities.map((entity) => (
               <Link
@@ -247,9 +221,7 @@ export default function PulseSidebar({
               >
                 <span
                   className="h-2 w-2 shrink-0 rounded-sm"
-                  style={{
-                    backgroundColor: getEntityColour(entity.tags),
-                  }}
+                  style={{ backgroundColor: getEntityColour(entity.tags) }}
                 />
                 <span className="truncate text-[11px] text-wh-text-primary">
                   {entity.name}
@@ -263,6 +235,45 @@ export default function PulseSidebar({
         )}
       </div>
     </div>
+  );
+}
+
+// --- Shared section header with chevron ---
+
+function SectionHeader({
+  label,
+  badge,
+  open,
+  onToggle,
+}: {
+  label: string;
+  badge?: string | null;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      onClick={onToggle}
+      className="flex w-full items-center justify-between px-3 py-2 text-left"
+    >
+      <span className="text-[10px] font-semibold uppercase tracking-wider text-wh-text-secondary/70">
+        {label}
+        {badge && (
+          <span className="ml-1 text-wh-accent-teal">({badge})</span>
+        )}
+      </span>
+      <svg
+        className={`h-3 w-3 text-wh-text-secondary/40 transition-transform ${
+          open ? 'rotate-180' : ''
+        }`}
+        fill="none"
+        viewBox="0 0 24 24"
+        strokeWidth={2}
+        stroke="currentColor"
+      >
+        <path strokeLinecap="round" strokeLinejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" />
+      </svg>
+    </button>
   );
 }
 
