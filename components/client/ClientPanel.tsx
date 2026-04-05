@@ -62,7 +62,7 @@ export default function ClientPanel({ client }: { client: ClientConfig }) {
       </div>
 
       {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto overscroll-contain">
         {/* Stakeholder groups */}
         <StakeholderGroup label="Primary" items={grouped.primary} disabledSourceIds={disabledSourceIds} />
         <StakeholderGroup label="Secondary" items={grouped.secondary} disabledSourceIds={disabledSourceIds} />

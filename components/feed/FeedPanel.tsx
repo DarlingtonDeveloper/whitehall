@@ -47,16 +47,17 @@ export default function FeedPanel({
 
   // Get active keywords for client-based keyword filtering
   const clientConfig = clientId ? getClientBySlug(clientId) : null;
-  const { activeKeywords } = useClientOverrides(
-    clientId ?? '__none__',
-    {
+  const baseConfig = useMemo(
+    () => ({
       policyKeywords: clientConfig?.policyKeywords ?? [],
       industryKeywords: clientConfig?.industryKeywords ?? [],
       competitors: clientConfig?.competitors ?? [],
       projects: clientConfig?.projects ?? [],
       monitoringThemes: clientConfig?.monitoringThemes ?? [],
-    },
+    }),
+    [clientConfig],
   );
+  const { activeKeywords } = useClientOverrides(clientId ?? '__none__', baseConfig);
 
   // Compute active source IDs for client filtering (stakeholders minus disabled)
   const activeSourceIds = useMemo(() => {
@@ -65,6 +66,13 @@ export default function FeedPanel({
     if (disabledSourceIds.length === 0) return all;
     return all.filter((id) => !disabledSourceIds.includes(id));
   }, [clientConfig, disabledSourceIds]);
+
+  // Stable serialised keys so the effect only re-runs when values actually change
+  const activeKeywordsKey = useMemo(() => activeKeywords.join('\0'), [activeKeywords]);
+  const activeSourceIdsKey = useMemo(
+    () => (activeSourceIds ? activeSourceIds.join('\0') : ''),
+    [activeSourceIds],
+  );
 
   useEffect(() => {
     if (propItems && propItems.length > 0) return;
@@ -110,7 +118,6 @@ export default function FeedPanel({
           }
 
           // 2. Fetch by keyword matches (search title/body)
-          // Use top keywords in batches to build OR filter
           const kwsToSearch = activeKeywords.slice(0, 30);
           if (kwsToSearch.length > 0) {
             const orConditions = kwsToSearch
@@ -161,7 +168,7 @@ export default function FeedPanel({
 
     fetchItems();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entityId, clientId, propItems, activeSourceIds, activeKeywords]);
+  }, [entityId, clientId, propItems, activeSourceIdsKey, activeKeywordsKey]);
 
   // Client-side filtering by search + date
   const filtered = useMemo(() => {
@@ -236,7 +243,7 @@ export default function FeedPanel({
       </div>
 
       {/* Scrollable feed list */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto overscroll-contain">
         {loading && (
           <div className="flex flex-col gap-2 p-4">
             {Array.from({ length: 6 }).map((_, i) => (

@@ -220,7 +220,7 @@ export default function IntelligencePanel() {
       {activeTab === 'chat' && (
         <>
           {/* Messages area */}
-          <div className="chat-scroll flex-1 overflow-y-auto px-4 py-4">
+          <div className="chat-scroll flex-1 overflow-y-auto overscroll-contain px-4 py-4">
             {!hasMessages && !isLoading && (
               <div className="flex h-full flex-col items-center justify-center gap-4 text-center">
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-wh-accent-teal/10">
