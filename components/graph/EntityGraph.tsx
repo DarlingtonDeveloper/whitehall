@@ -6,9 +6,10 @@ import { graphStyles } from './graphStyles';
 
 interface EntityGraphProps {
   elements: ElementDefinition[];
-  layout?: 'preset' | 'concentric';
+  layout?: 'preset' | 'concentric' | 'cose';
   onNodeClick?: (entityId: string) => void;
   onNodeHover?: (entityId: string | null) => void;
+  focusNodeId?: string | null;
   className?: string;
   minZoom?: number;
   maxZoom?: number;
@@ -22,6 +23,7 @@ export default function EntityGraph({
   layout = 'preset',
   onNodeClick,
   onNodeHover,
+  focusNodeId,
   className = '',
   minZoom = 0.15,
   maxZoom = 4,
@@ -41,16 +43,34 @@ export default function EntityGraph({
   useEffect(() => {
     if (!containerRef.current) return;
 
+    // Build layout config based on type
+    const layoutConfig: Record<string, unknown> = { name: layout, fit: true, padding: 40 };
+    if (layout === 'cose') {
+      Object.assign(layoutConfig, {
+        animate: false,
+        nodeRepulsion: () => 8000,
+        idealEdgeLength: () => 120,
+        gravity: 0.25,
+        numIter: 300,
+      });
+    }
+    if (layout === 'concentric' && focusNodeId) {
+      Object.assign(layoutConfig, {
+        concentric: (node: { id: () => string }) => (node.id() === focusNodeId ? 10 : 1),
+        levelWidth: () => 1,
+        minNodeSpacing: 60,
+      });
+    }
+
     const cy = cytoscape({
       container: containerRef.current,
       elements,
       style: graphStyles,
-      layout: { name: layout, fit: true, padding: 40 },
+      layout: layoutConfig as unknown as cytoscape.LayoutOptions,
       minZoom,
       maxZoom,
       wheelSensitivity: 0.3,
       pixelRatio: 'auto',
-      // Let CSS handle the background
       styleEnabled: true,
     });
 
@@ -61,6 +81,11 @@ export default function EntityGraph({
 
     // Fit everything with padding on mount.
     cy.fit(undefined, 40);
+
+    // In focused mode (non-preset), show all labels immediately.
+    if (layout !== 'preset') {
+      cy.nodes().addClass('show-label');
+    }
 
     // ----- Node click -----
     cy.on('tap', 'node', (evt) => {
@@ -133,7 +158,7 @@ export default function EntityGraph({
     };
     // We only re-initialise when elements or layout change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [elements, layout, minZoom, maxZoom]);
+  }, [elements, layout, focusNodeId, minZoom, maxZoom]);
 
   return (
     <div

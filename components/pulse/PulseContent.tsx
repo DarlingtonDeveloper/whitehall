@@ -4,7 +4,6 @@ import { useMemo } from 'react';
 import { ENTITY_LIST, getEntity } from '@/data/entities';
 import { getEntityColour } from '@/data/colours';
 import { getRelationships } from '@/data/relationships';
-import { getClientBySlug } from '@/data/clients';
 import PulseView from '@/components/graph/PulseView';
 import FilterPanel from '@/components/sidebar/FilterPanel';
 import IntelligencePanel from '@/components/intelligence/IntelligencePanel';
@@ -38,31 +37,9 @@ export default function PulseContent() {
     };
   }, [panels.selectedEntityId]);
 
-  // When a client is selected, enhance the graph filter to highlight their stakeholders
-  const clientConfig = useMemo(() => {
-    if (!panels.selectedClientId) return null;
-    return getClientBySlug(panels.selectedClientId) ?? null;
-  }, [panels.selectedClientId]);
-
-  const effectiveGraphFilter = useMemo(() => {
-    if (!clientConfig) return graphFilter;
-
-    const stakeholderIds = new Set(clientConfig.stakeholders.map((s) => s.entityId));
-
-    return {
-      ...graphFilter,
-      isVisible: (entity: Parameters<typeof graphFilter.isVisible>[0]) => {
-        // If the base filter already hides it, keep it hidden
-        if (!graphFilter.isVisible(entity)) return false;
-        // In client mode, only show stakeholder entities
-        return stakeholderIds.has(entity.id);
-      },
-    };
-  }, [graphFilter, clientConfig]);
-
   const visibleCount = useMemo(() => {
-    return ENTITY_LIST.filter((e) => effectiveGraphFilter.isVisible(e)).length;
-  }, [effectiveGraphFilter]);
+    return ENTITY_LIST.filter((e) => graphFilter.isVisible(e)).length;
+  }, [graphFilter]);
 
   const hasActiveFilters =
     filter.search !== '' ||
@@ -97,7 +74,7 @@ export default function PulseContent() {
 
       {/* Graph area with floating filter panel */}
       <div className="relative min-w-0 flex-1">
-        <PulseView filter={effectiveGraphFilter} />
+        <PulseView filter={graphFilter} />
         {panels.legend && (
           <FilterPanel
             filter={filter}
