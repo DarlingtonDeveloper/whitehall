@@ -112,6 +112,35 @@ export default function FilterPanel({
     return groups;
   }, []);
 
+  // All type keys for invert logic
+  const allTypeKeys = useMemo(
+    () => Object.values(legendGrouped).flat().map((e) => e.key),
+    [legendGrouped],
+  );
+
+  // Click a type: select it (hide all others). Click again: show all.
+  const handleTypeClick = useCallback(
+    (key: string) => {
+      const isOnlyOneShown =
+        filter.hiddenTypes.size === allTypeKeys.length - 1 && !filter.hiddenTypes.has(key);
+
+      if (isOnlyOneShown) {
+        // Already solo — clicking again shows all
+        for (const k of allTypeKeys) {
+          if (filter.hiddenTypes.has(k)) onToggleType(k);
+        }
+      } else {
+        // Hide everything except the clicked one
+        for (const k of allTypeKeys) {
+          const shouldBeHidden = k !== key;
+          const isHidden = filter.hiddenTypes.has(k);
+          if (shouldBeHidden !== isHidden) onToggleType(k);
+        }
+      }
+    },
+    [filter.hiddenTypes, allTypeKeys, onToggleType],
+  );
+
   // --- Filtered entity list ---
   const filteredEntities = useMemo(() => {
     const q = filter.search.toLowerCase();
@@ -296,43 +325,6 @@ export default function FilterPanel({
 
           {/* Scrollable sections */}
           <div className="flex-1 overflow-y-auto">
-            {/* Types (legend) */}
-            <div className="border-b border-wh-border/50">
-              <SectionHeader
-                label="Types"
-                badge={filter.hiddenTypes.size > 0 ? `${filter.hiddenTypes.size} hidden` : null}
-                open={openSections.has('types')}
-                onToggle={() => toggle('types')}
-              />
-              {openSections.has('types') && (
-                <div className="px-3 pb-2">
-                  {Object.entries(legendGrouped).map(([category, items]) => (
-                    <div key={category}>
-                      <p className="mt-1 mb-0.5 text-[9px] font-semibold uppercase tracking-wider text-wh-text-secondary/50">
-                        {CATEGORY_LABELS[category] ?? category}
-                      </p>
-                      {items.map((entry) => {
-                        const hidden = filter.hiddenTypes.has(entry.key);
-                        return (
-                          <button
-                            key={entry.key}
-                            onClick={() => onToggleType(entry.key)}
-                            className={`flex w-full items-center gap-2 rounded px-1.5 py-0.5 text-left transition-opacity ${
-                              hidden ? 'opacity-30' : 'opacity-100 hover:bg-wh-border/30'
-                            }`}
-                          >
-                            <ShapeIcon shape={entry.shape} colour={entry.hex} size={12} />
-                            <span className="flex-1 text-[11px] text-wh-text-primary">{entry.label}</span>
-                            <span className="text-[9px] text-wh-text-secondary/40">{entry.count}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
             {/* Jurisdiction */}
             <div className="border-b border-wh-border/50">
               <SectionHeader
@@ -351,6 +343,43 @@ export default function FilterPanel({
                       active={filter.jurisdiction === key}
                       onClick={() => onSetJurisdiction(filter.jurisdiction === key ? null : key)}
                     />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Types (legend) — selecting a type shows only that type */}
+            <div className="border-b border-wh-border/50">
+              <SectionHeader
+                label="Types"
+                badge={filter.hiddenTypes.size > 0 ? `${allTypeKeys.length - filter.hiddenTypes.size} shown` : null}
+                open={openSections.has('types')}
+                onToggle={() => toggle('types')}
+              />
+              {openSections.has('types') && (
+                <div className="px-3 pb-2">
+                  {Object.entries(legendGrouped).map(([category, items]) => (
+                    <div key={category}>
+                      <p className="mt-1 mb-0.5 text-[9px] font-semibold uppercase tracking-wider text-wh-text-secondary/50">
+                        {CATEGORY_LABELS[category] ?? category}
+                      </p>
+                      {items.map((entry) => {
+                        const active = !filter.hiddenTypes.has(entry.key);
+                        return (
+                          <button
+                            key={entry.key}
+                            onClick={() => handleTypeClick(entry.key)}
+                            className={`flex w-full items-center gap-2 rounded px-1.5 py-0.5 text-left transition-opacity ${
+                              active ? 'opacity-100 hover:bg-wh-border/30' : 'opacity-30'
+                            }`}
+                          >
+                            <ShapeIcon shape={entry.shape} colour={entry.hex} size={12} />
+                            <span className="flex-1 text-[11px] text-wh-text-primary">{entry.label}</span>
+                            <span className="text-[9px] text-wh-text-secondary/40">{entry.count}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   ))}
                 </div>
               )}
