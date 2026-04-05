@@ -109,28 +109,31 @@ export default function EntityGraph({
       }
     });
 
+    // Resize observer — refit when the container changes size
+    // (e.g. sidebar or intelligence panel toggled).
+    let prevW = containerRef.current.clientWidth;
+    let prevH = containerRef.current.clientHeight;
+    const ro = new ResizeObserver(() => {
+      const w = containerRef.current?.clientWidth ?? 0;
+      const h = containerRef.current?.clientHeight ?? 0;
+      // Only refit when the size actually changes, not on every observer fire.
+      if (w !== prevW || h !== prevH) {
+        prevW = w;
+        prevH = h;
+        cy.resize();
+        cy.fit(undefined, 40);
+      }
+    });
+    ro.observe(containerRef.current);
+
     return () => {
+      ro.disconnect();
       cy.destroy();
       cyRef.current = null;
     };
     // We only re-initialise when elements or layout change.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [elements, layout, minZoom, maxZoom]);
-
-  // -----------------------------------------------------------------------
-  // Resize observer — refit Cytoscape when the container changes size
-  // (e.g. sidebar or feed panel toggled).
-  // -----------------------------------------------------------------------
-  useEffect(() => {
-    if (!cyRef.current || !containerRef.current) return;
-    const cy = cyRef.current;
-    const ro = new ResizeObserver(() => {
-      cy.resize();
-      cy.fit(undefined, 40);
-    });
-    ro.observe(containerRef.current);
-    return () => ro.disconnect();
-  });
 
   return (
     <div
