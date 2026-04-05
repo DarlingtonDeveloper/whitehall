@@ -4,27 +4,16 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import ClientSwitcher from '@/components/client/ClientSwitcher';
 import ThemeToggle from './ThemeToggle';
+import { usePanelStore, toggleSidebar, toggleFeed } from '@/lib/panelStore';
 
 interface NavBarProps {
   onChatToggle: () => void;
   isChatOpen: boolean;
-  isSidebarOpen: boolean;
-  onSidebarToggle: () => void;
-  isFeedOpen: boolean;
-  onFeedToggle: () => void;
-  showPanelToggles: boolean;
 }
 
-export default function NavBar({
-  onChatToggle,
-  isChatOpen,
-  isSidebarOpen,
-  onSidebarToggle,
-  isFeedOpen,
-  onFeedToggle,
-  showPanelToggles,
-}: NavBarProps) {
+export default function NavBar({ onChatToggle, isChatOpen }: NavBarProps) {
   const pathname = usePathname();
+  const panels = usePanelStore();
 
   const isOnPulse = pathname === '/';
   const isOnClient = pathname.startsWith('/client/');
@@ -66,24 +55,22 @@ export default function NavBar({
 
       {/* Right: Panel toggles + Client Switcher + Theme + Chat */}
       <div className="ml-auto flex items-center gap-1.5">
-        {showPanelToggles && (
+        {isOnPulse && (
           <>
             <IconToggle
-              isActive={isSidebarOpen}
-              onClick={onSidebarToggle}
+              isActive={panels.sidebar}
+              onClick={toggleSidebar}
               label="Toggle sidebar"
             >
-              {/* Sidebar icon */}
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25H12" />
               </svg>
             </IconToggle>
             <IconToggle
-              isActive={isFeedOpen}
-              onClick={onFeedToggle}
+              isActive={panels.feed}
+              onClick={toggleFeed}
               label="Toggle activity feed"
             >
-              {/* Feed/newspaper icon */}
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 0 1-2.25 2.25M16.5 7.5V18a2.25 2.25 0 0 0 2.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 0 0 2.25 2.25h13.5M6 7.5h3v3H6v-3Z" />
               </svg>
