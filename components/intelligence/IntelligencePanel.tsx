@@ -42,9 +42,31 @@ function nextId() {
 /*  Component                                                                 */
 /* -------------------------------------------------------------------------- */
 
+const PANEL_KEY = 'wh-intel-unlocked';
+
+function useGate(): [boolean, (pw: string) => boolean] {
+  const [unlocked, setUnlocked] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return sessionStorage.getItem(PANEL_KEY) === '1';
+  });
+  const tryUnlock = useCallback((pw: string) => {
+    if (pw === 'wa') {
+      sessionStorage.setItem(PANEL_KEY, '1');
+      setUnlocked(true);
+      return true;
+    }
+    return false;
+  }, []);
+  return [unlocked, tryUnlock];
+}
+
 export default function IntelligencePanel() {
+  const [unlocked, tryUnlock] = useGate();
+  const [gatePw, setGatePw] = useState('');
+  const [gateError, setGateError] = useState(false);
+
   const { selectedEntityId, selectedClientId } = usePanelStore();
-  const [activeTab, setActiveTab] = useState<Tab>('feed');
+  const [activeTab, setActiveTab] = useState<Tab>('chat');
 
   // Chat state
   const [messages, setMessages] = useState<Message[]>([]);
@@ -198,6 +220,51 @@ export default function IntelligencePanel() {
   );
 
   const hasMessages = messages.length > 0;
+
+  if (!unlocked) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-4 px-6">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-wh-border/50">
+          <svg className="h-5 w-5 text-wh-text-secondary/60" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+          </svg>
+        </div>
+        <div className="text-center">
+          <p className="text-sm font-medium text-wh-text-primary">Intelligence Locked</p>
+          <p className="mt-1 text-xs text-wh-text-secondary">Enter password to access</p>
+        </div>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            if (!tryUnlock(gatePw)) {
+              setGateError(true);
+              setTimeout(() => setGateError(false), 1500);
+            }
+          }}
+          className="flex w-full max-w-[200px] flex-col gap-2"
+        >
+          <input
+            type="password"
+            value={gatePw}
+            onChange={(e) => setGatePw(e.target.value)}
+            placeholder="Password"
+            autoFocus
+            className={`w-full rounded-lg border bg-wh-panel px-3 py-2 text-center text-sm text-wh-text-primary placeholder:text-wh-text-secondary/40 outline-none transition-colors ${
+              gateError
+                ? 'border-red-500/60 shake'
+                : 'border-wh-border focus:border-wh-accent-teal/50'
+            }`}
+          />
+          <button
+            type="submit"
+            className="rounded-lg bg-wh-accent-teal/15 px-3 py-1.5 text-xs font-medium text-wh-accent-teal transition-colors hover:bg-wh-accent-teal/25"
+          >
+            Unlock
+          </button>
+        </form>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full flex-col">
