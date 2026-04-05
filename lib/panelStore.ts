@@ -7,14 +7,16 @@
 import { useSyncExternalStore } from 'react';
 
 interface PanelState {
-  sidebar: boolean;
+  entityPanel: boolean;
+  legend: boolean;
   intelligence: boolean;
   selectedEntityId: string | null;
   selectedClientId: string | null;
 }
 
 const DEFAULT: PanelState = {
-  sidebar: true,
+  entityPanel: true,
+  legend: true,
   intelligence: true,
   selectedEntityId: null,
   selectedClientId: null,
@@ -27,8 +29,13 @@ function emit() {
   listeners.forEach((fn) => fn());
 }
 
-export function toggleSidebar() {
-  state = { ...state, sidebar: !state.sidebar };
+export function toggleEntityPanel() {
+  state = { ...state, entityPanel: !state.entityPanel };
+  emit();
+}
+
+export function toggleLegend() {
+  state = { ...state, legend: !state.legend };
   emit();
 }
 

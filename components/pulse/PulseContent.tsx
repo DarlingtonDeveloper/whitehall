@@ -72,8 +72,8 @@ export default function PulseContent() {
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 overflow-hidden">
-      {/* Left panel: Entity detail (when selected) */}
-      {entityData && (
+      {/* Left panel: Entity detail (when selected and toggled on) */}
+      {entityData && panels.entityPanel && (
         <div className="flex w-96 shrink-0 flex-col border-r border-wh-border bg-wh-panel">
           <div className="flex shrink-0 items-center justify-end border-b border-wh-border px-3 py-1.5">
             <button
@@ -98,7 +98,7 @@ export default function PulseContent() {
       {/* Graph area with floating filter panel */}
       <div className="relative min-w-0 flex-1">
         <PulseView filter={effectiveGraphFilter} />
-        {panels.sidebar && (
+        {panels.legend && (
           <FilterPanel
             filter={filter}
             onSearch={setSearch}

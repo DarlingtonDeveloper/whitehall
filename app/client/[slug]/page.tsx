@@ -72,9 +72,7 @@ export default async function ClientPage({
           {/* Right: Intelligence feed */}
           <div className="flex w-80 shrink-0 flex-col border-l border-wh-border bg-wh-panel">
             <FeedPanel
-              title="Intelligence Feed"
               clientId={slug}
-              entityName={client.name}
             />
           </div>
         </div>

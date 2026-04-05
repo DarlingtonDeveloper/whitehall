@@ -45,9 +45,7 @@ export default async function EntityPage({
         {/* Right panel (40%): Feed + chat */}
         <div className="flex w-[400px] shrink-0 flex-col border-l border-wh-border bg-wh-panel">
           <FeedPanel
-            title="Entity Feed"
             entityId={entity.id}
-            entityName={entity.name}
           />
         </div>
       </div>
