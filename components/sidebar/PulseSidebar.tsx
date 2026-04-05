@@ -14,6 +14,7 @@ interface PulseSidebarProps {
   onToggleTag: (tagId: string) => void;
   onSetJurisdiction: (j: string | null) => void;
   visibleCount: number;
+  onCollapse: () => void;
 }
 
 export default function PulseSidebar({
@@ -22,6 +23,7 @@ export default function PulseSidebar({
   onToggleTag,
   onSetJurisdiction,
   visibleCount,
+  onCollapse,
 }: PulseSidebarProps) {
   const [expandedSection, setExpandedSection] = useState<'tags' | 'entities' | null>('entities');
 
@@ -71,39 +73,51 @@ export default function PulseSidebar({
 
   return (
     <div className="flex h-full w-72 shrink-0 flex-col border-r border-wh-border bg-wh-panel">
-      {/* Search */}
+      {/* Search + close button */}
       <div className="shrink-0 border-b border-wh-border p-3">
-        <div className="flex items-center gap-2 rounded-md border border-wh-border bg-wh-bg px-2.5 py-1.5">
-          <svg
-            className="h-3.5 w-3.5 shrink-0 text-wh-text-secondary/40"
-            fill="none"
-            viewBox="0 0 24 24"
-            strokeWidth={1.5}
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
-            />
-          </svg>
-          <input
-            type="text"
-            value={filter.search}
-            onChange={(e) => onSearch(e.target.value)}
-            placeholder="Search entities..."
-            className="w-full bg-transparent text-xs text-wh-text-primary placeholder:text-wh-text-secondary/40 outline-none"
-          />
-          {filter.search && (
-            <button
-              onClick={() => onSearch('')}
-              className="text-wh-text-secondary/40 hover:text-wh-text-primary"
+        <div className="flex items-center gap-2">
+          <div className="flex flex-1 items-center gap-2 rounded-md border border-wh-border bg-wh-bg px-2.5 py-1.5">
+            <svg
+              className="h-3.5 w-3.5 shrink-0 text-wh-text-secondary/40"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
             >
-              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-              </svg>
-            </button>
-          )}
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+              />
+            </svg>
+            <input
+              type="text"
+              value={filter.search}
+              onChange={(e) => onSearch(e.target.value)}
+              placeholder="Search entities..."
+              className="w-full bg-transparent text-xs text-wh-text-primary placeholder:text-wh-text-secondary/40 outline-none"
+            />
+            {filter.search && (
+              <button
+                onClick={() => onSearch('')}
+                className="text-wh-text-secondary/40 hover:text-wh-text-primary"
+              >
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+          <button
+            onClick={onCollapse}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-wh-text-secondary/40 hover:bg-wh-border/40 hover:text-wh-text-secondary"
+            aria-label="Close sidebar"
+            title="Close sidebar"
+          >
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M15.75 19.5 8.25 12l7.5-7.5" />
+            </svg>
+          </button>
         </div>
         <p className="mt-1.5 text-[10px] text-wh-text-secondary/50">
           {visibleCount} of {ENTITY_LIST.length} entities visible

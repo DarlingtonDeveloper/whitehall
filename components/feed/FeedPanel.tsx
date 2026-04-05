@@ -83,14 +83,16 @@ export default function FeedPanel({
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
-      <div className="shrink-0 border-b border-wh-border px-4 py-3">
-        <h2 className="text-xs font-semibold uppercase tracking-wider text-wh-text-secondary">
-          {title}
-        </h2>
-        <p className="mt-0.5 text-[10px] text-wh-text-secondary/50">
-          {loading ? 'Loading...' : `${items.length} items`}
-        </p>
-      </div>
+      {title && (
+        <div className="shrink-0 border-b border-wh-border px-4 py-3">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-wh-text-secondary">
+            {title}
+          </h2>
+          <p className="mt-0.5 text-[10px] text-wh-text-secondary/50">
+            {loading ? 'Loading...' : `${items.length} items`}
+          </p>
+        </div>
+      )}
 
       {/* Scrollable feed list */}
       <div className="flex-1 overflow-y-auto">
