@@ -11,8 +11,13 @@ interface ChatMessageProps {
 }
 
 /**
- * Build a sorted list of entity names for matching (longest first to avoid
- * partial matches, e.g. "Home Office" before "Home").
+ * Build a sorted list of entity names for matching, sorted longest-first.
+ *
+ * DELIBERATE: longest-first ordering prevents partial matches from consuming
+ * substrings of longer names. Without this, "Home" would match before
+ * "Home Office", "Secretary of State" before "Secretary of State for Energy
+ * Security and Net Zero", etc. The 300+ entity dataset includes many nested
+ * names, so greedy shortest-first matching would produce incorrect highlights.
  */
 const ENTITY_NAMES = ENTITY_LIST.map((e) => ({
   id: e.id,

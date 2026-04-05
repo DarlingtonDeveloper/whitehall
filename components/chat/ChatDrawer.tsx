@@ -163,7 +163,8 @@ export default function ChatDrawer({
           if (done) break;
           accumulated += decoder.decode(value, { stream: true });
 
-          // Parse and dispatch graph commands
+          // DELIBERATE: See IntelligencePanel.tsx for why graph commands are
+          // embedded as HTML comment markers in the text stream.
           const cmdRegex = /<!--GRAPH_CMD:(.*?)-->/g;
           let cmdMatch;
           while ((cmdMatch = cmdRegex.exec(accumulated)) !== null) {

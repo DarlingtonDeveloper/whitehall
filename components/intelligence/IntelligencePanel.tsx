@@ -146,7 +146,13 @@ export default function IntelligencePanel() {
           if (done) break;
           accumulated += decoder.decode(value, { stream: true });
 
-          // Parse and dispatch graph commands embedded as <!--GRAPH_CMD:{...}-->
+          // DELIBERATE: Graph commands are embedded as HTML comment markers
+          // (<!--GRAPH_CMD:{json}-->) in the text stream rather than a separate
+          // sideband. Three reasons: (1) streamText returns a single text
+          // stream with no built-in metadata channel, (2) HTML comments are
+          // invisible if accidentally rendered as markdown, and (3) they can be
+          // emitted mid-stream so the graph reacts before the full response
+          // completes. The client strips these markers before display.
           const cmdRegex = /<!--GRAPH_CMD:(.*?)-->/g;
           let cmdMatch;
           while ((cmdMatch = cmdRegex.exec(accumulated)) !== null) {

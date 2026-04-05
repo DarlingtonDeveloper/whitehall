@@ -9,10 +9,19 @@ import type { ClientConfig } from '@/types/client';
 import type { FeedItem } from '@/types/feed';
 
 /**
- * Two-query merge strategy: first query matches by entity overlap with
- * stakeholder IDs, second matches by keyword in title. Results are merged
- * and deduplicated by id. This mirrors the monitoring agent's two-pass
- * collection approach — cast a wide net, then filter in groupByTheme.
+ * Two-query merge strategy for feed filtering.
+ *
+ * DELIBERATE: We run two separate Supabase queries instead of one complex
+ * OR filter because Supabase's PostgREST does not support combining
+ * array-overlap (entity_ids && stakeholderIds) with OR'd ilike patterns
+ * in a single query. Merging client-side with deduplication by id gives
+ * us the union of both result sets without false negatives.
+ *
+ * Query 1 catches items tagged with stakeholder entity IDs (structural match).
+ * Query 2 catches items whose titles contain client keywords (textual match).
+ * Items that match both appear once after dedup. This mirrors the monitoring
+ * agent's two-pass collection approach — cast a wide net, then filter
+ * downstream in groupByTheme.
  */
 export async function gatherItems(
   client: ClientConfig,

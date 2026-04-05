@@ -3,6 +3,14 @@ import type { FeedItem } from '@/types/feed';
 /**
  * Compute a recency-weighted pulse score for an entity based on feed activity
  * in the last 7 days.  More recent items contribute more.
+ *
+ * Scoring formula: sum of 1/max(hoursAgo, 1) for each matching item.
+ * This is a deliberate inverse-recency weighting: an item published 1 hour
+ * ago contributes 1.0, an item from 24 hours ago contributes ~0.04.
+ * The result is that a single very recent item scores higher than many
+ * old items — which correctly models "pulse" as current activity rather
+ * than historical volume. The floor of max(hoursAgo, 1) prevents division
+ * by zero and caps any single item's contribution at 1.0.
  */
 export function computePulseScore(
   entityId: string,
