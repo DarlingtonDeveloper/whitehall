@@ -6,6 +6,7 @@ import type { ElementDefinition } from 'cytoscape';
 
 import { ENTITIES } from '@/data/entities';
 import { getEntityColour } from '@/data/colours';
+import { getNodeShape } from '@/lib/graph/shapes';
 import { getClientBySlug } from '@/data/clients';
 import { getPulseLevel } from '@/lib/graph/pulse';
 import type { Stakeholder } from '@/types/client';
@@ -186,6 +187,9 @@ function buildConstellationElements(
         id: p.entity.id,
         label: p.entity.name,
         colour: getEntityColour(p.entity.category, p.entity.subtype),
+        shape: getNodeShape(p.entity.category, p.entity.subtype),
+        category: p.entity.category,
+        subtype: p.entity.subtype,
       },
       position: { x: p.x, y: p.y },
       classes: pulseClass,

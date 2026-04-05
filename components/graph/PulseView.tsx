@@ -6,10 +6,12 @@ import type { ElementDefinition } from 'cytoscape';
 
 import { ENTITY_LIST } from '@/data/entities';
 import { getEntityColour } from '@/data/colours';
+import { getNodeShape } from '@/lib/graph/shapes';
 import { LAYOUT } from '@/lib/graph/layout';
 import { computePulseScore, getPulseLevel } from '@/lib/graph/pulse';
 import { supabase } from '@/lib/db';
 import type { FeedItem } from '@/types/feed';
+import type { GraphFilter } from '@/components/sidebar/types';
 import EntityGraph from './EntityGraph';
 import GraphTooltip from './GraphTooltip';
 
@@ -17,26 +19,42 @@ import GraphTooltip from './GraphTooltip';
 // Build Cytoscape elements from the full entity set + pre-computed layout.
 // ---------------------------------------------------------------------------
 
-function buildElements(pulseScores: Map<string, number>): ElementDefinition[] {
+function buildElements(
+  pulseScores: Map<string, number>,
+  filter: GraphFilter,
+): ElementDefinition[] {
   const nodes: ElementDefinition[] = [];
   const edges: ElementDefinition[] = [];
+  const visibleIds = new Set<string>();
 
   for (const entity of ENTITY_LIST) {
     const pos = LAYOUT.positions.get(entity.id);
-    if (!pos) continue; // skip entities that weren't laid out
+    if (!pos) continue;
 
     const score = pulseScores.get(entity.id) ?? 0;
     const level = getPulseLevel(score);
     const pulseClass = level === 'none' ? '' : `pulse-${level}`;
+
+    // Determine if entity passes filters
+    const isVisible = filter.isVisible(entity);
+    if (isVisible) visibleIds.add(entity.id);
+
+    const classes = [
+      pulseClass,
+      !isVisible ? 'filtered-out' : '',
+    ].filter(Boolean).join(' ');
 
     nodes.push({
       data: {
         id: entity.id,
         label: entity.name,
         colour: getEntityColour(entity.category, entity.subtype),
+        shape: getNodeShape(entity.category, entity.subtype),
+        category: entity.category,
+        subtype: entity.subtype,
       },
       position: { x: pos.x, y: pos.y },
-      classes: pulseClass,
+      classes,
     });
 
     // Primary parent edges
@@ -75,7 +93,11 @@ function buildElements(pulseScores: Map<string, number>): ElementDefinition[] {
 // Component
 // ---------------------------------------------------------------------------
 
-export default function PulseView() {
+interface PulseViewProps {
+  filter: GraphFilter;
+}
+
+export default function PulseView({ filter }: PulseViewProps) {
   const router = useRouter();
   const [hoveredEntity, setHoveredEntity] = useState<string | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
@@ -103,7 +125,10 @@ export default function PulseView() {
     return scores;
   }, [feedItems]);
 
-  const elements = useMemo(() => buildElements(pulseScores), [pulseScores]);
+  const elements = useMemo(
+    () => buildElements(pulseScores, filter),
+    [pulseScores, filter],
+  );
 
   const handleNodeClick = useCallback(
     (entityId: string) => {
@@ -116,7 +141,6 @@ export default function PulseView() {
     setHoveredEntity(entityId);
   }, []);
 
-  // Track the mouse to position the tooltip.
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
       if (hoveredEntity) {

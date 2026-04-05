@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import ClientSwitcher from '@/components/client/ClientSwitcher';
+import ThemeToggle from './ThemeToggle';
 
 interface NavBarProps {
   onChatToggle: () => void;
@@ -51,9 +52,10 @@ export default function NavBar({ onChatToggle, isChatOpen }: NavBarProps) {
         </NavLink>
       </nav>
 
-      {/* Right: Client Switcher + Chat */}
-      <div className="ml-auto flex items-center gap-3">
+      {/* Right: Client Switcher + Theme + Chat */}
+      <div className="ml-auto flex items-center gap-2">
         <ClientSwitcher />
+        <ThemeToggle />
         <ChatToggle isActive={isChatOpen} onClick={onChatToggle} />
       </div>
     </header>

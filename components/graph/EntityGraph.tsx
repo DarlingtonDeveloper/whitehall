@@ -71,6 +71,9 @@ export default function EntityGraph({
     // ----- Node hover: add/remove hover + show-label classes -----
     cy.on('mouseover', 'node', (evt) => {
       const node = evt.target;
+      // Skip interaction on filtered-out nodes
+      if (node.hasClass('filtered-out')) return;
+
       node.addClass('hover show-label');
 
       // Highlight connected edges and dim the rest.

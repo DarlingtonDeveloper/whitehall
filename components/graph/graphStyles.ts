@@ -10,6 +10,14 @@ export const graphStyles: StylesheetStyle[] = [
       'background-color': '#95a5a6',
       'border-width': 0,
       'label': '',
+      'shape': 'ellipse',
+    },
+  },
+  // Node shapes from data attribute
+  {
+    selector: 'node[shape]',
+    style: {
+      'shape': 'data(shape)' as any,
     },
   },
   // Labelled nodes (when zoomed or hovered)
@@ -83,6 +91,17 @@ export const graphStyles: StylesheetStyle[] = [
       'height': 14,
     },
   },
+  // Filtered-out nodes (hidden by sidebar/legend filters)
+  {
+    selector: 'node.filtered-out',
+    style: {
+      'opacity': 0.06,
+      'width': 4,
+      'height': 4,
+      'border-width': 0,
+      'label': '',
+    },
+  },
   // Edges
   {
     selector: 'edge',
@@ -117,6 +136,13 @@ export const graphStyles: StylesheetStyle[] = [
     selector: '.dimmed',
     style: {
       'opacity': 0.08,
+    },
+  },
+  // Edges connected to filtered-out nodes
+  {
+    selector: 'edge.edge-filtered',
+    style: {
+      'opacity': 0.03,
     },
   },
 ];

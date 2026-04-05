@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
-:root {
+/* Dark mode (default) */
+:root,
+.dark {
   --wh-bg: #0a0a0f;
   --wh-panel: #12121a;
   --wh-border: #1e1e2e;
@@ -8,6 +10,23 @@
   --wh-accent-amber: #f59e0b;
   --wh-text-primary: #e2e8f0;
   --wh-text-secondary: #94a3b8;
+  --wh-graph-bg: #0a0a0f;
+  --wh-graph-label: #e2e8f0;
+  --wh-graph-label-outline: #0a0a0f;
+}
+
+/* Light mode */
+.light {
+  --wh-bg: #f8f9fa;
+  --wh-panel: #ffffff;
+  --wh-border: #e2e5ea;
+  --wh-accent-teal: #0d9488;
+  --wh-accent-amber: #d97706;
+  --wh-text-primary: #1a1a2e;
+  --wh-text-secondary: #64748b;
+  --wh-graph-bg: #f0f2f5;
+  --wh-graph-label: #1a1a2e;
+  --wh-graph-label-outline: #f0f2f5;
 }
 
 @theme inline {
@@ -108,7 +127,7 @@ body {
   scrollbar-width: none;
 }
 
-/* Scrollbar styling for the dark theme */
+/* Scrollbar styling */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -125,4 +144,12 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--wh-text-secondary);
+}
+
+/* Smooth theme transitions */
+body,
+header,
+.bg-wh-panel,
+.bg-wh-bg {
+  transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
 }
