@@ -11,6 +11,7 @@ import {
   type ThemeEntry,
 } from '@/lib/clientOverrides';
 import ExportButton from '@/components/export/ExportButton';
+import ClientHealthDashboard from './ClientHealthDashboard';
 import type { ReportStatus } from '@/types/report';
 
 /* ------------------------------------------------------------------ */
@@ -66,6 +67,9 @@ export default function ClientPanel({ client }: { client: ClientConfig }) {
           <ReportListButton clientId={client.id} />
         </div>
       </div>
+
+      {/* Health dashboard */}
+      <ClientHealthDashboard client={client} />
 
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto overscroll-contain">
