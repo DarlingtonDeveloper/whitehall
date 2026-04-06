@@ -3,7 +3,8 @@
 import { useMemo, useState, useCallback, useRef, useEffect, type KeyboardEvent } from 'react';
 import type { ClientConfig } from '@/types/client';
 import { getEntity } from '@/data/entities';
-import { selectEntity, selectClient, usePanelStore, toggleSource } from '@/lib/panelStore';
+import { selectEntity, selectClient, usePanelStore, toggleSource, openIntelligence } from '@/lib/panelStore';
+import { dispatchChatAction } from '@/lib/chatActions';
 import {
   useClientOverrides,
   type KeywordField,
@@ -205,9 +206,28 @@ export default function ClientPanel({ client }: { client: ClientConfig }) {
       </div>
 
       {/* Fixed bottom bar — actions */}
-      <div className="shrink-0 border-t border-wh-border px-3 py-2.5 space-y-2">
-        <ExportButton clientId={client.id} />
-        <ReportListButton clientId={client.id} />
+      <div className="shrink-0 border-t border-wh-border px-3 py-2.5">
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => {
+              openIntelligence();
+              dispatchChatAction({
+                message:
+                  'Give me a brief intelligence summary for this week. What are the most important developments, any deadlines approaching, and what should we be paying attention to? Be concise — bullet the key items with dates and action needed.',
+              });
+            }}
+            className="flex items-center gap-1.5 rounded-lg border border-wh-border px-3 py-1.5 text-xs font-medium
+                       text-wh-text-primary hover:border-wh-accent-teal transition-colors"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            </svg>
+            Morning briefing
+          </button>
+          <ExportButton clientId={client.id} />
+          <ReportListButton clientId={client.id} />
+        </div>
       </div>
     </div>
   );
