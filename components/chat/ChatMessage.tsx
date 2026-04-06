@@ -29,11 +29,34 @@ const ENTITY_NAMES = ENTITY_LIST.map((e) => ({
  * Parse a message string into an array of React nodes with basic
  * markdown-like formatting and entity name highlighting.
  */
+/**
+ * Rejoin lines that were split mid-markdown-link.
+ *
+ * The AI often wraps long links across multiple lines, e.g.:
+ *   [The Carbon Capture\nRegulations 2026]\n(http://…)
+ *
+ * This collapses continuation lines back into the line that opened
+ * the bracket/parenthesis so `formatInline` sees the full pattern.
+ */
+function rejoinWrappedLinks(text: string): string {
+  // Use [\s\S] instead of . with /s flag (ES2017 target doesn't support /s)
+  return text.replace(
+    /\[([^\]]*)\][\s]*\(([^)]*)\)/g,
+    (_match: string, linkText: string, url: string) => {
+      // Collapse newlines in link text to spaces, in URL to nothing
+      const cleanText = linkText.replace(/\s*\n\s*/g, ' ');
+      const cleanUrl = url.replace(/\s*\n\s*/g, '');
+      return `[${cleanText}](${cleanUrl})`;
+    },
+  );
+}
+
 function parseContent(raw: string): React.ReactNode[] {
   if (typeof window !== 'undefined') {
     console.log('[ChatMessage] raw content:', raw.slice(0, 500));
   }
-  const lines = raw.split('\n');
+  const joined = rejoinWrappedLinks(raw);
+  const lines = joined.split('\n');
   const nodes: React.ReactNode[] = [];
 
   for (let i = 0; i < lines.length; i++) {
