@@ -10,6 +10,7 @@ import type { ClientConfig } from '@/types/client';
 import type { FeedItem } from '@/types/feed';
 import type { AnalysisJSON } from './types';
 import { buildThemePrompt, buildSynthesisPrompt } from './prompts';
+import { logTrace, withTiming } from '@/lib/observability/opik';
 
 function formatDate(d: Date): string {
   return d.toLocaleDateString('en-GB', {
@@ -70,11 +71,34 @@ export async function enrichItems(
       theme.sectionNumber,
     );
 
-    const { text } = await generateText({
-      model: anthropic('claude-sonnet-4-20250514'),
-      maxOutputTokens: 4096,
+    const { result: genResult, duration_ms } = await withTiming(() =>
+      generateText({
+        model: anthropic('claude-sonnet-4-20250514'),
+        maxOutputTokens: 4096,
+        prompt,
+      }),
+    );
+
+    const { text } = genResult;
+
+    // Log trace for observability
+    await logTrace(
+      {
+        client_id: client.id,
+        theme_id: theme.id,
+        step: 'theme_analysis',
+        model: 'claude-sonnet-4-20250514',
+        items_count: items.length,
+      },
       prompt,
-    });
+      text,
+      undefined,
+      {
+        input_tokens: genResult.usage?.inputTokens ?? 0,
+        output_tokens: genResult.usage?.outputTokens ?? 0,
+        duration_ms,
+      },
+    );
 
     return {
       themeId: theme.id,
@@ -114,11 +138,32 @@ export async function enrichItems(
     reportingPeriod,
   );
 
-  const { text: synthesisText } = await generateText({
-    model: anthropic('claude-sonnet-4-20250514'),
-    maxOutputTokens: 4096,
-    prompt: synthesisPrompt,
-  });
+  const { result: synthesisResult, duration_ms: synthDuration } = await withTiming(() =>
+    generateText({
+      model: anthropic('claude-sonnet-4-20250514'),
+      maxOutputTokens: 4096,
+      prompt: synthesisPrompt,
+    }),
+  );
+
+  const { text: synthesisText } = synthesisResult;
+
+  await logTrace(
+    {
+      client_id: client.id,
+      step: 'synthesis',
+      model: 'claude-sonnet-4-20250514',
+      items_count: allItems.length,
+    },
+    synthesisPrompt,
+    synthesisText,
+    undefined,
+    {
+      input_tokens: synthesisResult.usage?.inputTokens ?? 0,
+      output_tokens: synthesisResult.usage?.outputTokens ?? 0,
+      duration_ms: synthDuration,
+    },
+  );
 
   const synthesis = parseJsonResponse(synthesisText, {
     executive_summary: { top_line: '', key_developments: [] },

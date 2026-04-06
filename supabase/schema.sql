@@ -145,3 +145,30 @@ CREATE TABLE IF NOT EXISTS client_learned_signals (
   rag_adjustments     JSONB DEFAULT '{}',
   computed_at         TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- ============================================================================
+-- Pipeline observability
+-- ============================================================================
+
+-- Structured traces for every Claude call in the report pipeline.
+-- Replaces the monitoring agent's Opik @track decorators with a Supabase-
+-- native approach. Optionally forwarded to Opik REST API when configured.
+CREATE TABLE IF NOT EXISTS pipeline_traces (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id           TEXT NOT NULL,
+  report_id           TEXT,
+  theme_id            TEXT,
+  step                TEXT NOT NULL,
+  model               TEXT NOT NULL,
+  items_count         INTEGER,
+  input_preview       TEXT,
+  output_preview      TEXT,
+  scores              JSONB,
+  input_tokens        INTEGER,
+  output_tokens       INTEGER,
+  duration_ms         INTEGER,
+  created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_pipeline_traces_client ON pipeline_traces (client_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_pipeline_traces_step ON pipeline_traces (step);

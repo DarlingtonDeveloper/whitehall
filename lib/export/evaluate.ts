@@ -5,9 +5,8 @@
 //   2. Factuality check (LLM-as-judge: is the summary grounded in sources?)
 //   3. Specificity check (LLM-as-judge: is client_relevance project-specific?)
 //
-// The monitoring agent uses Opik @track decorators on each evaluation
-// function. In the Next.js context we call Opik's Node SDK to log traces
-// so the same dashboard at localhost:5173 shows report quality scores.
+// Traces are logged to Supabase pipeline_traces and optionally forwarded
+// to Opik REST API (matching the monitoring agent's @track decorators).
 // ---------------------------------------------------------------------------
 
 import { generateText } from 'ai';
@@ -15,6 +14,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 import type { ClientConfig } from '@/types/client';
 import type { FeedItem } from '@/types/feed';
 import type { AnalysisJSON, AnalysedItem, ThemeSection } from './types';
+import { logTrace, withTiming } from '@/lib/observability/opik';
 
 // ---------------------------------------------------------------------------
 // 1. Template validator — ~30 deterministic checks matching
@@ -377,6 +377,18 @@ export async function evaluateReport(
   const flagged_refs = [
     ...new Set([...factuality.flagged_items, ...specificity.flagged_items]),
   ];
+
+  // Log evaluation scores for observability
+  await logTrace(
+    {
+      client_id: client.id,
+      step: 'factuality_eval',
+      model: 'claude-sonnet-4-20250514',
+    },
+    `Evaluated ${factuality.total_checked} items`,
+    `Mean: ${factuality.mean_score}, Flagged: ${factuality.flagged_items.join(', ')}`,
+    { factuality: factuality.mean_score, specificity: specificity.mean_score },
+  );
 
   return {
     template_validation: { passed: errors.length === 0, errors, warnings },
