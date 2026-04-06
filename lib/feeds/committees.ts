@@ -62,7 +62,7 @@ export const COMMITTEES: CommitteeConfig[] = [
     url: 'https://committees.parliament.uk/committee/62/environmental-audit-committee/',
     keywords: ['energy', 'climate', 'environment', 'biodiversity', 'carbon',
       'emissions', 'green', 'sustainability'],
-    defaultEntityIds: ['defra', 'desnz'],
+    defaultEntityIds: ['defra'],
     sector: 'energy',
   },
   {
@@ -86,7 +86,7 @@ export const COMMITTEES: CommitteeConfig[] = [
     url: 'https://committees.parliament.uk/committee/517/industry-and-regulators-committee/',
     keywords: ['energy', 'regulation', 'ofgem', 'industry', 'infrastructure',
       'investment', 'utilities'],
-    defaultEntityIds: ['desnz', 'ofgem'],
+    defaultEntityIds: [],
     sector: 'energy',
   },
   {
@@ -94,7 +94,7 @@ export const COMMITTEES: CommitteeConfig[] = [
     url: 'https://committees.parliament.uk/committee/46/welsh-affairs-committee/',
     keywords: ['energy', 'wind', 'wales', 'marine', 'port', 'freeport',
       'celtic sea', 'tidal'],
-    defaultEntityIds: ['desnz'],
+    defaultEntityIds: [],
     sector: 'energy',
   },
   {
@@ -102,7 +102,7 @@ export const COMMITTEES: CommitteeConfig[] = [
     url: 'https://committees.parliament.uk/committee/136/scottish-affairs-committee/',
     keywords: ['energy', 'wind', 'scotland', 'oil', 'gas', 'transition',
       'ScotWind', 'INTOG'],
-    defaultEntityIds: ['desnz'],
+    defaultEntityIds: [],
     sector: 'energy',
   },
 
@@ -112,7 +112,7 @@ export const COMMITTEES: CommitteeConfig[] = [
     url: 'https://committees.parliament.uk/committee/81/health-and-social-care-committee/',
     keywords: ['health', 'NHS', 'social care', 'medicine', 'pharmaceutical',
       'vaccine', 'workforce', 'mental health', 'waiting', 'patient safety'],
-    defaultEntityIds: ['dhsc', 'nhs-improve'],
+    defaultEntityIds: ['dhsc'],
     sector: 'health',
   },
   {
@@ -120,7 +120,7 @@ export const COMMITTEES: CommitteeConfig[] = [
     url: 'https://committees.parliament.uk/committee/193/science-and-technology-committee/',
     keywords: ['health', 'science', 'research', 'technology', 'clinical',
       'life sciences', 'genomics', 'AI', 'data'],
-    defaultEntityIds: ['dsit'],
+    defaultEntityIds: [],
     sector: 'health',
   },
 
@@ -130,7 +130,7 @@ export const COMMITTEES: CommitteeConfig[] = [
     url: 'https://committees.parliament.uk/committee/127/public-accounts-committee/',
     keywords: ['government', 'spending', 'value', 'audit', 'department',
       'efficiency', 'NHS', 'energy', 'defence', 'welfare'],
-    defaultEntityIds: ['treasury'],
+    defaultEntityIds: [],
     sector: 'general',
   },
   {

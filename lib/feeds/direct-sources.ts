@@ -61,7 +61,7 @@ export const DIRECT_SOURCES: DirectSourceConfig[] = [
     url: 'https://www.neso.energy/news-and-events',
     keywords: ['connection', 'ssep', 'spatial', 'reform', 'scenario', 'fes',
       'curtailment', 'constraint', 'balancing', 'pricing', 'pathfinder'],
-    defaultEntityIds: ['desnz'],
+    defaultEntityIds: ['neso'],
     sector: 'energy',
   },
   {
@@ -69,7 +69,7 @@ export const DIRECT_SOURCES: DirectSourceConfig[] = [
     url: 'https://www.thecrownestate.co.uk/news',
     keywords: ['offshore', 'leasing', 'seabed', 'wind', 'round', 'marine',
       'energy', 'partnership'],
-    defaultEntityIds: ['desnz'],
+    defaultEntityIds: ['crown-estate'],
     sector: 'energy',
   },
   {
@@ -77,7 +77,7 @@ export const DIRECT_SOURCES: DirectSourceConfig[] = [
     url: 'https://www.gbe.gov.uk/news-and-publications',
     keywords: ['investment', 'fund', 'community', 'supply chain', 'partnership',
       'clean energy', 'local power', 'announcement'],
-    defaultEntityIds: ['desnz'],
+    defaultEntityIds: ['gbe'],
     sector: 'energy',
   },
   {
@@ -85,7 +85,7 @@ export const DIRECT_SOURCES: DirectSourceConfig[] = [
     url: 'https://www.nstauthority.co.uk/news-publications/news/',
     keywords: ['carbon storage', 'licensing', 'CCS', 'CCUS', 'carbon capture',
       'storage licence', 'acreage', 'decommissioning'],
-    defaultEntityIds: ['desnz'],
+    defaultEntityIds: ['nsta'],
     sector: 'energy',
   },
   {
@@ -93,7 +93,7 @@ export const DIRECT_SOURCES: DirectSourceConfig[] = [
     url: 'https://www.renewableuk.com/news-and-resources/press-releases/',
     keywords: ['wind', 'offshore', 'onshore', 'energy', 'report', 'publication',
       'policy', 'planning', 'grid', 'deployment'],
-    defaultEntityIds: ['desnz'],
+    defaultEntityIds: [],
     sector: 'energy',
   },
   {
@@ -101,7 +101,7 @@ export const DIRECT_SOURCES: DirectSourceConfig[] = [
     url: 'https://www.energy-uk.org.uk/publications/',
     keywords: ['report', 'publication', 'scotland', 'wales', 'energy',
       'electricity', 'market', 'policy', 'vision', 'outlook'],
-    defaultEntityIds: ['desnz'],
+    defaultEntityIds: [],
     urlFilters: ['/publications/', '/insights/', '/reports/'],
     sector: 'energy',
   },
@@ -110,7 +110,7 @@ export const DIRECT_SOURCES: DirectSourceConfig[] = [
     url: 'https://oeuk.org.uk/category/news/',
     keywords: ['offshore', 'energy', 'oil', 'gas', 'ccus', 'hydrogen',
       'investment', 'workforce', 'supply chain'],
-    defaultEntityIds: ['desnz'],
+    defaultEntityIds: [],
     sector: 'energy',
   },
   {
@@ -118,7 +118,7 @@ export const DIRECT_SOURCES: DirectSourceConfig[] = [
     url: 'https://ore.catapult.org.uk/media-centre/press-releases',
     keywords: ['offshore', 'wind', 'innovation', 'technology', 'research',
       'supply chain', 'floating', 'testing'],
-    defaultEntityIds: ['desnz'],
+    defaultEntityIds: [],
     sector: 'energy',
   },
   {
@@ -126,7 +126,7 @@ export const DIRECT_SOURCES: DirectSourceConfig[] = [
     url: 'https://www.theccc.org.uk/news/',
     keywords: ['energy', 'emissions', 'carbon', 'progress', 'advice',
       'report', 'recommendation', 'adaptation'],
-    defaultEntityIds: ['defra', 'desnz'],
+    defaultEntityIds: ['ccc'],
     sector: 'energy',
   },
 
@@ -178,7 +178,7 @@ export const DIRECT_SOURCES: DirectSourceConfig[] = [
     url: 'https://www.nao.org.uk/reports/',
     keywords: ['report', 'investigation', 'value for money', 'audit',
       'government', 'spending', 'department', 'efficiency'],
-    defaultEntityIds: ['treasury'],
+    defaultEntityIds: ['nao'],
     sector: 'general',
   },
   {

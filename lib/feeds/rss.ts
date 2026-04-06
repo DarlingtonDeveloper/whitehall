@@ -48,43 +48,43 @@ export const RSS_FEEDS: RssFeedConfig[] = [
   {
     name: 'Recharge News',
     url: 'https://news.google.com/rss/search?q=site:rechargenews.com&hl=en-GB&gl=GB&ceid=GB:en',
-    defaultEntityIds: ['desnz'],
+    defaultEntityIds: [],
     sector: 'energy',
   },
   {
     name: 'Windpower Monthly',
     url: 'https://www.windpowermonthly.com/rss',
-    defaultEntityIds: ['desnz'],
+    defaultEntityIds: [],
     sector: 'energy',
   },
   {
     name: 'Current±',
     url: 'https://www.current-news.co.uk/feed/',
-    defaultEntityIds: ['desnz'],
+    defaultEntityIds: [],
     sector: 'energy',
   },
   {
     name: 'Utility Week',
     url: 'https://news.google.com/rss/search?q=site:utilityweek.co.uk&hl=en-GB&gl=GB&ceid=GB:en',
-    defaultEntityIds: ['desnz', 'ofgem'],
+    defaultEntityIds: [],
     sector: 'energy',
   },
   {
     name: 'New Power',
     url: 'https://www.newpower.info/feed/',
-    defaultEntityIds: ['desnz'],
+    defaultEntityIds: [],
     sector: 'energy',
   },
   {
     name: 'RenewableUK',
     url: 'https://news.google.com/rss/search?q=site:renewableuk.com&hl=en-GB&gl=GB&ceid=GB:en',
-    defaultEntityIds: ['desnz'],
+    defaultEntityIds: [],
     sector: 'energy',
   },
   {
     name: 'Energy UK',
     url: 'https://www.energy-uk.org.uk/feed/',
-    defaultEntityIds: ['desnz'],
+    defaultEntityIds: [],
     sector: 'energy',
   },
   {
@@ -96,7 +96,7 @@ export const RSS_FEEDS: RssFeedConfig[] = [
   {
     name: 'Climate Change Committee',
     url: 'https://www.theccc.org.uk/feed/',
-    defaultEntityIds: ['defra', 'desnz'],
+    defaultEntityIds: ['ccc'],
     sector: 'energy',
   },
 
@@ -116,25 +116,25 @@ export const RSS_FEEDS: RssFeedConfig[] = [
   {
     name: 'HSJ',
     url: 'https://www.hsj.co.uk/26024.rss',
-    defaultEntityIds: ['dhsc', 'nhs-improve'],
+    defaultEntityIds: [],
     sector: 'health',
   },
   {
     name: 'Pulse Today',
     url: 'https://www.pulsetoday.co.uk/feed/',
-    defaultEntityIds: ['dhsc', 'nhs-improve'],
+    defaultEntityIds: [],
     sector: 'health',
   },
   {
     name: 'PharmaTimes',
     url: 'https://www.pharmatimes.com/rss',
-    defaultEntityIds: ['mhra', 'dhsc'],
+    defaultEntityIds: [],
     sector: 'health',
   },
   {
     name: 'The BMJ News',
     url: 'https://news.google.com/rss/search?q=site:bmj.com&hl=en-GB&gl=GB&ceid=GB:en',
-    defaultEntityIds: ['dhsc'],
+    defaultEntityIds: [],
     sector: 'health',
   },
 
@@ -142,19 +142,19 @@ export const RSS_FEEDS: RssFeedConfig[] = [
   {
     name: 'Civil Service World',
     url: 'https://www.civilserviceworld.com/nocache/rss/articles',
-    defaultEntityIds: ['co'],
+    defaultEntityIds: [],
     sector: 'general',
   },
   {
     name: 'Public Finance',
     url: 'https://www.publicfinance.co.uk/rss.xml',
-    defaultEntityIds: ['treasury'],
+    defaultEntityIds: [],
     sector: 'finance',
   },
   {
     name: 'Institute for Government',
     url: 'https://www.instituteforgovernment.org.uk/rss.xml',
-    defaultEntityIds: ['co'],
+    defaultEntityIds: [],
     sector: 'general',
   },
 ];
