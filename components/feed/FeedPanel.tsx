@@ -223,6 +223,15 @@ export default function FeedPanel({
     return list;
   }, [items, search, dateRange, sortMode, clientConfig, feedFilter]);
 
+  // Compute relevance scores for each filtered item (when client is selected)
+  const scoredItems = useMemo(() => {
+    if (!clientConfig) return filtered.map((item) => ({ item, score: undefined as number | undefined }));
+    return filtered.map((item) => ({
+      item,
+      score: computeFeedRelevance(item, clientConfig),
+    }));
+  }, [filtered, clientConfig]);
+
   const clearSearch = useCallback(() => setSearch(''), []);
 
   return (
@@ -334,8 +343,13 @@ export default function FeedPanel({
           </div>
         )}
 
-        {filtered.map((item) => (
-          <FeedItemCard key={item.id} item={item} />
+        {scoredItems.map(({ item, score }) => (
+          <FeedItemCard
+            key={item.id}
+            item={item}
+            relevanceScore={score}
+            showScore={sortMode === 'relevance'}
+          />
         ))}
       </div>
     </div>

@@ -2,62 +2,94 @@
 
 import type { FeedItem as FeedItemType } from '@/types/feed';
 import { dispatchGraphCommand } from '@/lib/graphCommands';
+import { entityDisplayName } from '@/lib/entities/display';
 
-const SOURCE_COLOURS: Record<FeedItemType['source_type'], string> = {
-  govuk: 'bg-teal-500/15 text-teal-400',
-  hansard: 'bg-blue-500/15 text-blue-400',
-  committee: 'bg-purple-500/15 text-purple-400',
-  legislation: 'bg-emerald-500/15 text-emerald-400',
-  web_search: 'bg-amber-500/15 text-amber-400',
-  forward_scan: 'bg-rose-500/15 text-rose-400',
-  trade_press: 'bg-orange-500/15 text-orange-400',
-  stakeholder: 'bg-cyan-500/15 text-cyan-400',
-  petition: 'bg-pink-500/15 text-pink-400',
-  research: 'bg-indigo-500/15 text-indigo-400',
+/* ------------------------------------------------------------------ */
+/*  Source badge config                                                 */
+/* ------------------------------------------------------------------ */
+
+const SOURCE_DISPLAY: Record<
+  FeedItemType['source_type'],
+  { label: string; colour: string; bg: string }
+> = {
+  govuk:        { label: 'GOV.UK',      colour: '#A32D2D', bg: '#FCEBEB' },
+  hansard:      { label: 'Hansard',      colour: '#854F0B', bg: '#FAEEDA' },
+  committee:    { label: 'Committee',    colour: '#0F6E56', bg: '#E1F5EE' },
+  legislation:  { label: 'Legislation',  colour: '#534AB7', bg: '#EEEDFE' },
+  trade_press:  { label: 'Trade',        colour: '#185FA5', bg: '#E6F1FB' },
+  stakeholder:  { label: 'Stakeholder',  colour: '#993556', bg: '#FBEAF0' },
+  petition:     { label: 'Petition',     colour: '#5F5E5A', bg: '#F1EFE8' },
+  research:     { label: 'Research',     colour: '#3B6D11', bg: '#EAF3DE' },
+  web_search:   { label: 'Web',          colour: '#444441', bg: '#F1EFE8' },
+  forward_scan: { label: 'Forward',      colour: '#993556', bg: '#FBEAF0' },
 };
 
-const SOURCE_LABELS: Record<FeedItemType['source_type'], string> = {
-  govuk: 'GOV.UK',
-  hansard: 'Hansard',
-  committee: 'Committee',
-  legislation: 'Legislation',
-  web_search: 'Web',
-  forward_scan: 'Forward Scan',
-  trade_press: 'Trade Press',
-  stakeholder: 'Stakeholder',
-  petition: 'Petition',
-  research: 'Research',
-};
+/* ------------------------------------------------------------------ */
+/*  Time formatting                                                     */
+/* ------------------------------------------------------------------ */
 
-function relevanceBorder(score: number): string {
-  if (score >= 0.8) return 'border-l-red-500';
-  if (score >= 0.5) return 'border-l-amber-500';
+function formatPublishedTime(dateString: string): string {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffHours = diffMs / (1000 * 60 * 60);
+  const diffDays = diffMs / (1000 * 60 * 60 * 24);
+
+  if (diffHours < 1) return `${Math.max(1, Math.floor(diffMs / 60000))}m ago`;
+  if (diffHours < 24) return `${Math.floor(diffHours)}h ago`;
+  if (diffDays < 7) return `${Math.floor(diffDays)}d ago`;
+
+  return date.toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+    ...(date.getFullYear() !== now.getFullYear() ? { year: 'numeric' } : {}),
+  });
+}
+
+/* ------------------------------------------------------------------ */
+/*  Relevance helpers                                                   */
+/* ------------------------------------------------------------------ */
+
+function getBorderColour(score?: number): string {
+  if (score === undefined) return 'border-l-transparent';
+  if (score >= 0.6) return 'border-l-wh-accent-teal';
+  if (score >= 0.4) return 'border-l-amber-400';
   return 'border-l-transparent';
 }
 
-function timeAgo(dateStr: string): string {
-  const now = new Date();
-  const date = new Date(dateStr);
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  if (diffMins < 1) return 'now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  const diffHours = Math.floor(diffMins / 60);
-  if (diffHours < 24) return `${diffHours}h ago`;
-  const diffDays = Math.floor(diffHours / 24);
-  if (diffDays < 7) return `${diffDays}d ago`;
-  const diffWeeks = Math.floor(diffDays / 7);
-  return `${diffWeeks}w ago`;
+function getScoreBg(score: number): string {
+  if (score >= 0.6) return 'var(--color-wh-accent-teal)';
+  if (score >= 0.4) return '#F59E0B';
+  return 'var(--color-wh-bg)';
 }
+
+function getScoreText(score: number): string {
+  if (score >= 0.4) return 'white';
+  return 'var(--color-wh-text-secondary)';
+}
+
+/* ------------------------------------------------------------------ */
+/*  Component                                                           */
+/* ------------------------------------------------------------------ */
 
 interface FeedItemCardProps {
   item: FeedItemType;
+  relevanceScore?: number;
+  showScore?: boolean;
 }
 
-export default function FeedItemCard({ item }: FeedItemCardProps) {
-  const sourceStyle = SOURCE_COLOURS[item.source_type] ?? SOURCE_COLOURS.web_search;
-  const sourceLabel = SOURCE_LABELS[item.source_type] ?? item.source_name;
-  const borderClass = relevanceBorder(item.relevance_score);
+export default function FeedItemCard({
+  item,
+  relevanceScore,
+  showScore = false,
+}: FeedItemCardProps) {
+  const source = SOURCE_DISPLAY[item.source_type] ?? {
+    label: item.source_type,
+    colour: '#666',
+    bg: '#f0f0f0',
+  };
+
+  const borderClass = getBorderColour(relevanceScore);
 
   return (
     <div
@@ -76,48 +108,70 @@ export default function FeedItemCard({ item }: FeedItemCardProps) {
         }
       }}
     >
-      {/* Top row: source badge + time */}
-      <div className="flex items-center justify-between gap-2">
+      {/* Row 1: source badge + time + score */}
+      <div className="flex items-center justify-between gap-2 mb-1">
         <span
-          className={`inline-flex shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${sourceStyle}`}
+          className="inline-flex shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium"
+          style={{ color: source.colour, backgroundColor: source.bg }}
         >
-          {sourceLabel}
+          {source.label}
         </span>
-        <span className="shrink-0 text-[10px] text-wh-text-secondary/50">
-          {timeAgo(item.published_at)}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="shrink-0 text-[10px] text-wh-text-secondary/50">
+            {formatPublishedTime(item.published_at)}
+          </span>
+          {showScore && relevanceScore !== undefined && relevanceScore >= 0.25 && (
+            <span
+              className="text-[10px] font-medium px-1.5 py-0.5 rounded min-w-[24px] text-center"
+              style={{
+                backgroundColor: getScoreBg(relevanceScore),
+                color: getScoreText(relevanceScore),
+              }}
+            >
+              {Math.round(relevanceScore * 100)}
+            </span>
+          )}
+        </div>
       </div>
 
-      {/* Title */}
+      {/* Row 2: title */}
       {item.url ? (
         <a
           href={item.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="mt-1.5 block text-xs font-medium leading-snug text-wh-text-primary line-clamp-2 transition-colors hover:text-wh-accent-teal"
+          onClick={(e) => e.stopPropagation()}
+          className="block text-xs font-medium leading-snug text-wh-text-primary line-clamp-2 transition-colors hover:text-wh-accent-teal"
         >
           {item.title}
         </a>
       ) : (
-        <p className="mt-1.5 text-xs font-medium leading-snug text-wh-text-primary line-clamp-2">
+        <p className="text-xs font-medium leading-snug text-wh-text-primary line-clamp-2">
           {item.title}
         </p>
       )}
 
-      {/* Entity tags */}
+      {/* Row 3: body preview */}
+      {item.body && item.body.length > 20 && (
+        <p className="mt-1 text-[11px] text-wh-text-secondary/60 leading-relaxed line-clamp-2">
+          {item.body.substring(0, 150)}
+        </p>
+      )}
+
+      {/* Row 4: entity tags */}
       {item.entity_ids.length > 0 && (
         <div className="mt-1.5 flex flex-wrap gap-1">
-          {item.entity_ids.slice(0, 3).map((eid) => (
+          {item.entity_ids.slice(0, 4).map((eid) => (
             <span
               key={eid}
               className="rounded bg-wh-border/60 px-1.5 py-0.5 text-[9px] text-wh-text-secondary/70"
             >
-              {eid}
+              {entityDisplayName(eid)}
             </span>
           ))}
-          {item.entity_ids.length > 3 && (
+          {item.entity_ids.length > 4 && (
             <span className="text-[9px] text-wh-text-secondary/40">
-              +{item.entity_ids.length - 3}
+              +{item.entity_ids.length - 4}
             </span>
           )}
         </div>
