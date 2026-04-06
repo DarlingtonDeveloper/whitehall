@@ -3,6 +3,11 @@
 import { useEffect, useState } from 'react';
 import type { ClientConfig } from '@/types/client';
 import { supabase } from '@/lib/db';
+import {
+  useFeedFilter,
+  setFeedFilter,
+  type FeedFilter,
+} from '@/lib/feedFilterStore';
 
 interface HealthMetrics {
   itemsThisWeek: number;
@@ -11,6 +16,14 @@ interface HealthMetrics {
   committeeInquiries: number;
   activePetitions: number;
   tradePressCoverage: number;
+}
+
+interface MetricCard {
+  label: string;
+  value: number;
+  colour: string;
+  zeroColour: string;
+  feedFilter: FeedFilter;
 }
 
 async function fetchHealthMetrics(client: ClientConfig): Promise<HealthMetrics> {
@@ -48,7 +61,8 @@ async function fetchHealthMetrics(client: ClientConfig): Promise<HealthMetrics> 
       .from('feed_items')
       .select('id', { count: 'exact', head: true })
       .overlaps('entity_ids', stakeholderIds)
-      .eq('source_type', 'petition'),
+      .eq('source_type', 'petition')
+      .gte('published_at', oneWeekAgo),
     supabase
       .from('feed_items')
       .select('id', { count: 'exact', head: true })
@@ -70,6 +84,7 @@ async function fetchHealthMetrics(client: ClientConfig): Promise<HealthMetrics> 
 export default function ClientHealthDashboard({ client }: { client: ClientConfig }) {
   const [metrics, setMetrics] = useState<HealthMetrics | null>(null);
   const [loading, setLoading] = useState(true);
+  const activeFilter = useFeedFilter();
 
   useEffect(() => {
     setLoading(true);
@@ -81,7 +96,7 @@ export default function ClientHealthDashboard({ client }: { client: ClientConfig
 
   if (loading || !metrics) {
     return (
-      <div className="grid grid-cols-6 gap-2 p-3 border-b border-wh-border">
+      <div className="grid grid-cols-3 gap-2 px-3 py-2.5">
         {[...Array(6)].map((_, i) => (
           <div key={i} className="h-14 rounded-lg bg-wh-bg animate-pulse" />
         ))}
@@ -89,51 +104,86 @@ export default function ClientHealthDashboard({ client }: { client: ClientConfig
     );
   }
 
-  const cards = [
+  const cards: MetricCard[] = [
     {
-      label: 'Items this week',
+      label: 'This week',
       value: metrics.itemsThisWeek,
       colour: 'var(--color-wh-text-primary)',
+      zeroColour: 'var(--color-wh-text-secondary)',
+      feedFilter: { label: 'This week', dateRange: '7d' },
     },
     {
-      label: 'Open consultations',
+      label: 'Consultations',
       value: metrics.openConsultations,
-      colour: metrics.openConsultations > 0 ? '#f59e0b' : 'var(--color-wh-text-secondary)',
+      colour: '#f59e0b',
+      zeroColour: 'var(--color-wh-text-secondary)',
+      feedFilter: { label: 'Consultations', dateRange: 'all', titleContains: 'consultation' },
     },
     {
-      label: 'Bills in progress',
+      label: 'Bills',
       value: metrics.billsInProgress,
       colour: 'var(--color-wh-text-primary)',
+      zeroColour: 'var(--color-wh-text-secondary)',
+      feedFilter: { label: 'Bills', sourceType: 'legislation', titleContains: 'Bill' },
     },
     {
-      label: 'Committee inquiries',
+      label: 'Committees',
       value: metrics.committeeInquiries,
       colour: 'var(--color-wh-text-primary)',
+      zeroColour: 'var(--color-wh-text-secondary)',
+      feedFilter: { label: 'Committees', sourceType: 'committee' },
     },
     {
-      label: 'Active petitions',
+      label: 'Petitions',
       value: metrics.activePetitions,
-      colour: metrics.activePetitions > 0 ? '#ec4899' : 'var(--color-wh-text-secondary)',
+      colour: metrics.activePetitions > 50 ? '#ef4444' : '#f59e0b',
+      zeroColour: 'var(--color-wh-text-secondary)',
+      feedFilter: { label: 'Petitions', sourceType: 'petition' },
     },
     {
       label: 'Trade press',
       value: metrics.tradePressCoverage,
-      colour: metrics.tradePressCoverage > 0 ? '#f97316' : 'var(--color-wh-text-secondary)',
+      colour: '#f59e0b',
+      zeroColour: 'var(--color-wh-text-secondary)',
+      feedFilter: { label: 'Trade press', sourceType: 'trade_press' },
     },
   ];
 
+  function handleMetricClick(card: MetricCard) {
+    const isActive =
+      activeFilter &&
+      activeFilter.label === card.feedFilter.label;
+    setFeedFilter(isActive ? null : card.feedFilter);
+  }
+
   return (
-    <div className="grid grid-cols-6 gap-2 p-3 border-b border-wh-border">
-      {cards.map((card) => (
-        <div key={card.label} className="rounded-lg bg-wh-bg p-2.5">
-          <div className="text-[10px] text-wh-text-secondary/70 uppercase tracking-wide mb-1">
-            {card.label}
-          </div>
-          <div className="text-xl font-medium" style={{ color: card.colour }}>
-            {card.value}
-          </div>
-        </div>
-      ))}
+    <div className="grid grid-cols-3 gap-2 px-3 py-2.5">
+      {cards.map((card) => {
+        const isActive =
+          activeFilter !== null &&
+          activeFilter.label === card.feedFilter.label;
+        const displayColour = card.value > 0 ? card.colour : card.zeroColour;
+
+        return (
+          <button
+            key={card.label}
+            type="button"
+            onClick={() => handleMetricClick(card)}
+            className={`rounded-lg p-2.5 text-left transition-all ${
+              isActive
+                ? 'bg-wh-accent-teal/10 ring-1 ring-wh-accent-teal'
+                : 'bg-wh-bg hover:bg-wh-panel'
+            } ${card.value === 0 ? 'opacity-50' : ''}`}
+          >
+            <div className="text-[10px] text-wh-text-secondary/70 uppercase tracking-wide mb-1">
+              {card.label}
+            </div>
+            <div className="text-xl font-medium" style={{ color: displayColour }}>
+              {card.value}
+            </div>
+          </button>
+        );
+      })}
     </div>
   );
 }
