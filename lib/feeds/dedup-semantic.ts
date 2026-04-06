@@ -15,8 +15,12 @@ const SOURCE_PRIORITY: Record<string, number> = {
   govuk: 10,
   legislation: 9,
   committee: 8,
+  research: 8,
   hansard: 7,
+  stakeholder: 6,
+  trade_press: 5,
   forward_scan: 5,
+  petition: 4,
   web_search: 4,
 };
 

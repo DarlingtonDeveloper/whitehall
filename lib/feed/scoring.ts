@@ -55,8 +55,12 @@ export function computeFeedRelevance(
     hansard: 0.10,
     committee: 0.08,
     legislation: 0.08,
-    web_search: 0.05,
+    research: 0.08,
+    trade_press: 0.06,
+    stakeholder: 0.07,
+    petition: 0.05,
     forward_scan: 0.06,
+    web_search: 0.05,
   };
   score += sourceWeights[item.source_type] || 0.03;
 

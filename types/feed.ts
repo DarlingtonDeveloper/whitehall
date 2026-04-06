@@ -1,6 +1,16 @@
 export interface FeedItem {
   id: string;
-  source_type: 'govuk' | 'hansard' | 'committee' | 'legislation' | 'web_search' | 'forward_scan';
+  source_type:
+    | 'govuk'
+    | 'hansard'
+    | 'committee'
+    | 'legislation'
+    | 'web_search'
+    | 'forward_scan'
+    | 'trade_press'
+    | 'stakeholder'
+    | 'petition'
+    | 'research';
   source_name: string;
   title: string;
   url?: string;
