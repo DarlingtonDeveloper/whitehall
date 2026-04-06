@@ -192,7 +192,7 @@ export default function FeedItemCard({
               }}
               className="ml-auto w-5 h-5 flex items-center justify-center shrink-0
                          rounded text-wh-text-secondary/30 hover:text-wh-accent-teal
-                         transition-colors opacity-0 group-hover:opacity-100"
+                         transition-colors"
               title="Ask AI about this item"
             >
               <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">

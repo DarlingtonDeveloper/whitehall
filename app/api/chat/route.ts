@@ -57,82 +57,55 @@ export async function POST(request: Request) {
   }
   messages.push({ role: 'user', content: message });
 
-  /**
-   * DELIBERATE: Graph command side-channel via HTML comment markers.
-   *
-   * When the graph_action tool is invoked, we embed <!--GRAPH_CMD:{json}-->
-   * markers in the text stream. The client parses these out before display
-   * and dispatches them to the graph via a pub/sub bus.
-   */
-  const graphCommands: string[] = [];
-
   const result = streamText({
     model: anthropic('claude-sonnet-4-20250514'),
     system: systemPrompt,
     messages,
     tools: chatTools,
     stopWhen: stepCountIs(5),
-    onStepFinish: (event) => {
-      try {
-        const { toolCalls, toolResults } = event;
-        if (!toolCalls || !toolResults) return;
-        for (const call of toolCalls) {
-          if (call.toolName !== 'graph_action') continue;
-
-          const matched = toolResults.find(
-            (r: Record<string, unknown>) =>
-              (r as { toolCallId?: string }).toolCallId === call.toolCallId,
-          );
-          if (!matched) continue;
-
-          // AI SDK v6: result is in `output` or `result` depending on version
-          const res = ((matched as Record<string, unknown>).output ??
-            (matched as Record<string, unknown>).result) as
-            | Record<string, unknown>
-            | undefined;
-          if (!res?.success) continue;
-
-          const input = call.input as Record<string, unknown>;
-          const cmd: Record<string, unknown> = { type: input.action };
-          if (input.action === 'select_entity') {
-            cmd.entityId = res.entityId ?? input.entityId;
-          } else if (input.action === 'search') {
-            cmd.query = input.query;
-          } else if (input.action === 'focus_mode') {
-            cmd.enabled = input.enabled;
-          }
-          graphCommands.push(`<!--GRAPH_CMD:${JSON.stringify(cmd)}-->`);
-        }
-      } catch (err) {
-        console.error('[chat/route] onStepFinish error:', err);
-      }
-    },
   });
 
-  // Convert the AI SDK stream to a plain text stream with embedded graph commands
+  /**
+   * Use fullStream instead of textStream to get text from ALL steps
+   * (including post-tool-call responses). textStream in some SDK versions
+   * only yields text from the first step.
+   *
+   * Graph commands are detected from tool-result events for graph_action
+   * and embedded as HTML comment markers in the text stream.
+   */
   const encoder = new TextEncoder();
-  let commandsEmitted = false;
 
   const readable = new ReadableStream({
     async start(controller) {
       try {
-        for await (const chunk of result.textStream) {
-          // Emit pending graph commands before the first text chunk
-          if (!commandsEmitted && graphCommands.length > 0) {
-            for (const cmd of graphCommands) {
-              controller.enqueue(encoder.encode(cmd));
+        for await (const event of result.fullStream) {
+          if (event.type === 'text-delta') {
+            controller.enqueue(encoder.encode(event.text));
+          } else if (event.type === 'tool-result') {
+            // Embed graph commands for graph_action tool calls
+            if (event.toolName === 'graph_action') {
+              try {
+                const res = event.output as Record<string, unknown> | undefined;
+                if (res?.success) {
+                  const args = event.input as Record<string, unknown>;
+                  const cmd: Record<string, unknown> = { type: args.action };
+                  if (args.action === 'select_entity') {
+                    cmd.entityId = res.entityId ?? args.entityId;
+                  } else if (args.action === 'search') {
+                    cmd.query = args.query;
+                  } else if (args.action === 'focus_mode') {
+                    cmd.enabled = args.enabled;
+                  }
+                  controller.enqueue(
+                    encoder.encode(`<!--GRAPH_CMD:${JSON.stringify(cmd)}-->`),
+                  );
+                }
+              } catch (err) {
+                console.error('[chat/route] graph command error:', err);
+              }
             }
-            graphCommands.length = 0;
-            commandsEmitted = true;
           }
-          controller.enqueue(encoder.encode(chunk));
         }
-
-        // Emit any graph commands that arrived during later steps
-        for (const cmd of graphCommands) {
-          controller.enqueue(encoder.encode(cmd));
-        }
-
         controller.close();
       } catch (err) {
         console.error('[chat/route] stream error:', err);
