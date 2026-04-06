@@ -46,6 +46,17 @@ export function toggleIntelligence() {
   emit();
 }
 
+export function openIntelligence() {
+  if (!state.intelligence) {
+    state = { ...state, intelligence: true };
+    emit();
+  }
+}
+
+export function getPanelState(): PanelState {
+  return state;
+}
+
 export function selectEntity(entityId: string) {
   state = { ...state, selectedEntityId: entityId };
   emit();

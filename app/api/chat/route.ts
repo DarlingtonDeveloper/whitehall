@@ -1,6 +1,6 @@
 import { streamText, stepCountIs } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
-import { buildSystemPrompt } from '@/lib/chat/systemPrompt';
+import { buildSystemPrompt, type ChatViewState } from '@/lib/chat/systemPrompt';
 import { chatTools } from '@/lib/chat/tools';
 
 export const dynamic = 'force-dynamic';
@@ -11,6 +11,7 @@ interface ChatRequestBody {
   clientId?: string;
   entityId?: string;
   history?: Array<{ role: string; content: string }>;
+  viewState?: ChatViewState;
 }
 
 export async function POST(request: Request) {
@@ -35,7 +36,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { message, clientId, entityId, history } = body;
+  const { message, clientId, entityId, history, viewState } = body;
   if (!message || typeof message !== 'string') {
     return new Response(
       JSON.stringify({ error: 'A "message" field is required.' }),
@@ -43,7 +44,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const systemPrompt = buildSystemPrompt({ clientId, entityId });
+  const systemPrompt = buildSystemPrompt({ clientId, entityId, viewState });
 
   // Build message history in AI SDK format
   const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];

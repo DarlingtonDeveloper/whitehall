@@ -3,9 +3,42 @@ import { getClientBySlug } from '@/data/clients';
 import { getPowers } from '@/data/powers';
 import { getRelationships } from '@/data/relationships';
 
+/* ------------------------------------------------------------------ */
+/*  View state passed from the client                                  */
+/* ------------------------------------------------------------------ */
+
+export interface ChatViewState {
+  feedDateRange: string;
+  feedSortMode: string;
+  feedSearchText: string | null;
+  feedActiveFilter: {
+    label: string;
+    sourceType?: string;
+    titleContains?: string;
+  } | null;
+  disabledSourceIds: string[];
+  selectedEntityId: string | null;
+  topVisibleItems: Array<{ title: string; source_type: string }>;
+  lastClickedItem: {
+    title: string;
+    source_type: string;
+    published_at: string;
+  } | null;
+  topPulseEntities: Array<{
+    entityId: string;
+    score: number;
+    level: string;
+  }>;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Prompt builder                                                     */
+/* ------------------------------------------------------------------ */
+
 export function buildSystemPrompt(opts: {
   clientId?: string;
   entityId?: string;
+  viewState?: ChatViewState;
 }): string {
   const sections: string[] = [];
 
@@ -98,6 +131,54 @@ ${entity.description}`;
       }
 
       sections.push(entitySection);
+    }
+  }
+
+  // View state — what the user is currently looking at
+  if (opts.viewState) {
+    const vs = opts.viewState;
+    const lines: string[] = [];
+
+    if (vs.feedDateRange !== 'all') {
+      lines.push(`Feed showing: last ${vs.feedDateRange}`);
+    }
+    if (vs.feedSortMode === 'relevance') {
+      lines.push('Feed sorted by: relevance (algorithmic scoring)');
+    }
+    if (vs.feedSearchText) {
+      lines.push(`Feed search: "${vs.feedSearchText}"`);
+    }
+    if (vs.feedActiveFilter) {
+      lines.push(`Feed filtered to: ${vs.feedActiveFilter.label}`);
+    }
+    if (vs.lastClickedItem) {
+      const lc = vs.lastClickedItem;
+      lines.push(
+        `User last clicked: "${lc.title}" (${lc.source_type}, ${lc.published_at})`,
+      );
+    }
+    if (vs.disabledSourceIds.length > 0) {
+      lines.push(
+        `User has disabled these stakeholders from feed: ${vs.disabledSourceIds.join(', ')}`,
+      );
+    }
+    if (vs.topPulseEntities.length > 0) {
+      lines.push('Most active entities this week:');
+      for (const e of vs.topPulseEntities.slice(0, 5)) {
+        lines.push(
+          `  - ${e.entityId}: ${e.level} activity (score ${e.score.toFixed(1)})`,
+        );
+      }
+    }
+    if (vs.topVisibleItems.length > 0) {
+      lines.push('Top items currently visible in feed:');
+      for (const item of vs.topVisibleItems.slice(0, 5)) {
+        lines.push(`  - "${item.title}" (${item.source_type})`);
+      }
+    }
+
+    if (lines.length > 0) {
+      sections.push(`\n--- CURRENT VIEW STATE ---\n${lines.join('\n')}`);
     }
   }
 
