@@ -131,7 +131,7 @@ function formatInline(text: string, keyPrefix: string): React.ReactNode[] {
           rel="noopener noreferrer"
           className="text-wh-accent-teal underline decoration-wh-accent-teal/30 hover:decoration-wh-accent-teal transition-colors"
         >
-          {match[1]}
+          {match[1]}&nbsp;&#x2197;
         </a>,
       );
       remaining = remaining.slice(earliestIdx + match[0].length);
@@ -144,7 +144,17 @@ function formatInline(text: string, keyPrefix: string): React.ReactNode[] {
 }
 
 /**
- * Highlight known entity names in teal.
+ * Check whether the character at a boundary position is a word-break
+ * (i.e. not a letter or digit). Undefined (start/end of string) counts as a boundary.
+ */
+function isWordBoundary(ch: string | undefined): boolean {
+  if (!ch) return true;
+  return /[^a-zA-Z0-9]/.test(ch);
+}
+
+/**
+ * Highlight known entity names in teal, with word-boundary checks to prevent
+ * partial matches (e.g. "tate" inside "Estate", "rwe" inside "Harwell").
  */
 function highlightEntities(text: string, keyPrefix: string): React.ReactNode[] {
   const parts: React.ReactNode[] = [];
@@ -157,10 +167,32 @@ function highlightEntities(text: string, keyPrefix: string): React.ReactNode[] {
     for (const entity of ENTITY_NAMES) {
       const lowerRemaining = remaining.toLowerCase();
       const lowerName = entity.name.toLowerCase();
-      const pos = lowerRemaining.indexOf(lowerName);
 
-      if (pos !== -1) {
-        // Add text before the entity
+      // Scan for all occurrences, skipping those that fail boundary checks
+      let searchFrom = 0;
+      while (searchFrom < lowerRemaining.length) {
+        const pos = lowerRemaining.indexOf(lowerName, searchFrom);
+        if (pos === -1) break;
+
+        const charBefore = remaining[pos - 1];
+        const charAfter = remaining[pos + entity.name.length];
+
+        // Short names (< 4 chars) must match case-sensitively to avoid
+        // false positives like "CMA" inside "eCMAscript"
+        if (entity.name.length < 4) {
+          const exact = remaining.slice(pos, pos + entity.name.length);
+          if (exact !== entity.name) {
+            searchFrom = pos + 1;
+            continue;
+          }
+        }
+
+        if (!isWordBoundary(charBefore) || !isWordBoundary(charAfter)) {
+          searchFrom = pos + 1;
+          continue;
+        }
+
+        // Valid match — add text before, then the entity button
         if (pos > 0) {
           parts.push(
             <span key={`${keyPrefix}-t-${idx}`}>{remaining.slice(0, pos)}</span>,
@@ -168,7 +200,6 @@ function highlightEntities(text: string, keyPrefix: string): React.ReactNode[] {
           idx++;
         }
 
-        // Add the entity name as a clickable button
         const entityId = entity.id;
         parts.push(
           <button
@@ -193,6 +224,8 @@ function highlightEntities(text: string, keyPrefix: string): React.ReactNode[] {
         foundMatch = true;
         break;
       }
+
+      if (foundMatch) break;
     }
 
     if (!foundMatch) {
@@ -221,7 +254,7 @@ export default function ChatMessage({ role, content, isStreaming }: ChatMessageP
 
   return (
     <div className="flex justify-start animate-[fadeSlideIn_0.2s_ease-out]">
-      <div className="max-w-[90%] rounded-2xl rounded-bl-md bg-wh-panel border border-wh-border px-4 py-2.5 text-sm text-wh-text-primary leading-relaxed">
+      <div className="max-w-[90%] rounded-2xl rounded-bl-md bg-wh-panel border border-wh-border px-4 py-2.5 text-sm text-wh-text-primary leading-relaxed break-words [overflow-wrap:anywhere]">
         {formattedContent}
         {isStreaming && (
           <span className="inline-block ml-1 w-2 h-4 bg-wh-accent-teal/60 animate-pulse rounded-sm" />
