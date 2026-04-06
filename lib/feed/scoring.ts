@@ -86,5 +86,44 @@ export function computeFeedRelevance(
     score += Math.min(kwBoost, 0.05);
   }
 
+  // ── Source floors ──────────────────────────────────────────────────────
+  // The monitoring agent gave priority sources minimum scores to prevent
+  // relevant items from important entities being filtered out when keyword
+  // overlap is low. An Ofgem decision using language our keywords don't
+  // match should still surface.
+
+  // Tier 1: Client named directly — almost always relevant
+  const clientNameTerms = [
+    client.name.toLowerCase(),
+    ...(client.projects || []).map(p => p.toLowerCase()),
+  ];
+  if (clientNameTerms.some(term => text.includes(term))) {
+    score = Math.max(score, 0.60);
+  }
+
+  // Primary stakeholder floor: items tagged to a primary stakeholder
+  // always score at least 0.30 (above the 0.25 threshold in generate.ts)
+  const primaryEntityIds = client.stakeholders
+    .filter(s => s.priority === 'primary')
+    .map(s => s.entityId);
+  const hasPrimaryEntity = (item.entity_ids || []).some(id =>
+    primaryEntityIds.includes(id),
+  );
+  if (hasPrimaryEntity) {
+    score = Math.max(score, 0.30);
+  }
+
+  // Secondary stakeholder floor: 0.20 — below threshold but close enough
+  // that any keyword match pushes them over
+  const secondaryEntityIds = client.stakeholders
+    .filter(s => s.priority === 'secondary')
+    .map(s => s.entityId);
+  const hasSecondaryEntity = (item.entity_ids || []).some(id =>
+    secondaryEntityIds.includes(id),
+  );
+  if (hasSecondaryEntity && !hasPrimaryEntity) {
+    score = Math.max(score, 0.20);
+  }
+
   return Math.min(score, 1.0);
 }
