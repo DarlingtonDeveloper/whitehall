@@ -74,7 +74,7 @@ export const DIRECT_SOURCES: DirectSourceConfig[] = [
   },
   {
     name: 'Great British Energy',
-    url: 'https://www.gbe.gov.uk/blog',
+    url: 'https://www.gbe.gov.uk/news-and-publications',
     keywords: ['investment', 'fund', 'community', 'supply chain', 'partnership',
       'clean energy', 'local power', 'announcement'],
     defaultEntityIds: ['desnz'],
@@ -90,7 +90,7 @@ export const DIRECT_SOURCES: DirectSourceConfig[] = [
   },
   {
     name: 'RenewableUK',
-    url: 'https://www.renewableuk.com/news',
+    url: 'https://www.renewableuk.com/news-and-resources/press-releases/',
     keywords: ['wind', 'offshore', 'onshore', 'energy', 'report', 'publication',
       'policy', 'planning', 'grid', 'deployment'],
     defaultEntityIds: ['desnz'],
@@ -115,7 +115,7 @@ export const DIRECT_SOURCES: DirectSourceConfig[] = [
   },
   {
     name: 'ORE Catapult',
-    url: 'https://ore.catapult.org.uk/news-and-events/',
+    url: 'https://ore.catapult.org.uk/media-centre/press-releases',
     keywords: ['offshore', 'wind', 'innovation', 'technology', 'research',
       'supply chain', 'floating', 'testing'],
     defaultEntityIds: ['desnz'],

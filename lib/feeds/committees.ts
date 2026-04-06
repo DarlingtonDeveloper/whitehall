@@ -51,7 +51,7 @@ export const COMMITTEES: CommitteeConfig[] = [
   // ── Energy-related committees ──────────────────────────────────────────
   {
     name: 'Energy Security and Net Zero Committee',
-    url: 'https://committees.parliament.uk/committee/135/energy-security-and-net-zero-committee/',
+    url: 'https://committees.parliament.uk/committee/664/energy-security-and-net-zero-committee/',
     keywords: ['energy', 'wind', 'offshore', 'power', 'grid', 'net zero',
       'resilience', 'hydrogen', 'nuclear', 'CfD', 'REMA'],
     defaultEntityIds: ['desnz'],
@@ -75,7 +75,7 @@ export const COMMITTEES: CommitteeConfig[] = [
   },
   {
     name: 'Science, Innovation and Technology Committee',
-    url: 'https://committees.parliament.uk/committee/135/',
+    url: 'https://committees.parliament.uk/committee/673/science-innovation-and-technology-committee/',
     keywords: ['energy', 'technology', 'innovation', 'digital', 'AI',
       'data', 'research', 'R&D'],
     defaultEntityIds: ['dsit'],

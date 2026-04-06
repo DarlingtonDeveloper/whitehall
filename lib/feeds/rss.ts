@@ -47,7 +47,7 @@ export const RSS_FEEDS: RssFeedConfig[] = [
   // ── Energy sector ──────────────────────────────────────────────────────
   {
     name: 'Recharge News',
-    url: 'https://www.rechargenews.com/rss',
+    url: 'https://news.google.com/rss/search?q=site:rechargenews.com&hl=en-GB&gl=GB&ceid=GB:en',
     defaultEntityIds: ['desnz'],
     sector: 'energy',
   },
@@ -65,7 +65,7 @@ export const RSS_FEEDS: RssFeedConfig[] = [
   },
   {
     name: 'Utility Week',
-    url: 'https://utilityweek.co.uk/feed/',
+    url: 'https://news.google.com/rss/search?q=site:utilityweek.co.uk&hl=en-GB&gl=GB&ceid=GB:en',
     defaultEntityIds: ['desnz', 'ofgem'],
     sector: 'energy',
   },
@@ -77,7 +77,7 @@ export const RSS_FEEDS: RssFeedConfig[] = [
   },
   {
     name: 'RenewableUK',
-    url: 'https://www.renewableuk.com/news/rss.aspx',
+    url: 'https://news.google.com/rss/search?q=site:renewableuk.com&hl=en-GB&gl=GB&ceid=GB:en',
     defaultEntityIds: ['desnz'],
     sector: 'energy',
   },
@@ -89,7 +89,7 @@ export const RSS_FEEDS: RssFeedConfig[] = [
   },
   {
     name: 'Ofgem Blog',
-    url: 'https://www.ofgem.gov.uk/rss',
+    url: 'https://news.google.com/rss/search?q=site:ofgem.gov.uk+blog&hl=en-GB&gl=GB&ceid=GB:en',
     defaultEntityIds: ['ofgem'],
     sector: 'energy',
   },
@@ -109,13 +109,13 @@ export const RSS_FEEDS: RssFeedConfig[] = [
   },
   {
     name: 'NICE News',
-    url: 'https://www.nice.org.uk/news/nice-newsletters-and-alerts/rss',
+    url: 'https://news.google.com/rss/search?q=site:nice.org.uk&hl=en-GB&gl=GB&ceid=GB:en',
     defaultEntityIds: ['nice'],
     sector: 'health',
   },
   {
     name: 'HSJ',
-    url: 'https://www.hsj.co.uk/rss',
+    url: 'https://www.hsj.co.uk/26024.rss',
     defaultEntityIds: ['dhsc', 'nhs-improve'],
     sector: 'health',
   },
@@ -133,7 +133,7 @@ export const RSS_FEEDS: RssFeedConfig[] = [
   },
   {
     name: 'The BMJ News',
-    url: 'https://www.bmj.com/rss/rss.xml',
+    url: 'https://news.google.com/rss/search?q=site:bmj.com&hl=en-GB&gl=GB&ceid=GB:en',
     defaultEntityIds: ['dhsc'],
     sector: 'health',
   },
@@ -141,7 +141,7 @@ export const RSS_FEEDS: RssFeedConfig[] = [
   // ── General government / public affairs ────────────────────────────────
   {
     name: 'Civil Service World',
-    url: 'https://www.civilserviceworld.com/feed/',
+    url: 'https://www.civilserviceworld.com/nocache/rss/articles',
     defaultEntityIds: ['co'],
     sector: 'general',
   },
