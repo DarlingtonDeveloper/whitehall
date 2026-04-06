@@ -3,10 +3,12 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { supabase } from '@/lib/db';
 import { getClientBySlug } from '@/data/clients';
-import { usePanelStore } from '@/lib/panelStore';
+import { usePanelStore, openIntelligence } from '@/lib/panelStore';
 import { useClientOverrides } from '@/lib/clientOverrides';
 import { computeFeedRelevance } from '@/lib/feed/scoring';
 import { useFeedFilter, setFeedFilter } from '@/lib/feedFilterStore';
+import { setFeedViewState } from '@/lib/feedViewStore';
+import { dispatchChatAction } from '@/lib/chatActions';
 import type { FeedItem } from '@/types/feed';
 import FeedItemCard from './FeedItem';
 
@@ -36,6 +38,13 @@ function getDateCutoff(range: DateRange): string | null {
   return new Date(Date.now() - ms[range]).toISOString();
 }
 
+function formatDateShort(dateString: string): string {
+  return new Date(dateString).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'short',
+  });
+}
+
 export default function FeedPanel({
   entityId,
   clientId,
@@ -49,6 +58,7 @@ export default function FeedPanel({
   const [search, setSearch] = useState('');
   const [dateRange, setDateRange] = useState<DateRange>('7d');
   const [sortMode, setSortMode] = useState<SortMode>('recent');
+  const [lastClickedItem, setLastClickedItem] = useState<FeedItem | null>(null);
 
   // Get active keywords for client-based keyword filtering
   const clientConfig = clientId ? getClientBySlug(clientId) : null;
@@ -232,7 +242,42 @@ export default function FeedPanel({
     }));
   }, [filtered, clientConfig]);
 
+  // Publish view state for the chat system prompt
+  useEffect(() => {
+    setFeedViewState({
+      dateRange,
+      sortMode,
+      searchText: search || '',
+      visibleItems: filtered.slice(0, 20).map((item) => ({
+        id: item.id,
+        title: item.title,
+        source_type: item.source_type,
+      })),
+      lastClickedItem: lastClickedItem
+        ? {
+            id: lastClickedItem.id,
+            title: lastClickedItem.title,
+            source_type: lastClickedItem.source_type,
+            published_at: lastClickedItem.published_at,
+          }
+        : null,
+    });
+  }, [dateRange, sortMode, search, filtered, lastClickedItem]);
+
   const clearSearch = useCallback(() => setSearch(''), []);
+
+  // "Why relevant?" handler — opens chat with pre-formed question
+  const handleAskRelevance = useCallback(
+    (item: FeedItem) => {
+      if (!clientConfig) return;
+      setLastClickedItem(item);
+      openIntelligence();
+      dispatchChatAction({
+        message: `Why is this relevant to ${clientConfig.name} and what should we do about it?\n\n"${item.title}" (${item.source_name}, ${formatDateShort(item.published_at)})`,
+      });
+    },
+    [clientConfig],
+  );
 
   return (
     <div className="flex h-full flex-col">
@@ -349,6 +394,8 @@ export default function FeedPanel({
             item={item}
             relevanceScore={score}
             showScore={sortMode === 'relevance'}
+            clientName={clientConfig?.name}
+            onAskRelevance={clientConfig ? handleAskRelevance : undefined}
           />
         ))}
       </div>
