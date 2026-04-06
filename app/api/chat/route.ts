@@ -81,7 +81,10 @@ export async function POST(request: Request) {
         for await (const event of result.fullStream) {
           if (event.type === 'text-delta') {
             controller.enqueue(encoder.encode(event.text));
+          } else if (event.type === 'tool-call') {
+            console.log('[chat/route] tool-call:', event.toolName);
           } else if (event.type === 'tool-result') {
+            console.log('[chat/route] tool-result:', event.toolName, 'output keys:', Object.keys(event.output as object ?? {}));
             // Embed graph commands for graph_action tool calls
             if (event.toolName === 'graph_action') {
               try {
@@ -104,11 +107,22 @@ export async function POST(request: Request) {
                 console.error('[chat/route] graph command error:', err);
               }
             }
+          } else if (event.type === 'tool-error') {
+            console.error('[chat/route] tool-error:', (event as Record<string, unknown>).toolName, event);
+          } else if (event.type === 'error') {
+            console.error('[chat/route] stream error event:', event.error);
+          } else if (event.type === 'start-step') {
+            console.log('[chat/route] start-step');
+          } else if (event.type === 'finish-step') {
+            console.log('[chat/route] finish-step, reason:', event.finishReason);
+          } else if (event.type === 'finish') {
+            console.log('[chat/route] finish, reason:', event.finishReason);
           }
         }
+        console.log('[chat/route] stream completed normally');
         controller.close();
       } catch (err) {
-        console.error('[chat/route] stream error:', err);
+        console.error('[chat/route] stream iteration error:', err);
         const errorMessage =
           err instanceof Error ? err.message : 'An unexpected error occurred.';
         controller.enqueue(encoder.encode(`\n\n[Error: ${errorMessage}]`));

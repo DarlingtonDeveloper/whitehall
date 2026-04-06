@@ -191,7 +191,7 @@ export default function FeedItemCard({
                 onAskRelevance(item);
               }}
               className="ml-auto w-5 h-5 flex items-center justify-center shrink-0
-                         rounded text-wh-text-secondary/30 hover:text-wh-accent-teal
+                         rounded text-wh-text-primary hover:text-wh-accent-teal
                          transition-colors"
               title="Ask AI about this item"
             >
