@@ -291,6 +291,11 @@ function hasEntriesOlderThan(entries: ParsedEntry[], cutoffDate: Date): boolean 
 
 // -- Main collector ---------------------------------------------------------
 
+/** Safety cap: some feeds (e.g. Scotland Acts) have 50k+ entries with
+ *  recent <updated> dates. 200 pages = 4,000 items is more than enough
+ *  for a 12-month window. */
+const MAX_PAGES = 200;
+
 export async function collectLegislation(): Promise<{ inserted: number; skipped: number }> {
   let totalInserted = 0;
   let totalSkipped = 0;
@@ -394,6 +399,13 @@ export async function collectLegislation(): Promise<{ inserted: number; skipped:
       }
 
       page++;
+
+      // Safety cap to prevent runaway pagination on feeds with
+      // constantly-refreshed <updated> dates
+      if (page > MAX_PAGES) {
+        console.log(`  reached ${MAX_PAGES} page cap, stopping`);
+        break;
+      }
 
       // 500ms delay between requests - be polite to legislation.gov.uk
       await delay(500);
