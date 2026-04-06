@@ -3,6 +3,7 @@
 import { useMemo } from 'react';
 import { ENTITY_LIST } from '@/data/entities';
 import { selectEntity } from '@/lib/panelStore';
+import { dispatchGraphCommand } from '@/lib/graphCommands';
 
 interface ChatMessageProps {
   role: 'user' | 'assistant';
@@ -173,6 +174,12 @@ function highlightEntities(text: string, keyPrefix: string): React.ReactNode[] {
           <button
             key={`${keyPrefix}-e-${idx}`}
             type="button"
+            onMouseEnter={() =>
+              dispatchGraphCommand({ type: 'highlight_entities', entityIds: [entityId] })
+            }
+            onMouseLeave={() =>
+              dispatchGraphCommand({ type: 'clear_highlight' })
+            }
             onClick={() => selectEntity(entityId)}
             className="text-wh-accent-teal font-medium hover:underline decoration-wh-accent-teal/40 cursor-pointer"
             title={`View ${entity.name}`}
