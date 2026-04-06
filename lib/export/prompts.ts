@@ -58,7 +58,7 @@ export function buildThemePrompt(
 Date: ${item.published_at}
 Source: ${item.source_name} (${item.source_type})
 URL: ${item.url ?? 'N/A'}
-Body: ${item.body?.substring(0, 500) || 'N/A'}
+Body: ${item.body?.substring(0, 2000) || 'N/A'}
 Entity tags: ${item.entity_ids?.join(', ') || 'none'}
 Fingerprint: ${item.fingerprint}`;
     })
