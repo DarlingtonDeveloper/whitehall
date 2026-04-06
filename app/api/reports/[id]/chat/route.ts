@@ -124,8 +124,9 @@ You can also use general tools: entity_lookup, feed_search, stakeholder_map.`;
   // Build tools (report tools need the reportId in closure)
   const tools = buildReportTools(id, analysis);
 
-  // Track mutations from tool calls
-  const mutations: ReportMutation[] = [];
+  // Track mutations and tool call data from each step
+  const allMutations: ReportMutation[] = [];
+  const allToolCalls: unknown[] = [];
 
   const result = streamText({
     model: anthropic('claude-sonnet-4-20250514'),
@@ -136,41 +137,50 @@ You can also use general tools: entity_lookup, feed_search, stakeholder_map.`;
     onStepFinish: ({ toolCalls, toolResults }) => {
       if (!toolCalls || !toolResults) return;
       for (const call of toolCalls) {
+        allToolCalls.push({
+          toolName: call.toolName,
+          toolCallId: call.toolCallId,
+          input: call.input,
+        });
         const matched = toolResults.find(r => r.toolCallId === call.toolCallId);
         if (!matched) continue;
         const res = matched.output as Record<string, unknown> | undefined;
         if (res?.mutation) {
-          mutations.push(res.mutation as ReportMutation);
+          allMutations.push(res.mutation as ReportMutation);
         }
       }
     },
   });
 
-  // Stream response with embedded mutation markers
+  // Stream response with embedded mutation markers.
+  // Collect the full assistant text for persistence after stream ends.
   const encoder = new TextEncoder();
   let mutationsEmitted = false;
+  let fullAssistantText = '';
 
   const readable = new ReadableStream({
     async start(controller) {
       try {
         for await (const chunk of result.textStream) {
-          if (!mutationsEmitted && mutations.length > 0) {
-            for (const m of mutations) {
+          if (!mutationsEmitted && allMutations.length > 0) {
+            for (const m of allMutations) {
               controller.enqueue(
                 encoder.encode(`<!--MUTATION:${JSON.stringify(m)}-->`),
               );
             }
-            mutations.length = 0;
             mutationsEmitted = true;
           }
+          fullAssistantText += chunk;
           controller.enqueue(encoder.encode(chunk));
         }
 
-        // Emit any remaining mutations
-        for (const m of mutations) {
-          controller.enqueue(
-            encoder.encode(`<!--MUTATION:${JSON.stringify(m)}-->`),
-          );
+        // Emit any mutations that arrived during later steps
+        if (!mutationsEmitted) {
+          for (const m of allMutations) {
+            controller.enqueue(
+              encoder.encode(`<!--MUTATION:${JSON.stringify(m)}-->`),
+            );
+          }
         }
 
         controller.close();
@@ -179,22 +189,37 @@ You can also use general tools: entity_lookup, feed_search, stakeholder_map.`;
         controller.enqueue(encoder.encode(`\n\n[Error: ${msg}]`));
         controller.close();
       }
+
+      // ── Persist both messages AFTER the stream finishes ──
+      // This is the most valuable data in the system: structured
+      // mutations with old_value/new_value/reasoning, tied to the
+      // user message that prompted them and the section context.
+      try {
+        // 1. User message — with the section/item context they were viewing
+        await supabase.from('report_chat_messages').insert({
+          report_draft_id: id,
+          role: 'user',
+          content: message,
+          user_role: userRole,
+          active_section: activeSection,
+          active_item_ref: activeItemRef,
+        });
+
+        // 2. Assistant message — with structured mutations and raw tool calls
+        if (fullAssistantText.trim() || allMutations.length > 0) {
+          await supabase.from('report_chat_messages').insert({
+            report_draft_id: id,
+            role: 'assistant',
+            content: fullAssistantText,
+            mutations: allMutations,
+            tool_calls: allToolCalls.length > 0 ? allToolCalls : null,
+          });
+        }
+      } catch (err) {
+        console.error('[report-chat] Failed to persist messages:', err);
+      }
     },
   });
-
-  // Store messages asynchronously (don't block stream)
-  (async () => {
-    try {
-      await supabase.from('report_chat_messages').insert({
-        report_draft_id: id,
-        role: 'user',
-        content: message,
-        user_role: userRole,
-        active_section: activeSection,
-        active_item_ref: activeItemRef,
-      });
-    } catch { /* best-effort */ }
-  })();
 
   return new Response(readable, {
     headers: {
