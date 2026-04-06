@@ -6,6 +6,7 @@ import { getClientBySlug } from '@/data/clients';
 import { usePanelStore } from '@/lib/panelStore';
 import { useClientOverrides } from '@/lib/clientOverrides';
 import { computeFeedRelevance } from '@/lib/feed/scoring';
+import { useFeedFilter, setFeedFilter } from '@/lib/feedFilterStore';
 import type { FeedItem } from '@/types/feed';
 import FeedItemCard from './FeedItem';
 
@@ -41,6 +42,7 @@ export default function FeedPanel({
   items: propItems,
 }: FeedPanelProps) {
   const { disabledSourceIds } = usePanelStore();
+  const feedFilter = useFeedFilter();
   const [items, setItems] = useState<FeedItem[]>(propItems ?? []);
   const [loading, setLoading] = useState(!propItems);
   const [error, setError] = useState<string | null>(null);
@@ -173,9 +175,26 @@ export default function FeedPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entityId, clientId, propItems, activeSourceIdsKey, activeKeywordsKey]);
 
-  // Client-side filtering by search + date, then sort
+  // Client-side filtering by search + date + metric filter, then sort
   const filtered = useMemo(() => {
     let list = items;
+
+    // Apply metric filter from health dashboard
+    if (feedFilter) {
+      if (feedFilter.sourceType) {
+        list = list.filter((item) => item.source_type === feedFilter.sourceType);
+      }
+      if (feedFilter.titleContains) {
+        const term = feedFilter.titleContains.toLowerCase();
+        list = list.filter((item) => item.title.toLowerCase().includes(term));
+      }
+      if (feedFilter.dateRange) {
+        const metricCutoff = getDateCutoff(feedFilter.dateRange as DateRange);
+        if (metricCutoff) {
+          list = list.filter((item) => item.published_at >= metricCutoff);
+        }
+      }
+    }
 
     const cutoff = getDateCutoff(dateRange);
     if (cutoff) {
@@ -202,7 +221,7 @@ export default function FeedPanel({
     }
 
     return list;
-  }, [items, search, dateRange, sortMode, clientConfig]);
+  }, [items, search, dateRange, sortMode, clientConfig, feedFilter]);
 
   const clearSearch = useCallback(() => setSearch(''), []);
 
@@ -271,6 +290,23 @@ export default function FeedPanel({
           </span>
         </div>
       </div>
+
+      {/* Active metric filter chip */}
+      {feedFilter && (
+        <div className="shrink-0 flex items-center gap-2 px-3 py-1.5 mx-2 mt-2 rounded-lg
+                        bg-wh-accent-teal/10 text-xs text-wh-accent-teal">
+          <span>Filtered: {feedFilter.label}</span>
+          <button
+            type="button"
+            onClick={() => setFeedFilter(null)}
+            className="ml-auto hover:text-wh-text-primary transition-colors"
+          >
+            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+      )}
 
       {/* Scrollable feed list */}
       <div className="flex-1 overflow-y-auto overscroll-contain">
