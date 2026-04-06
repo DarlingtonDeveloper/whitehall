@@ -272,8 +272,18 @@ export default function FeedPanel({
       if (!clientConfig) return;
       setLastClickedItem(item);
       openIntelligence();
+
+      let context = `"${item.title}" (${item.source_name}, ${formatDateShort(item.published_at)})`;
+      if (item.url) context += `\nURL: ${item.url}`;
+      if (item.body && item.body.length > 20) {
+        context += `\nContent: ${item.body.substring(0, 500)}`;
+      }
+      if (item.entity_ids.length > 0) {
+        context += `\nTagged entities: ${item.entity_ids.join(', ')}`;
+      }
+
       dispatchChatAction({
-        message: `Why is this relevant to ${clientConfig.name} and what should we do about it?\n\n"${item.title}" (${item.source_name}, ${formatDateShort(item.published_at)})`,
+        message: `Why is this relevant to ${clientConfig.name} and what should we do about it?\n\n${context}`,
       });
     },
     [clientConfig],
