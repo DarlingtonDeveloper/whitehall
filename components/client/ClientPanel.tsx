@@ -215,6 +215,7 @@ export default function ClientPanel({ client }: { client: ClientConfig }) {
               dispatchChatAction({
                 message:
                   'Give me a brief intelligence summary for this week. What are the most important developments, any deadlines approaching, and what should we be paying attention to? Be concise — bullet the key items with dates and action needed.',
+                isBriefing: true,
               });
             }}
             className="flex items-center gap-1.5 rounded-lg border border-wh-border px-3 py-1.5 text-xs font-medium

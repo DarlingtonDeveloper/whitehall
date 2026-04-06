@@ -12,6 +12,7 @@ interface ChatRequestBody {
   entityId?: string;
   history?: Array<{ role: string; content: string }>;
   viewState?: ChatViewState;
+  isBriefing?: boolean;
 }
 
 export async function POST(request: Request) {
@@ -36,7 +37,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const { message, clientId, entityId, history, viewState } = body;
+  const { message, clientId, entityId, history, viewState, isBriefing } = body;
   if (!message || typeof message !== 'string') {
     return new Response(
       JSON.stringify({ error: 'A "message" field is required.' }),
@@ -44,7 +45,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const systemPrompt = buildSystemPrompt({ clientId, entityId, viewState });
+  const systemPrompt = buildSystemPrompt({ clientId, entityId, viewState, isBriefing });
 
   // Build message history in AI SDK format
   const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];

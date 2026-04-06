@@ -5,6 +5,8 @@ import { getClientBySlug, ALL_CLIENTS } from '@/data/clients';
 import { getPowers } from '@/data/powers';
 import { getRelationships } from '@/data/relationships';
 import { supabase } from '@/lib/db';
+import { computeFeedRelevance } from '@/lib/feed/scoring';
+import type { FeedItem } from '@/types/feed';
 
 // ---------------------------------------------------------------------------
 // Tool definitions using the Vercel AI SDK `tool()` helper.
@@ -67,6 +69,52 @@ export const chatTools = {
     }),
     execute: async ({ clientId }): Promise<Record<string, unknown>> => {
       return handleStakeholderMap(clientId);
+    },
+  }),
+
+  feed_top_items: tool({
+    description:
+      'Get the highest-relevance feed items for a client over a time period. Returns items pre-scored and ranked by the algorithmic relevance system (entity overlap, keyword matches, source quality, recency, actionable content signals). Use this for briefings, weekly summaries, or "what should we focus on" questions.',
+    inputSchema: z.object({
+      clientId: z
+        .string()
+        .describe('Client slug (e.g. "rwe", "sanofi").'),
+      daysBack: z
+        .number()
+        .optional()
+        .describe('Days to look back. Default 7.'),
+      limit: z
+        .number()
+        .optional()
+        .describe('Max items to return. Default 15.'),
+      sourceType: z
+        .string()
+        .optional()
+        .describe('Optional: filter to a source type (govuk, hansard, committee, legislation, trade_press, stakeholder, petition, research).'),
+      minScore: z
+        .number()
+        .optional()
+        .describe('Minimum relevance score 0-1. Default 0.20.'),
+    }),
+    execute: async ({ clientId, daysBack, limit, sourceType, minScore }): Promise<Record<string, unknown>> => {
+      return handleFeedTopItems(clientId, daysBack, limit, sourceType, minScore);
+    },
+  }),
+
+  feed_deadlines: tool({
+    description:
+      'Find upcoming consultations, calls for evidence, and deadlines relevant to a client. Returns items with future event dates or deadline-related keywords, sorted by closest deadline first.',
+    inputSchema: z.object({
+      clientId: z
+        .string()
+        .describe('Client slug (e.g. "rwe", "sanofi").'),
+      daysAhead: z
+        .number()
+        .optional()
+        .describe('Days ahead to search. Default 30.'),
+    }),
+    execute: async ({ clientId, daysAhead }): Promise<Record<string, unknown>> => {
+      return handleFeedDeadlines(clientId, daysAhead);
     },
   }),
 
@@ -290,6 +338,191 @@ function handleGraphAction(
     default:
       return { error: `Unknown graph action: ${action}` };
   }
+}
+
+async function handleFeedTopItems(
+  clientId: string,
+  daysBack?: number,
+  limit?: number,
+  sourceType?: string,
+  minScore?: number,
+): Promise<Record<string, unknown>> {
+  const client = getClientBySlug(clientId);
+  if (!client) {
+    return { error: `Client "${clientId}" not found.`, availableClients: ALL_CLIENTS.map((c) => c.id) };
+  }
+
+  const days = daysBack ?? 7;
+  const maxItems = Math.min(limit ?? 15, 30);
+  const threshold = minScore ?? 0.20;
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString();
+  const stakeholderIds = client.stakeholders.map((s) => s.entityId);
+
+  try {
+    let query = supabase
+      .from('feed_items')
+      .select('*')
+      .overlaps('entity_ids', stakeholderIds)
+      .gte('published_at', cutoff)
+      .order('published_at', { ascending: false })
+      .limit(300);
+
+    if (sourceType) {
+      query = query.eq('source_type', sourceType);
+    }
+
+    const { data: items, error } = await query;
+    if (error) {
+      console.error('[feed_top_items] query error:', error.message);
+      return { error: error.message };
+    }
+    if (!items || items.length === 0) {
+      return { clientId, days, results: [], message: 'No items found for this period.' };
+    }
+
+    // Score each item with the algorithmic scorer
+    const scored = (items as FeedItem[])
+      .map((item) => ({
+        item,
+        score: computeFeedRelevance(item, client),
+      }))
+      .filter((s) => s.score >= threshold)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, maxItems);
+
+    const results = scored.map(({ item, score }, i) => {
+      const date = new Date(item.published_at).toLocaleDateString('en-GB', {
+        day: 'numeric', month: 'short', year: 'numeric',
+      });
+      const isConsultation =
+        item.title.toLowerCase().includes('consultation') ||
+        item.title.toLowerCase().includes('call for evidence');
+
+      return {
+        rank: i + 1,
+        relevance_score: Math.round(score * 100),
+        title: item.title,
+        url: item.url ?? null,
+        source_name: item.source_name,
+        source_type: item.source_type,
+        date,
+        published_at: item.published_at,
+        entity_ids: item.entity_ids,
+        is_consultation: isConsultation,
+        event_date: item.event_date ?? null,
+        body_preview: item.body ? item.body.substring(0, 300) : null,
+      };
+    });
+
+    return {
+      clientId,
+      clientName: client.name,
+      days,
+      totalScored: items.length,
+      returnedCount: results.length,
+      minScoreUsed: threshold,
+      results,
+    };
+  } catch (err) {
+    console.error('[feed_top_items] error:', err);
+    return { error: err instanceof Error ? err.message : 'Failed to fetch top items' };
+  }
+}
+
+async function handleFeedDeadlines(
+  clientId: string,
+  daysAhead?: number,
+): Promise<Record<string, unknown>> {
+  const client = getClientBySlug(clientId);
+  if (!client) {
+    return { error: `Client "${clientId}" not found.` };
+  }
+
+  const ahead = daysAhead ?? 30;
+  const stakeholderIds = client.stakeholders.map((s) => s.entityId);
+  const now = new Date().toISOString();
+  const futureLimit = new Date(Date.now() + ahead * 24 * 60 * 60 * 1000).toISOString();
+
+  try {
+    const seen = new Set<string>();
+    const allItems: Array<Record<string, unknown>> = [];
+
+    // 1. Items with future event_date
+    const { data: forwardItems } = await supabase
+      .from('feed_items')
+      .select('*')
+      .overlaps('entity_ids', stakeholderIds)
+      .gte('event_date', now)
+      .lte('event_date', futureLimit)
+      .order('event_date', { ascending: true })
+      .limit(50);
+
+    for (const item of (forwardItems ?? []) as FeedItem[]) {
+      if (!seen.has(item.id)) {
+        seen.add(item.id);
+        allItems.push(formatDeadlineItem(item, client));
+      }
+    }
+
+    // 2. Recent consultations / calls for evidence (may have deadlines in body)
+    const { data: consultations } = await supabase
+      .from('feed_items')
+      .select('*')
+      .overlaps('entity_ids', stakeholderIds)
+      .or('title.ilike.%consultation%,title.ilike.%call for evidence%,title.ilike.%deadline%,title.ilike.%respond by%,title.ilike.%closes%')
+      .gte('published_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
+      .order('published_at', { ascending: false })
+      .limit(30);
+
+    for (const item of (consultations ?? []) as FeedItem[]) {
+      if (!seen.has(item.id)) {
+        seen.add(item.id);
+        allItems.push(formatDeadlineItem(item, client));
+      }
+    }
+
+    if (allItems.length === 0) {
+      return {
+        clientId,
+        clientName: client.name,
+        daysAhead: ahead,
+        results: [],
+        message: 'No upcoming deadlines or consultations found for this client.',
+      };
+    }
+
+    return {
+      clientId,
+      clientName: client.name,
+      daysAhead: ahead,
+      resultCount: allItems.length,
+      results: allItems,
+    };
+  } catch (err) {
+    console.error('[feed_deadlines] error:', err);
+    return { error: err instanceof Error ? err.message : 'Failed to fetch deadlines' };
+  }
+}
+
+function formatDeadlineItem(item: FeedItem, client: Parameters<typeof computeFeedRelevance>[1]): Record<string, unknown> {
+  const score = computeFeedRelevance(item, client);
+  const daysUntil = item.event_date
+    ? Math.ceil((new Date(item.event_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+    : null;
+
+  return {
+    title: item.title,
+    url: item.url ?? null,
+    source_name: item.source_name,
+    source_type: item.source_type,
+    published_at: item.published_at,
+    event_date: item.event_date ?? null,
+    days_until: daysUntil,
+    is_urgent: daysUntil !== null && daysUntil < 14,
+    relevance_score: Math.round(score * 100),
+    entity_ids: item.entity_ids,
+    body_preview: item.body ? item.body.substring(0, 300) : null,
+  };
 }
 
 function handleStakeholderMap(clientId?: string): Record<string, unknown> {

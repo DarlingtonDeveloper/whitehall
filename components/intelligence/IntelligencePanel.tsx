@@ -195,7 +195,7 @@ export default function IntelligencePanel() {
 
   // ── Send message ─────────────────────────────────────────────────────
   const sendMessage = useCallback(
-    async (text: string) => {
+    async (text: string, isBriefing?: boolean) => {
       const trimmed = text.trim();
       if (!trimmed || isLoading) return;
 
@@ -228,6 +228,7 @@ export default function IntelligencePanel() {
             entityId: selectedEntityId ?? undefined,
             history,
             viewState,
+            isBriefing: isBriefing ?? false,
           }),
         });
 
@@ -295,7 +296,7 @@ export default function IntelligencePanel() {
     const unsub = onChatAction((action) => {
       setActiveTab('chat');
       // Small delay to ensure tab switch renders before sending
-      setTimeout(() => sendMessage(action.message), 50);
+      setTimeout(() => sendMessage(action.message, action.isBriefing), 50);
     });
     return unsub;
   }, [sendMessage]);

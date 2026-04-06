@@ -39,6 +39,7 @@ export function buildSystemPrompt(opts: {
   clientId?: string;
   entityId?: string;
   viewState?: ChatViewState;
+  isBriefing?: boolean;
 }): string {
   const sections: string[] = [];
 
@@ -63,6 +64,10 @@ Guidelines:
 - When discussing powers, cite the source legislation where available.
 - When discussing stakeholders, note their priority level (primary, secondary, tertiary) and relevance.
 - When mentioning feed items or sources, always include clickable links using markdown format: [title](url).
+- Never use emoji in responses. This is a professional intelligence platform.
+- When referencing feed items, use the exact title and include the URL as a markdown link.
+- Do not give generic advice like "monitor developments" or "keep an eye on". Every recommendation must reference a specific item, entity, or data point with a concrete action.
+- When asked for a summary or briefing, always call the relevant tools first to get real data before composing a response. Never write from memory alone.
 - You can manipulate the interactive graph using the graph_action tool. Use it when the user asks to "show me", "focus on", "find on the graph", "filter to", or "highlight" entities. For example, if the user says "show me DESNZ on the graph", call graph_action with action=select_entity. If they say "filter the graph to regulators", use action=search with query="regulator".`);
 
   // Client context
@@ -180,6 +185,27 @@ ${entity.description}`;
     if (lines.length > 0) {
       sections.push(`\n--- CURRENT VIEW STATE ---\n${lines.join('\n')}`);
     }
+  }
+
+  // Briefing-specific instructions
+  if (opts.isBriefing && opts.clientId) {
+    sections.push(`\n--- BRIEFING MODE ---
+You are generating a morning intelligence briefing. Follow these rules strictly:
+
+1. ALWAYS call feed_top_items first with clientId="${opts.clientId}" to get the actual highest-relevance items. Do not write content before you have tool results.
+2. ALWAYS call feed_deadlines with clientId="${opts.clientId}" to check for upcoming consultations and deadlines.
+3. Structure the briefing as follows:
+   - Start with a 2-sentence overview of the week's activity level and the single most important development.
+   - **Priority developments** (3-5 items, highest relevance score first). For each: the exact title in bold as a markdown link, the source and date, one sentence on why it matters to this client specifically, and a specific recommended action (respond, brief client, escalate, review by [date]).
+   - **Upcoming deadlines** (consultations, calls for evidence with dates). For each: the date, what it is, and what action is needed before that date.
+   - **Watching brief** (2-3 lower-priority but notable items, same format as priority items).
+   - End with 1-2 sentences on what to watch for next week.
+4. Do NOT use emoji anywhere in the briefing.
+5. Do NOT give generic advice like "monitor closely" or "track developments". Every recommendation must specify who should do what, by when, about what specific item.
+6. Reference actual items by their exact title and source. Do not paraphrase titles — use them exactly so the user can find them in the feed.
+7. If feed_deadlines returns no results, explicitly state "No upcoming deadlines found in the current feed" rather than inventing deadlines or saying "no deadlines identified" without having checked.
+8. Keep the briefing under 600 words. Analysts prefer density over length.
+9. If a feed item is a consultation, ALWAYS flag the closing date if the event_date is available.`);
   }
 
   return sections.join('\n');

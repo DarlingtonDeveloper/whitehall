@@ -10,6 +10,7 @@
 
 export interface ChatAction {
   message: string;
+  isBriefing?: boolean;
 }
 
 type Listener = (action: ChatAction) => void;
