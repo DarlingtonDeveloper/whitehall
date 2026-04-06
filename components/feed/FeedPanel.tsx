@@ -5,6 +5,7 @@ import { supabase } from '@/lib/db';
 import { getClientBySlug } from '@/data/clients';
 import { usePanelStore } from '@/lib/panelStore';
 import { useClientOverrides } from '@/lib/clientOverrides';
+import { computeFeedRelevance } from '@/lib/feed/scoring';
 import type { FeedItem } from '@/types/feed';
 import FeedItemCard from './FeedItem';
 
@@ -15,6 +16,7 @@ interface FeedPanelProps {
 }
 
 type DateRange = '24h' | '7d' | '30d' | 'all';
+type SortMode = 'recent' | 'relevance';
 
 const DATE_OPTIONS: { value: DateRange; label: string }[] = [
   { value: '24h', label: '24h' },
@@ -44,6 +46,7 @@ export default function FeedPanel({
   const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [dateRange, setDateRange] = useState<DateRange>('7d');
+  const [sortMode, setSortMode] = useState<SortMode>('recent');
 
   // Get active keywords for client-based keyword filtering
   const clientConfig = clientId ? getClientBySlug(clientId) : null;
@@ -170,7 +173,7 @@ export default function FeedPanel({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [entityId, clientId, propItems, activeSourceIdsKey, activeKeywordsKey]);
 
-  // Client-side filtering by search + date
+  // Client-side filtering by search + date, then sort
   const filtered = useMemo(() => {
     let list = items;
 
@@ -189,8 +192,17 @@ export default function FeedPanel({
       );
     }
 
+    // Sort by relevance score when a client is selected and relevance mode is active
+    if (sortMode === 'relevance' && clientConfig) {
+      list = [...list].sort(
+        (a, b) =>
+          computeFeedRelevance(b, clientConfig) -
+          computeFeedRelevance(a, clientConfig),
+      );
+    }
+
     return list;
-  }, [items, search, dateRange]);
+  }, [items, search, dateRange, sortMode, clientConfig]);
 
   const clearSearch = useCallback(() => setSearch(''), []);
 
@@ -219,7 +231,7 @@ export default function FeedPanel({
           )}
         </div>
 
-        {/* Date range + count */}
+        {/* Date range + sort toggle + count */}
         <div className="flex items-center justify-between">
           <div className="flex gap-0.5">
             {DATE_OPTIONS.map((opt) => (
@@ -235,6 +247,24 @@ export default function FeedPanel({
                 {opt.label}
               </button>
             ))}
+            {clientConfig && (
+              <>
+                <span className="mx-1 text-wh-border">|</span>
+                {(['recent', 'relevance'] as const).map((mode) => (
+                  <button
+                    key={mode}
+                    onClick={() => setSortMode(mode)}
+                    className={`rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                      sortMode === mode
+                        ? 'bg-wh-accent-teal/15 text-wh-accent-teal'
+                        : 'text-wh-text-secondary/60 hover:text-wh-text-secondary hover:bg-wh-border/40'
+                    }`}
+                  >
+                    {mode === 'recent' ? 'Recent' : 'Relevant'}
+                  </button>
+                ))}
+              </>
+            )}
           </div>
           <span className="text-[10px] text-wh-text-secondary/40">
             {loading ? '...' : `${filtered.length} items`}

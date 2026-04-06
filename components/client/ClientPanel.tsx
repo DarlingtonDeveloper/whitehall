@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useCallback, useRef, type KeyboardEvent } from 'react';
+import { useMemo, useState, useCallback, useRef, useEffect, type KeyboardEvent } from 'react';
 import type { ClientConfig } from '@/types/client';
 import { getEntity } from '@/data/entities';
 import { selectEntity, selectClient, usePanelStore, toggleSource } from '@/lib/panelStore';
@@ -11,6 +11,7 @@ import {
   type ThemeEntry,
 } from '@/lib/clientOverrides';
 import ExportButton from '@/components/export/ExportButton';
+import type { ReportStatus } from '@/types/report';
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
@@ -60,8 +61,9 @@ export default function ClientPanel({ client }: { client: ClientConfig }) {
         <p className="mt-2 text-[13px] leading-relaxed text-wh-text-secondary">
           {client.description}
         </p>
-        <div className="mt-3">
+        <div className="mt-3 flex items-center gap-2">
           <ExportButton clientId={client.id} />
+          <ReportListButton clientId={client.id} />
         </div>
       </div>
 
@@ -451,6 +453,135 @@ function ThemeBlock({
             placeholder="Add keyword..."
             className="w-full bg-transparent text-[9px] text-wh-text-secondary placeholder:text-wh-text-secondary/30 outline-none border-b border-transparent focus:border-wh-border transition-colors py-0.5"
           />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Report list button + dropdown                                      */
+/* ------------------------------------------------------------------ */
+
+const STATUS_STYLES: Record<ReportStatus, string> = {
+  generating: 'bg-amber-500/15 text-amber-400',
+  draft: 'bg-blue-500/15 text-blue-400',
+  in_review: 'bg-purple-500/15 text-purple-400',
+  approved: 'bg-green-500/15 text-green-400',
+  exported: 'bg-wh-accent-teal/15 text-wh-accent-teal',
+};
+
+const STATUS_LABELS: Record<ReportStatus, string> = {
+  generating: 'Generating',
+  draft: 'Draft',
+  in_review: 'In Review',
+  approved: 'Approved',
+  exported: 'Exported',
+};
+
+interface ReportListItem {
+  id: string;
+  status: ReportStatus;
+  date_range_from: string;
+  date_range_to: string;
+  created_at: string;
+}
+
+function ReportListButton({ clientId }: { clientId: string }) {
+  const [open, setOpen] = useState(false);
+  const [reports, setReports] = useState<ReportListItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [generating, setGenerating] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setLoading(true);
+    import('@/lib/db').then(({ supabase }) => {
+      supabase
+        .from('report_drafts')
+        .select('id, status, date_range_from, date_range_to, created_at')
+        .eq('client_id', clientId)
+        .order('created_at', { ascending: false })
+        .limit(10)
+        .then(({ data }) => {
+          setReports((data as ReportListItem[]) ?? []);
+          setLoading(false);
+        });
+    });
+  }, [open, clientId]);
+
+  const handleGenerate = async () => {
+    setGenerating(true);
+    try {
+      const res = await fetch('/api/reports/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.draftId) {
+          window.location.href = `/client/${clientId}/report/${data.draftId}`;
+        }
+      }
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="rounded-md border border-wh-border px-3 py-1.5 text-xs font-medium text-wh-text-secondary transition-colors hover:bg-wh-border/50 hover:text-wh-text-primary"
+      >
+        Reports
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full z-50 mt-1 w-72 rounded-lg border border-wh-border bg-wh-panel shadow-lg">
+          <div className="flex items-center justify-between border-b border-wh-border px-3 py-2">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-wh-text-secondary/70">
+              Reports
+            </span>
+            <button
+              type="button"
+              onClick={handleGenerate}
+              disabled={generating}
+              className="rounded bg-wh-accent-teal/15 px-2 py-0.5 text-[10px] font-medium text-wh-accent-teal transition-colors hover:bg-wh-accent-teal/25 disabled:opacity-50"
+            >
+              {generating ? 'Generating...' : '+ New Report'}
+            </button>
+          </div>
+
+          <div className="max-h-60 overflow-y-auto">
+            {loading && (
+              <div className="p-3 text-[10px] text-wh-text-secondary/50">Loading...</div>
+            )}
+            {!loading && reports.length === 0 && (
+              <div className="p-3 text-[10px] text-wh-text-secondary/50">No reports yet.</div>
+            )}
+            {reports.map((r) => (
+              <a
+                key={r.id}
+                href={`/client/${clientId}/report/${r.id}`}
+                className="flex items-center gap-2 border-b border-wh-border/30 px-3 py-2 transition-colors hover:bg-wh-border/20 last:border-0"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="text-[10px] text-wh-text-primary">
+                    {new Date(r.date_range_from).toLocaleDateString('en-GB')} – {new Date(r.date_range_to).toLocaleDateString('en-GB')}
+                  </p>
+                  <p className="text-[9px] text-wh-text-secondary/50">
+                    {new Date(r.created_at).toLocaleDateString('en-GB')}
+                  </p>
+                </div>
+                <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-medium ${STATUS_STYLES[r.status]}`}>
+                  {STATUS_LABELS[r.status]}
+                </span>
+              </a>
+            ))}
+          </div>
         </div>
       )}
     </div>

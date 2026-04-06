@@ -1,0 +1,206 @@
+import { streamText, stepCountIs } from 'ai';
+import { anthropic } from '@ai-sdk/anthropic';
+import { supabase } from '@/lib/db';
+import { getClientBySlug } from '@/data/clients';
+import { buildReportTools } from '@/lib/report/tools';
+import type { AnalysisJSON } from '@/lib/export/types';
+import type { ReportMutation } from '@/types/report';
+
+export const dynamic = 'force-dynamic';
+
+interface ReportChatBody {
+  message: string;
+  userRole?: string;
+  activeSection?: string;
+  activeItemRef?: string;
+}
+
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> },
+) {
+  const { id } = await params;
+
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return new Response(
+      JSON.stringify({ error: 'ANTHROPIC_API_KEY is not configured.' }),
+      { status: 503, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
+  let body: ReportChatBody;
+  try {
+    body = await request.json();
+  } catch {
+    return new Response(
+      JSON.stringify({ error: 'Invalid JSON' }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
+  const { message, userRole, activeSection, activeItemRef } = body;
+  if (!message || typeof message !== 'string') {
+    return new Response(
+      JSON.stringify({ error: 'A "message" field is required.' }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
+  // Load draft
+  const { data: draft, error: draftError } = await supabase
+    .from('report_drafts')
+    .select('*')
+    .eq('id', id)
+    .single();
+
+  if (draftError || !draft) {
+    return new Response(
+      JSON.stringify({ error: 'Report not found' }),
+      { status: 404, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
+  const client = getClientBySlug(draft.client_id);
+  if (!client) {
+    return new Response(
+      JSON.stringify({ error: `Unknown client: "${draft.client_id}"` }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
+  // Load chat history for this report
+  const { data: history } = await supabase
+    .from('report_chat_messages')
+    .select('role, content')
+    .eq('report_draft_id', id)
+    .order('created_at', { ascending: true });
+
+  const messages: Array<{ role: 'user' | 'assistant'; content: string }> = [];
+  if (history) {
+    for (const msg of history) {
+      if (msg.role === 'user' || msg.role === 'assistant') {
+        messages.push({ role: msg.role, content: msg.content });
+      }
+    }
+  }
+  messages.push({ role: 'user', content: message });
+
+  // Build system prompt with report context
+  const analysis = draft.sections as AnalysisJSON;
+  const sectionSummary = Object.entries(analysis.sections)
+    .map(([id, section]) => {
+      const items = section.items || [];
+      const itemList = items
+        .map(i => `  - ${i.ref}: [${i.rag}] ${i.headline}`)
+        .join('\n');
+      return `${id} (${items.length} items):\n${itemList || '  (no items)'}`;
+    })
+    .join('\n\n');
+
+  const systemPrompt = `You are an intelligence assistant helping build a weekly monitoring report for ${client.name} at WA Communications.
+
+CURRENT REPORT STATE:
+${sectionSummary}
+
+EXECUTIVE SUMMARY:
+${analysis.executive_summary?.top_line || '(not yet written)'}
+
+CLIENT: ${client.name} (${client.sector})
+STAKEHOLDERS: ${client.stakeholders.filter(s => s.priority !== 'tertiary').map(s => s.entityId).join(', ')}
+
+You have tools to edit the report directly:
+- edit_report_item: Change any field on an existing item (summary, client_relevance, recommended_action, rag, escalation, headline)
+- add_report_item: Add a new enriched item to a theme section
+- remove_report_item: Remove an item from the report
+- move_report_item: Move an item between theme sections
+
+When the user asks you to change something, use the appropriate tool. Always confirm what you changed.
+When the user gives context about WHY something matters — incorporate it into the client_relevance field.
+Reference items by their ref numbers (e.g. "item 2.1").
+
+You can also use general tools: entity_lookup, feed_search, stakeholder_map.`;
+
+  // Build tools (report tools need the reportId in closure)
+  const tools = buildReportTools(id, analysis);
+
+  // Track mutations from tool calls
+  const mutations: ReportMutation[] = [];
+
+  const result = streamText({
+    model: anthropic('claude-sonnet-4-20250514'),
+    system: systemPrompt,
+    messages,
+    tools,
+    stopWhen: stepCountIs(5),
+    onStepFinish: ({ toolCalls, toolResults }) => {
+      if (!toolCalls || !toolResults) return;
+      for (const call of toolCalls) {
+        const matched = toolResults.find(r => r.toolCallId === call.toolCallId);
+        if (!matched) continue;
+        const res = matched.output as Record<string, unknown> | undefined;
+        if (res?.mutation) {
+          mutations.push(res.mutation as ReportMutation);
+        }
+      }
+    },
+  });
+
+  // Stream response with embedded mutation markers
+  const encoder = new TextEncoder();
+  let mutationsEmitted = false;
+
+  const readable = new ReadableStream({
+    async start(controller) {
+      try {
+        for await (const chunk of result.textStream) {
+          if (!mutationsEmitted && mutations.length > 0) {
+            for (const m of mutations) {
+              controller.enqueue(
+                encoder.encode(`<!--MUTATION:${JSON.stringify(m)}-->`),
+              );
+            }
+            mutations.length = 0;
+            mutationsEmitted = true;
+          }
+          controller.enqueue(encoder.encode(chunk));
+        }
+
+        // Emit any remaining mutations
+        for (const m of mutations) {
+          controller.enqueue(
+            encoder.encode(`<!--MUTATION:${JSON.stringify(m)}-->`),
+          );
+        }
+
+        controller.close();
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'An unexpected error occurred.';
+        controller.enqueue(encoder.encode(`\n\n[Error: ${msg}]`));
+        controller.close();
+      }
+    },
+  });
+
+  // Store messages asynchronously (don't block stream)
+  (async () => {
+    try {
+      await supabase.from('report_chat_messages').insert({
+        report_draft_id: id,
+        role: 'user',
+        content: message,
+        user_role: userRole,
+        active_section: activeSection,
+        active_item_ref: activeItemRef,
+      });
+    } catch { /* best-effort */ }
+  })();
+
+  return new Response(readable, {
+    headers: {
+      'Content-Type': 'text/plain; charset=utf-8',
+      'Cache-Control': 'no-cache',
+      'Transfer-Encoding': 'chunked',
+    },
+  });
+}

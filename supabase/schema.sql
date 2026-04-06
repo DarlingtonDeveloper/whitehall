@@ -79,3 +79,69 @@ CREATE TABLE IF NOT EXISTS enriched_items (
   created_at      TIMESTAMPTZ DEFAULT NOW(),
   UNIQUE(feed_item_id, client_id)
 );
+
+-- ============================================================================
+-- Report workflow tables
+-- ============================================================================
+
+-- Report drafts — mutable analysis JSON with workflow status
+CREATE TABLE IF NOT EXISTS report_drafts (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  client_id           TEXT NOT NULL,
+  status              TEXT NOT NULL DEFAULT 'draft',
+
+  date_range_from     TIMESTAMPTZ NOT NULL,
+  date_range_to       TIMESTAMPTZ NOT NULL,
+
+  sections            JSONB NOT NULL,
+  original_sections   JSONB NOT NULL,
+
+  feed_item_ids       UUID[] DEFAULT '{}',
+
+  created_by          TEXT,
+  reviewed_by         TEXT,
+  review_requested_at TIMESTAMPTZ,
+  reviewed_at         TIMESTAMPTZ,
+  approved_at         TIMESTAMPTZ,
+  exported_at         TIMESTAMPTZ,
+
+  review_token        TEXT UNIQUE,
+
+  created_at          TIMESTAMPTZ DEFAULT NOW(),
+  updated_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_report_drafts_client ON report_drafts (client_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_report_drafts_status ON report_drafts (status);
+CREATE INDEX IF NOT EXISTS idx_report_drafts_token ON report_drafts (review_token);
+
+-- Report chat messages
+CREATE TABLE IF NOT EXISTS report_chat_messages (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  report_draft_id     UUID REFERENCES report_drafts(id) ON DELETE CASCADE,
+
+  role                TEXT NOT NULL,
+  content             TEXT NOT NULL,
+
+  user_role           TEXT,
+  user_name           TEXT,
+
+  active_section      TEXT,
+  active_item_ref     TEXT,
+
+  mutations           JSONB DEFAULT '[]',
+  tool_calls          JSONB,
+
+  created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_report_chat_draft ON report_chat_messages (report_draft_id, created_at);
+
+-- Client learned signals (feedback loop)
+CREATE TABLE IF NOT EXISTS client_learned_signals (
+  client_id           TEXT PRIMARY KEY,
+  source_boosts       JSONB DEFAULT '{}',
+  keyword_boosts      JSONB DEFAULT '{}',
+  rag_adjustments     JSONB DEFAULT '{}',
+  computed_at         TIMESTAMPTZ DEFAULT NOW()
+);
