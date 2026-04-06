@@ -19,6 +19,7 @@ import * as path from 'path';
 import {
   enrichEntityIds as enrichEntityIdsCentral,
 } from './entity-enrichment';
+import { cleanTitle } from './clean-title';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env.local') });
 
@@ -358,7 +359,7 @@ export async function collectBills(): Promise<{ inserted: number; skipped: numbe
         continue;
       }
 
-      const title = bill.shortTitle || bill.longTitle || 'Untitled Bill';
+      const title = cleanTitle(bill.shortTitle || bill.longTitle || 'Untitled Bill');
       const billUrl = `https://bills.parliament.uk/bills/${bill.billId}`;
       const fingerprint = makeFingerprint(billUrl, title);
 
@@ -440,9 +441,9 @@ export async function collectWrittenQuestions(): Promise<{ inserted: number; ski
       const q = item.value;
       if (!q) continue;
 
-      const title = q.questionText
+      const title = cleanTitle(q.questionText
         ? stripHtml(q.questionText).slice(0, 300)
-        : 'Written Question';
+        : 'Written Question');
       const dateSlug = q.dateTabled ? q.dateTabled.split('T')[0] : '';
       const questionUrl = dateSlug && q.uin
         ? `https://questions-statements.parliament.uk/written-questions/detail/${dateSlug}/${q.uin}`
@@ -510,7 +511,7 @@ export async function collectDivisions(): Promise<{ inserted: number; skipped: n
   if (data && Array.isArray(data)) {
     for (const div of data) {
       if (!div.Title || !div.DivisionId) continue;
-      const title = div.Title;
+      const title = cleanTitle(div.Title);
       const divUrl = `https://votes.parliament.uk/votes/commons/division/${div.DivisionId}`;
       const fingerprint = makeFingerprint(divUrl, title);
 
@@ -566,7 +567,7 @@ export async function collectLordsDivisions(): Promise<{ inserted: number; skipp
   if (data && Array.isArray(data)) {
     for (const div of data) {
       if (!div.Title || !div.DivisionId) continue;
-      const title = div.Title;
+      const title = cleanTitle(div.Title);
       const divUrl = `https://votes.parliament.uk/votes/lords/division/${div.DivisionId}`;
       const fingerprint = makeFingerprint(divUrl, title);
 
@@ -640,7 +641,7 @@ export async function collectWrittenStatements(): Promise<{ inserted: number; sk
       const s = item.value;
       if (!s) continue;
 
-      const title = s.title || 'Written Statement';
+      const title = cleanTitle(s.title || 'Written Statement');
       const dateSlug = s.dateMade ? s.dateMade.split('T')[0] : '';
       const statementUrl = dateSlug && s.uin
         ? `https://questions-statements.parliament.uk/written-statements/detail/${dateSlug}/${s.uin}`
@@ -739,7 +740,7 @@ export async function collectEdms(): Promise<{ inserted: number; skipped: number
     for (const edm of data.Response) {
       if (!edm.title) continue;
 
-      const title = `Early Day Motion: ${edm.title}`;
+      const title = cleanTitle(`Early Day Motion: ${edm.title}`);
       const edmUrl = `https://edm.parliament.uk/early-day-motion/${edm.id}`;
       const fingerprint = makeFingerprint(edmUrl, edm.title);
 
@@ -838,7 +839,7 @@ export async function collectOralQuestions(): Promise<{ inserted: number; skippe
       if (!q) continue;
 
       const questionText = q.questionText ? stripHtml(q.questionText) : 'Oral Question';
-      const title = questionText.slice(0, 300);
+      const title = cleanTitle(questionText.slice(0, 300));
       const dateSlug = q.questionDate ? q.questionDate.split('T')[0] : '';
       const questionUrl = q.uin
         ? `https://questions-statements.parliament.uk/oral-questions/detail/${q.uin}`

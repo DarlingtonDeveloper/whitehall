@@ -17,6 +17,7 @@ import * as path from 'path';
 import {
   enrichEntityIds as enrichEntityIdsCentral,
 } from './entity-enrichment';
+import { cleanTitle } from './clean-title';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env.local') });
 
@@ -352,7 +353,7 @@ export async function collectLegislation(): Promise<{ inserted: number; skipped:
         return {
           source_type: 'legislation' as const,
           source_name: feed.label,
-          title: entry.title,
+          title: cleanTitle(entry.title),
           url: entry.url,
           published_at: entry.published_at,
           body: entry.body || null,

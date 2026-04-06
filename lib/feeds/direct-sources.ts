@@ -17,6 +17,7 @@ import {
   makeFingerprint,
   stripHtml,
 } from './entity-enrichment';
+import { cleanTitle, improveStakeholderTitle } from './clean-title';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env.local') });
 
@@ -156,14 +157,16 @@ export async function collectDirectSources(): Promise<{ inserted: number; skippe
           continue;
         }
 
-        const entityIds = enrichEntityIds(source.defaultEntityIds, link.title, '');
-        const ragStatus = determineRagStatus(link.title, '');
-        const fingerprint = makeFingerprint(fullUrl, link.title);
+        const cleaned = cleanTitle(link.title);
+        const improved = improveStakeholderTitle(cleaned, source.name, null);
+        const entityIds = enrichEntityIds(source.defaultEntityIds, improved, '');
+        const ragStatus = determineRagStatus(improved, '');
+        const fingerprint = makeFingerprint(fullUrl, cleaned);
 
         rows.push({
           source_type: 'stakeholder',
           source_name: source.name,
-          title: link.title,
+          title: improved,
           url: fullUrl,
           published_at: new Date().toISOString(),
           body: null,

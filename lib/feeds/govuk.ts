@@ -13,6 +13,7 @@ import * as path from 'path';
 import {
   enrichEntityIds as enrichEntityIdsCentral,
 } from './entity-enrichment';
+import { cleanTitle } from './clean-title';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env.local') });
 
@@ -549,7 +550,7 @@ export async function collectGovUK(): Promise<{ inserted: number; skipped: numbe
         return {
           source_type: 'govuk' as const,
           source_name: `GOV.UK - ${feed.label}`,
-          title: entry.title,
+          title: cleanTitle(entry.title),
           url: entry.url,
           published_at: entry.published_at,
           body: entry.body || null,

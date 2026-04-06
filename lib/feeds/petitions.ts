@@ -19,6 +19,7 @@ import {
   determineRagStatus,
   makeFingerprint,
 } from './entity-enrichment';
+import { cleanTitle } from './clean-title';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env.local') });
 
@@ -159,7 +160,7 @@ export async function collectPetitions(): Promise<{ inserted: number; skipped: n
           }
           body += `\n\nSignatures: ${attrs.signature_count.toLocaleString()}`;
 
-          const title = `Petition: ${attrs.action}`;
+          const title = cleanTitle(`Petition: ${attrs.action}`);
           const entityIds = enrichEntityIds([], title, body);
           const ragStatus = determineRagStatus(title, body);
           const fingerprint = makeFingerprint(petitionUrl, attrs.action);

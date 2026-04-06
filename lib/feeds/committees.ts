@@ -20,6 +20,7 @@ import {
   makeFingerprint,
   stripHtml,
 } from './entity-enrichment';
+import { cleanTitle } from './clean-title';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env.local') });
 
@@ -223,7 +224,7 @@ export async function collectCommittees(): Promise<{ inserted: number; skipped: 
           continue;
         }
 
-        const title = `${committee.name}: ${link.title}`;
+        const title = cleanTitle(`${committee.name}: ${link.title}`);
         const entityIds = enrichEntityIds(committee.defaultEntityIds, title, '');
         const ragStatus = determineRagStatus(title, '');
         const fingerprint = makeFingerprint(fullUrl, link.title);

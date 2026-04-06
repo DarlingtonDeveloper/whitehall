@@ -18,6 +18,7 @@ import {
   makeFingerprint,
   stripHtml,
 } from './entity-enrichment';
+import { cleanTitle } from './clean-title';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env.local') });
 
@@ -330,7 +331,7 @@ export async function collectRss(): Promise<{ inserted: number; skipped: number 
         rows.push({
           source_type: 'trade_press',
           source_name: feed.name,
-          title: item.title,
+          title: cleanTitle(item.title),
           url: item.url,
           published_at: item.published_at || new Date().toISOString(),
           body: item.body || null,

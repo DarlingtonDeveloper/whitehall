@@ -13,6 +13,7 @@ import * as path from 'path';
 import {
   enrichEntityIds as enrichEntityIdsCentral,
 } from './entity-enrichment';
+import { cleanTitle } from './clean-title';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env.local') });
 
@@ -310,7 +311,7 @@ export async function collectHansard(): Promise<{ inserted: number; skipped: num
       const rows: Array<Record<string, unknown>> = [];
 
       for (const c of contributions) {
-        const title = c.SectionTitle || c.DebateSection || 'Untitled';
+        const title = cleanTitle(c.SectionTitle || c.DebateSection || 'Untitled');
         const url = buildHansardUrl(c);
         const fingerprint = makeFingerprint(url, title);
 

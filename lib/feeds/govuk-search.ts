@@ -20,6 +20,7 @@ import {
   enrichEntityIds,
   determineRagStatus,
 } from './govuk';
+import { cleanTitle } from './clean-title';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env.local') });
 
@@ -255,7 +256,7 @@ function processSearchResults(
     rows.push({
       source_type: 'govuk',
       source_name: sourceName,
-      title: result.title,
+      title: cleanTitle(result.title),
       url: fullUrl,
       published_at: pubDate,
       body: description.slice(0, 2000) || null,
