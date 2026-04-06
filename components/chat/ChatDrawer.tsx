@@ -11,16 +11,22 @@ import {
 import ChatMessage from './ChatMessage';
 import SuggestedQuestions from './SuggestedQuestions';
 import { dispatchGraphCommand, type GraphCommand } from '@/lib/graphCommands';
+import {
+  useChatState,
+  addMessage,
+  updateStreamingMessage,
+  removeMessage,
+  setChatLoading,
+  setChatStreamingId,
+  setChatError,
+  clearChat,
+  persistMessage,
+  type ChatMsg,
+} from '@/lib/chatStore';
 
 /* -------------------------------------------------------------------------- */
 /*  Types                                                                     */
 /* -------------------------------------------------------------------------- */
-
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-}
 
 interface ChatDrawerProps {
   isOpen: boolean;
@@ -55,12 +61,10 @@ export default function ChatDrawer({
   clientId,
   entityId,
 }: ChatDrawerProps) {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [streamingId, setStreamingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const chatState = useChatState(clientId ?? null);
+  const { messages, isLoading, streamingId, error } = chatState;
 
+  const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -73,17 +77,10 @@ export default function ChatDrawer({
   /* --- Focus textarea when drawer opens --- */
   useEffect(() => {
     if (isOpen) {
-      // Small delay to let the slide animation start before focusing
       const t = setTimeout(() => textareaRef.current?.focus(), 220);
       return () => clearTimeout(t);
     }
   }, [isOpen]);
-
-  /* --- Clear context-specific conversation when context changes --- */
-  useEffect(() => {
-    setMessages([]);
-    setError(null);
-  }, [clientId, entityId]);
 
   /* --- Auto-resize textarea --- */
   const handleTextareaInput = useCallback(() => {
@@ -99,25 +96,24 @@ export default function ChatDrawer({
       const trimmed = text.trim();
       if (!trimmed || isLoading) return;
 
-      setError(null);
+      const cid = clientId ?? null;
+      setChatError(cid, null);
       setInput('');
 
-      // Reset textarea height
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto';
       }
 
-      const userMsg: Message = { id: nextId(), role: 'user', content: trimmed };
+      const userMsg: ChatMsg = { id: nextId(), role: 'user', content: trimmed };
       const assistantId = nextId();
-      const assistantMsg: Message = {
-        id: assistantId,
-        role: 'assistant',
-        content: '',
-      };
+      const assistantMsg: ChatMsg = { id: assistantId, role: 'assistant', content: '' };
 
-      setMessages((prev) => [...prev, userMsg, assistantMsg]);
-      setStreamingId(assistantId);
-      setIsLoading(true);
+      addMessage(cid, userMsg);
+      addMessage(cid, assistantMsg);
+      setChatStreamingId(cid, assistantId);
+      setChatLoading(cid, true);
+
+      persistMessage(cid, 'user', trimmed);
 
       try {
         const history = messages.map((m) => ({
@@ -137,19 +133,15 @@ export default function ChatDrawer({
         });
 
         if (!res.ok) {
-          // Try to parse JSON error body
           let errMsg = `Request failed (${res.status})`;
           try {
             const errJson = await res.json();
             if (errJson.error) errMsg = errJson.error;
-          } catch {
-            // Response wasn't JSON, use status text
-          }
-          // Remove the empty assistant message and show error
-          setMessages((prev) => prev.filter((m) => m.id !== assistantId));
-          setError(errMsg);
-          setIsLoading(false);
-          setStreamingId(null);
+          } catch { /* Response wasn't JSON */ }
+          removeMessage(cid, assistantId);
+          setChatError(cid, errMsg);
+          setChatLoading(cid, false);
+          setChatStreamingId(cid, null);
           return;
         }
 
@@ -163,8 +155,6 @@ export default function ChatDrawer({
           if (done) break;
           accumulated += decoder.decode(value, { stream: true });
 
-          // DELIBERATE: See IntelligencePanel.tsx for why graph commands are
-          // embedded as HTML comment markers in the text stream.
           const cmdRegex = /<!--GRAPH_CMD:(.*?)-->/g;
           let cmdMatch;
           while ((cmdMatch = cmdRegex.exec(accumulated)) !== null) {
@@ -178,25 +168,23 @@ export default function ChatDrawer({
           }
 
           const displayText = accumulated.replace(/\n?<!--GRAPH_CMD:.*?-->\n?/g, '');
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantId ? { ...m, content: displayText } : m,
-            ),
-          );
+          updateStreamingMessage(cid, assistantId, displayText);
         }
 
         const finalText = accumulated.replace(/\n?<!--GRAPH_CMD:.*?-->\n?/g, '');
         if (!finalText.trim()) {
-          setMessages((prev) => prev.filter((m) => m.id !== assistantId));
+          removeMessage(cid, assistantId);
+        } else {
+          persistMessage(cid, 'assistant', finalText);
         }
       } catch (err) {
         const errMsg =
           err instanceof Error ? err.message : 'An unexpected error occurred.';
-        setMessages((prev) => prev.filter((m) => m.id !== assistantId));
-        setError(errMsg);
+        removeMessage(cid, assistantId);
+        setChatError(cid, errMsg);
       } finally {
-        setIsLoading(false);
-        setStreamingId(null);
+        setChatLoading(cid, false);
+        setChatStreamingId(cid, null);
       }
     },
     [isLoading, messages, clientId, entityId],
@@ -258,7 +246,6 @@ export default function ChatDrawer({
         {/* Header */}
         <div className="flex shrink-0 items-center gap-3 border-b border-wh-border px-4 py-3">
           <div className="flex flex-1 items-center gap-2.5">
-            {/* Chat icon */}
             <svg
               className="h-4 w-4 text-wh-accent-teal"
               fill="none"
@@ -281,26 +268,38 @@ export default function ChatDrawer({
               </span>
             )}
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-7 w-7 items-center justify-center rounded-md text-wh-text-secondary transition-colors hover:bg-wh-border/50 hover:text-wh-text-primary"
-            aria-label="Close chat"
-          >
-            <svg
-              className="h-4 w-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              strokeWidth={1.5}
-              stroke="currentColor"
+          <div className="flex items-center gap-2">
+            {hasMessages && (
+              <button
+                type="button"
+                onClick={() => clearChat(clientId ?? null)}
+                className="text-[10px] text-wh-text-secondary/40
+                           hover:text-wh-text-primary transition-colors"
+              >
+                Clear
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-7 w-7 items-center justify-center rounded-md text-wh-text-secondary transition-colors hover:bg-wh-border/50 hover:text-wh-text-primary"
+              aria-label="Close chat"
             >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M6 18L18 6M6 6l12 12"
-              />
-            </svg>
-          </button>
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
 
         {/* Messages area */}

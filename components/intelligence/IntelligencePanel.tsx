@@ -8,30 +8,36 @@ import {
   type KeyboardEvent,
   type FormEvent,
 } from 'react';
-import { usePanelStore } from '@/lib/panelStore';
+import { usePanelStore, getPanelState } from '@/lib/panelStore';
 import { getEntity } from '@/data/entities';
 import { getClientBySlug } from '@/data/clients';
 import { dispatchGraphCommand, type GraphCommand } from '@/lib/graphCommands';
 import { useGate } from '@/lib/useGate';
 import { supabase } from '@/lib/db';
-import { computePulseScore } from '@/lib/graph/pulse';
+import { computePulseScore, getPulseLevel } from '@/lib/graph/pulse';
 import { ENTITY_LIST } from '@/data/entities';
 import type { FeedItem } from '@/types/feed';
 import FeedPanel from '@/components/feed/FeedPanel';
 import ChatMessage from '@/components/chat/ChatMessage';
 import SuggestedQuestions from '@/components/chat/SuggestedQuestions';
 
-/* -------------------------------------------------------------------------- */
-/*  Types                                                                     */
-/* -------------------------------------------------------------------------- */
-
-interface Message {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-}
-
-type Tab = 'feed' | 'chat';
+import {
+  useChatState,
+  addMessage,
+  updateStreamingMessage,
+  removeMessage,
+  setChatLoading,
+  setChatStreamingId,
+  setChatError,
+  clearChat,
+  loadConversation,
+  persistMessage,
+  type ChatMsg,
+} from '@/lib/chatStore';
+import { onChatAction } from '@/lib/chatActions';
+import { getFeedViewState } from '@/lib/feedViewStore';
+import { getFeedFilter } from '@/lib/feedFilterStore';
+import type { ChatViewState } from '@/lib/chat/systemPrompt';
 
 /* -------------------------------------------------------------------------- */
 /*  Helpers                                                                   */
@@ -43,6 +49,8 @@ function nextId() {
   return `msg-${Date.now()}-${_msgIdCounter}`;
 }
 
+type Tab = 'feed' | 'chat';
+
 /* -------------------------------------------------------------------------- */
 /*  Component                                                                 */
 /* -------------------------------------------------------------------------- */
@@ -52,7 +60,7 @@ export default function IntelligencePanel() {
   const [gatePw, setGatePw] = useState('');
   const [gateError, setGateError] = useState(false);
 
-  const { selectedEntityId, selectedClientId } = usePanelStore();
+  const { selectedEntityId, selectedClientId, disabledSourceIds } = usePanelStore();
   const [activeTab, setActiveTab] = useState<Tab>('chat');
 
   // Feed data for dynamic suggestions and new-item indicator
@@ -116,13 +124,11 @@ export default function IntelligencePanel() {
     return () => clearInterval(interval);
   }, [selectedClientId]);
 
-  // Chat state
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [input, setInput] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [streamingId, setStreamingId] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // ── Chat state from store ──────────────────────────────────────────────
+  const chatState = useChatState(selectedClientId);
+  const { messages, isLoading, streamingId, error } = chatState;
 
+  const [input, setInput] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -131,16 +137,15 @@ export default function IntelligencePanel() {
   const client = selectedClientId ? getClientBySlug(selectedClientId) : null;
   const contextLabel = entity?.name ?? client?.name ?? null;
 
+  // Load conversation from DB on client select
+  useEffect(() => {
+    loadConversation(selectedClientId);
+  }, [selectedClientId]);
+
   // Auto-scroll on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
-
-  // Clear messages when context changes
-  useEffect(() => {
-    setMessages([]);
-    setError(null);
-  }, [selectedEntityId, selectedClientId]);
 
   // Focus textarea when switching to chat tab
   useEffect(() => {
@@ -157,25 +162,62 @@ export default function IntelligencePanel() {
     el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
   }, []);
 
+  // ── Collect view state for system prompt ─────────────────────────────
+  const collectViewState = useCallback((): ChatViewState => {
+    const panels = getPanelState();
+    const feedView = getFeedViewState();
+    const feedFilter = getFeedFilter();
+
+    // Build top pulse entities from pulse map
+    const topPulse = Array.from(pulseScoreMap.current.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([entityId, score]) => ({
+        entityId,
+        score,
+        level: getPulseLevel(score),
+      }));
+
+    return {
+      feedDateRange: feedView.dateRange,
+      feedSortMode: feedView.sortMode,
+      feedSearchText: feedView.searchText || null,
+      feedActiveFilter: feedFilter
+        ? { label: feedFilter.label, sourceType: feedFilter.sourceType, titleContains: feedFilter.titleContains }
+        : null,
+      disabledSourceIds: panels.disabledSourceIds,
+      selectedEntityId: panels.selectedEntityId,
+      topVisibleItems: feedView.visibleItems.slice(0, 5),
+      lastClickedItem: feedView.lastClickedItem,
+      topPulseEntities: topPulse,
+    };
+  }, []);
+
+  // ── Send message ─────────────────────────────────────────────────────
   const sendMessage = useCallback(
     async (text: string) => {
       const trimmed = text.trim();
       if (!trimmed || isLoading) return;
 
-      setError(null);
+      setChatError(selectedClientId, null);
       setInput('');
       if (textareaRef.current) textareaRef.current.style.height = 'auto';
 
-      const userMsg: Message = { id: nextId(), role: 'user', content: trimmed };
+      const userMsg: ChatMsg = { id: nextId(), role: 'user', content: trimmed };
       const assistantId = nextId();
-      const assistantMsg: Message = { id: assistantId, role: 'assistant', content: '' };
+      const assistantMsg: ChatMsg = { id: assistantId, role: 'assistant', content: '' };
 
-      setMessages((prev) => [...prev, userMsg, assistantMsg]);
-      setStreamingId(assistantId);
-      setIsLoading(true);
+      addMessage(selectedClientId, userMsg);
+      addMessage(selectedClientId, assistantMsg);
+      setChatStreamingId(selectedClientId, assistantId);
+      setChatLoading(selectedClientId, true);
+
+      // Persist user message
+      persistMessage(selectedClientId, 'user', trimmed);
 
       try {
         const history = messages.map((m) => ({ role: m.role, content: m.content }));
+        const viewState = collectViewState();
 
         const res = await fetch('/api/chat', {
           method: 'POST',
@@ -185,6 +227,7 @@ export default function IntelligencePanel() {
             clientId: selectedClientId ?? undefined,
             entityId: selectedEntityId ?? undefined,
             history,
+            viewState,
           }),
         });
 
@@ -194,10 +237,10 @@ export default function IntelligencePanel() {
             const errJson = await res.json();
             if (errJson.error) errMsg = errJson.error;
           } catch { /* not JSON */ }
-          setMessages((prev) => prev.filter((m) => m.id !== assistantId));
-          setError(errMsg);
-          setIsLoading(false);
-          setStreamingId(null);
+          removeMessage(selectedClientId, assistantId);
+          setChatError(selectedClientId, errMsg);
+          setChatLoading(selectedClientId, false);
+          setChatStreamingId(selectedClientId, null);
           return;
         }
 
@@ -211,13 +254,6 @@ export default function IntelligencePanel() {
           if (done) break;
           accumulated += decoder.decode(value, { stream: true });
 
-          // DELIBERATE: Graph commands are embedded as HTML comment markers
-          // (<!--GRAPH_CMD:{json}-->) in the text stream rather than a separate
-          // sideband. Three reasons: (1) streamText returns a single text
-          // stream with no built-in metadata channel, (2) HTML comments are
-          // invisible if accidentally rendered as markdown, and (3) they can be
-          // emitted mid-stream so the graph reacts before the full response
-          // completes. The client strips these markers before display.
           const cmdRegex = /<!--GRAPH_CMD:(.*?)-->/g;
           let cmdMatch;
           while ((cmdMatch = cmdRegex.exec(accumulated)) !== null) {
@@ -231,29 +267,38 @@ export default function IntelligencePanel() {
             }
           }
 
-          // Strip command markers from displayed text
           const displayText = accumulated.replace(/\n?<!--GRAPH_CMD:.*?-->\n?/g, '');
-          setMessages((prev) =>
-            prev.map((m) => (m.id === assistantId ? { ...m, content: displayText } : m)),
-          );
+          updateStreamingMessage(selectedClientId, assistantId, displayText);
         }
 
-        // Final strip
         const finalText = accumulated.replace(/\n?<!--GRAPH_CMD:.*?-->\n?/g, '');
         if (!finalText.trim()) {
-          setMessages((prev) => prev.filter((m) => m.id !== assistantId));
+          removeMessage(selectedClientId, assistantId);
+        } else {
+          // Persist assistant message
+          persistMessage(selectedClientId, 'assistant', finalText);
         }
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : 'An unexpected error occurred.';
-        setMessages((prev) => prev.filter((m) => m.id !== assistantId));
-        setError(errMsg);
+        removeMessage(selectedClientId, assistantId);
+        setChatError(selectedClientId, errMsg);
       } finally {
-        setIsLoading(false);
-        setStreamingId(null);
+        setChatLoading(selectedClientId, false);
+        setChatStreamingId(selectedClientId, null);
       }
     },
-    [isLoading, messages, selectedClientId, selectedEntityId],
+    [isLoading, messages, selectedClientId, selectedEntityId, collectViewState],
   );
+
+  // ── Subscribe to cross-component chat actions ───────────────────────
+  useEffect(() => {
+    const unsub = onChatAction((action) => {
+      setActiveTab('chat');
+      // Small delay to ensure tab switch renders before sending
+      setTimeout(() => sendMessage(action.message), 50);
+    });
+    return unsub;
+  }, [sendMessage]);
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -337,7 +382,7 @@ export default function IntelligencePanel() {
         </div>
 
         {/* Tab bar */}
-        <div className="mt-2 flex gap-0.5">
+        <div className="mt-2 flex items-center gap-0.5">
           <TabButton
             active={activeTab === 'feed'}
             onClick={() => {
@@ -356,6 +401,18 @@ export default function IntelligencePanel() {
           <TabButton active={activeTab === 'chat'} onClick={() => setActiveTab('chat')}>
             Chat
           </TabButton>
+
+          {/* Clear chat button — right-aligned */}
+          {activeTab === 'chat' && hasMessages && (
+            <button
+              type="button"
+              onClick={() => clearChat(selectedClientId)}
+              className="ml-auto text-[10px] text-wh-text-secondary/40
+                         hover:text-wh-text-primary transition-colors"
+            >
+              Clear
+            </button>
+          )}
         </div>
       </div>
 
