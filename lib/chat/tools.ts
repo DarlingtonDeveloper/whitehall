@@ -359,44 +359,110 @@ async function handleFeedTopItems(
   const stakeholderIds = client.stakeholders.map((s) => s.entityId);
 
   try {
-    let query = supabase
-      .from('feed_items')
-      .select('*')
-      .overlaps('entity_ids', stakeholderIds)
-      .gte('published_at', cutoff)
-      .order('published_at', { ascending: false })
-      .limit(300);
+    // Fetch items per source type to avoid stakeholder homepage content
+    // flooding out legislation, hansard, GOV.UK items from the window.
+    const HIGH_VALUE_TYPES = ['govuk', 'hansard', 'committee', 'legislation', 'trade_press', 'research', 'petition', 'forward_scan'];
+
+    const seen = new Set<string>();
+    const allFetched: FeedItem[] = [];
 
     if (sourceType) {
-      query = query.eq('source_type', sourceType);
+      // Single source type filter
+      const { data, error: err } = await supabase
+        .from('feed_items')
+        .select('*')
+        .overlaps('entity_ids', stakeholderIds)
+        .eq('source_type', sourceType)
+        .gte('published_at', cutoff)
+        .order('published_at', { ascending: false })
+        .limit(200);
+      if (err) {
+        console.error('[feed_top_items] query error:', err.message);
+        return { error: err.message };
+      }
+      for (const item of (data ?? []) as FeedItem[]) {
+        if (!seen.has(item.id)) { seen.add(item.id); allFetched.push(item); }
+      }
+    } else {
+      // Fetch high-value source types (govuk, hansard, legislation, etc.)
+      const { data: hvItems } = await supabase
+        .from('feed_items')
+        .select('*')
+        .overlaps('entity_ids', stakeholderIds)
+        .in('source_type', HIGH_VALUE_TYPES)
+        .gte('published_at', cutoff)
+        .order('published_at', { ascending: false })
+        .limit(300);
+
+      for (const item of (hvItems ?? []) as FeedItem[]) {
+        if (!seen.has(item.id)) { seen.add(item.id); allFetched.push(item); }
+      }
+
+      // Fetch stakeholder/web_search items separately (lower limit)
+      const { data: stItems } = await supabase
+        .from('feed_items')
+        .select('*')
+        .overlaps('entity_ids', stakeholderIds)
+        .in('source_type', ['stakeholder', 'web_search'])
+        .gte('published_at', cutoff)
+        .order('published_at', { ascending: false })
+        .limit(100);
+
+      for (const item of (stItems ?? []) as FeedItem[]) {
+        if (!seen.has(item.id)) { seen.add(item.id); allFetched.push(item); }
+      }
     }
 
-    const { data: items, error } = await query;
-    if (error) {
-      console.error('[feed_top_items] query error:', error.message);
-      return { error: error.message };
-    }
-    if (!items || items.length === 0) {
+    const items = allFetched;
+    if (items.length === 0) {
       return { clientId, days, results: [], message: 'No items found for this period.' };
     }
 
+    // Build word-boundary regexes for client name and project terms
+    const clientNameLower = client.name.toLowerCase();
+    const clientNameRe = new RegExp(`\\b${clientNameLower.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i');
+    const projectCoreTerms = (client.projects ?? [])
+      .map((p) => p.replace(/\s*(offshore|onshore|wind\s*farm|wind|renewables|energy|power|plant|project|farm|uk)\s*/gi, ' ').trim().toLowerCase())
+      .filter((t) => t.length >= 4);
+    const projectRegexes = projectCoreTerms.map(
+      (t) => new RegExp(`\\b${t.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i'),
+    );
+
     // Score each item with the algorithmic scorer
     const scored = (items as FeedItem[])
-      .map((item) => ({
-        item,
-        score: computeFeedRelevance(item, client),
-      }))
-      .filter((s) => s.score >= threshold)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, maxItems);
+      .map((item) => {
+        const score = computeFeedRelevance(item, client);
+        const titleLower = item.title.toLowerCase();
+        const mentionsClient = clientNameRe.test(titleLower);
+        const mentionsProject = projectRegexes.some((re) => re.test(titleLower));
+        return { item, score, mentionsClient, mentionsProject };
+      })
+      .filter((s) => s.score >= threshold);
 
-    const results = scored.map(({ item, score }, i) => {
+    // Sort: items mentioning client/projects first, then by score
+    scored.sort((a, b) => {
+      const aBoost = (a.mentionsClient || a.mentionsProject) ? 1 : 0;
+      const bBoost = (b.mentionsClient || b.mentionsProject) ? 1 : 0;
+      if (aBoost !== bBoost) return bBoost - aBoost;
+      return b.score - a.score;
+    });
+
+    const topItems = scored.slice(0, maxItems);
+
+    const results = topItems.map(({ item, score, mentionsClient, mentionsProject }, i) => {
       const date = new Date(item.published_at).toLocaleDateString('en-GB', {
         day: 'numeric', month: 'short', year: 'numeric',
       });
+      const textLower = `${item.title} ${item.body || ''}`.toLowerCase();
       const isConsultation =
-        item.title.toLowerCase().includes('consultation') ||
-        item.title.toLowerCase().includes('call for evidence');
+        textLower.includes('consultation') ||
+        textLower.includes('call for evidence');
+      const isDeadline =
+        textLower.includes('deadline') ||
+        textLower.includes('application') ||
+        textLower.includes('selection process') ||
+        textLower.includes('respond by') ||
+        textLower.includes('closes');
 
       return {
         rank: i + 1,
@@ -408,7 +474,10 @@ async function handleFeedTopItems(
         date,
         published_at: item.published_at,
         entity_ids: item.entity_ids,
+        mentions_client: mentionsClient,
+        mentions_project: mentionsProject,
         is_consultation: isConsultation,
+        has_deadline_language: isDeadline,
         event_date: item.event_date ?? null,
         body_preview: item.body ? item.body.substring(0, 300) : null,
       };
@@ -421,6 +490,7 @@ async function handleFeedTopItems(
       totalScored: items.length,
       returnedCount: results.length,
       minScoreUsed: threshold,
+      projectItemsFound: scored.filter((s) => s.mentionsProject).length,
       results,
     };
   } catch (err) {
@@ -447,7 +517,7 @@ async function handleFeedDeadlines(
     const seen = new Set<string>();
     const allItems: Array<Record<string, unknown>> = [];
 
-    // 1. Items with future event_date
+    // 1. Items with future event_date (note: event_date may be sparsely populated)
     const { data: forwardItems } = await supabase
       .from('feed_items')
       .select('*')
@@ -464,15 +534,28 @@ async function handleFeedDeadlines(
       }
     }
 
-    // 2. Recent consultations / calls for evidence (may have deadlines in body)
+    // 2. Search title AND body for deadline-related keywords.
+    // Only search high-value source types — stakeholder/web_search body text
+    // is too noisy (job pages, about pages match "application"/"apply").
+    const HIGH_VALUE_SOURCES = ['govuk', 'hansard', 'committee', 'legislation', 'trade_press', 'research', 'petition', 'forward_scan'];
+    const deadlineKeywords = [
+      'consultation', 'call for evidence', 'deadline', 'respond by', 'closes',
+      'selection process', 'expression of interest', 'closing date',
+    ];
+    const titleConditions = deadlineKeywords.map((kw) => `title.ilike.%${kw}%`).join(',');
+    const bodyConditions = deadlineKeywords.map((kw) => `body.ilike.%${kw}%`).join(',');
+
+    // Use higher limit — committee scraping can produce many pages matching
+    // "call for evidence", so we need to reach back to recent GOV.UK items.
     const { data: consultations } = await supabase
       .from('feed_items')
       .select('*')
       .overlaps('entity_ids', stakeholderIds)
-      .or('title.ilike.%consultation%,title.ilike.%call for evidence%,title.ilike.%deadline%,title.ilike.%respond by%,title.ilike.%closes%')
+      .in('source_type', HIGH_VALUE_SOURCES)
+      .or(`${titleConditions},${bodyConditions}`)
       .gte('published_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
       .order('published_at', { ascending: false })
-      .limit(30);
+      .limit(200);
 
     for (const item of (consultations ?? []) as FeedItem[]) {
       if (!seen.has(item.id)) {
@@ -487,16 +570,22 @@ async function handleFeedDeadlines(
         clientName: client.name,
         daysAhead: ahead,
         results: [],
-        message: 'No upcoming deadlines or consultations found for this client.',
+        message: 'No upcoming deadlines or consultations found matching keyword search. Note: structured event_date field is not yet populated in the database, so this relies on keyword matching in titles and body text. Deadlines mentioned only in body paragraphs may be missed.',
       };
     }
+
+    // Sort by relevance score descending, then take top 20
+    allItems.sort((a, b) => (b.relevance_score as number) - (a.relevance_score as number));
+    const topResults = allItems.slice(0, 20);
 
     return {
       clientId,
       clientName: client.name,
       daysAhead: ahead,
-      resultCount: allItems.length,
-      results: allItems,
+      resultCount: topResults.length,
+      totalMatched: allItems.length,
+      note: 'Deadlines are identified by keyword matching (consultation, call for evidence, deadline, selection process, etc.) in title and body text. The structured event_date field is not yet populated. Results sorted by relevance to client.',
+      results: topResults,
     };
   } catch (err) {
     console.error('[feed_deadlines] error:', err);
