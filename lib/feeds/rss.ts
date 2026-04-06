@@ -157,6 +157,50 @@ export const RSS_FEEDS: RssFeedConfig[] = [
     defaultEntityIds: [],
     sector: 'general',
   },
+
+  // ── Offshore wind specialist ─────────────────────────────────────────
+  {
+    name: 'Offshore Wind Biz',
+    url: 'https://www.offshorewind.biz/feed/',
+    defaultEntityIds: [],
+    sector: 'energy',
+  },
+  {
+    name: '4C Offshore',
+    url: 'https://www.4coffshore.com/news/rss.aspx',
+    defaultEntityIds: [],
+    sector: 'energy',
+  },
+
+  // ── Energy policy ────────────────────────────────────────────────────
+  {
+    name: 'Carbon Brief',
+    url: 'https://www.carbonbrief.org/feed/',
+    defaultEntityIds: ['ccc', 'desnz'],
+    sector: 'energy',
+  },
+  {
+    name: 'Energy Voice',
+    url: 'https://www.energyvoice.com/feed/',
+    defaultEntityIds: [],
+    sector: 'energy',
+  },
+
+  // ── Government blogs ─────────────────────────────────────────────────
+  {
+    name: 'DESNZ Blog',
+    url: 'https://energyindemand.blog.gov.uk/feed/',
+    defaultEntityIds: ['desnz'],
+    sector: 'energy',
+  },
+
+  // ── Health (for Sanofi) ──────────────────────────────────────────────
+  {
+    name: 'NIHR News',
+    url: 'https://www.nihr.ac.uk/news/rss',
+    defaultEntityIds: ['dhsc'],
+    sector: 'health',
+  },
 ];
 
 // ── Parsing helpers ───────────────────────────────────────────────────────

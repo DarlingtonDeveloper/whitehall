@@ -10,6 +10,10 @@ import * as crypto from 'crypto';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
+import {
+  enrichEntityIds as enrichEntityIdsCentral,
+} from './entity-enrichment';
+
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env.local') });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -33,14 +37,28 @@ const HANSARD_WRITTEN_URL =
 // ── Search terms — broad set covering all departments ────────────────────
 
 const SEARCH_TERMS = [
-  // Department abbreviations
+  // Department full names (catches ALL debates mentioning the department)
+  'Department for Energy Security and Net Zero',
+  'Department of Health and Social Care',
+  'Department for Environment, Food and Rural Affairs',
+  'Ministry of Housing, Communities and Local Government',
+  'Department for Science, Innovation and Technology',
+  'Department for Business and Trade',
+  'HM Treasury',
+  'Cabinet Office',
+
+  // Department abbreviations (catches shorthand references)
   'DESNZ', 'DHSC', 'DfE', 'DfT', 'DLUHC', 'Defra', 'DSIT', 'DWP', 'DBT',
-  // Departments by name
-  'Home Office', 'Ministry of Defence', 'Ministry of Justice', 'Treasury',
-  'Foreign Office', 'Cabinet Office',
-  // Key topics
+
+  // Departments by shorter name
+  'Home Office', 'Ministry of Defence', 'Ministry of Justice',
+  'Foreign Office',
+
+  // Key topics (supplementary — catches cross-departmental debates)
   'energy', 'NHS', 'planning', 'immigration', 'defence',
   'offshore wind', 'net zero', 'consultation',
+  'North Sea', 'grid connection', 'CfD', 'onshore wind',
+  'carbon capture', 'nuclear', 'hydrogen',
 ];
 
 // ── Keyword-to-entity mapping ────────────────────────────────────────────
@@ -117,21 +135,14 @@ function daysAgo(n: number): string {
 }
 
 function enrichEntityIds(title: string, body: string): string[] {
-  const ids = new Set<string>();
-  const text = `${title} ${body}`;
+  const ids = enrichEntityIdsCentral([], title, body);
 
-  for (const [pattern, entityId] of KEYWORD_ENTITY_MAP) {
-    if (entityId && pattern.test(text)) {
-      ids.add(entityId);
-    }
+  // Fallback: if centralised enrichment found nothing, tag as generic parliament
+  if (ids.length === 0) {
+    return ['parliament'];
   }
 
-  // If nothing matched, tag as generic parliament
-  if (ids.size === 0) {
-    ids.add('parliament');
-  }
-
-  return Array.from(ids);
+  return ids;
 }
 
 function determineRagStatus(title: string, body: string): 'RED' | 'AMBER' | 'GREEN' {
