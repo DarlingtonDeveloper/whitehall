@@ -40,6 +40,10 @@ const LORDS_DIVISIONS_API =
   'https://lordsvotes-api.parliament.uk/data/Divisions/search';
 const WRITTEN_STATEMENTS_API =
   'https://questions-statements-api.parliament.uk/api/writtenstatements/statements';
+const EDMS_API =
+  'https://oralquestionsandmotions-api.parliament.uk/EarlyDayMotions/list';
+const ORAL_QUESTIONS_API =
+  'https://questions-statements-api.parliament.uk/api/oralquestions/list';
 
 // -- Keyword-to-entity mapping (same as hansard.ts) --------------------------
 
@@ -691,6 +695,202 @@ export async function collectWrittenStatements(): Promise<{ inserted: number; sk
   return result;
 }
 
+// -- 6. Early Day Motions (EDMs) ---------------------------------------------
+
+interface EdmResult {
+  id: number;
+  title?: string;
+  dateTabled?: string;
+  primarySponsor?: { name?: string };
+  numberOfSignatures?: number;
+  status?: string;
+  motionText?: string;
+}
+
+interface EdmsResponse {
+  Response?: EdmResult[];
+  PagingInfo?: { Total?: number };
+}
+
+export async function collectEdms(): Promise<{ inserted: number; skipped: number }> {
+  console.log('\n--- Early Day Motions ---');
+
+  const sinceDate = monthsAgo(12);
+  const seenFingerprints = new Set<string>();
+  const allRows: Array<Record<string, unknown>> = [];
+  let skip = 0;
+  const take = 25;
+  let hasMore = true;
+
+  while (hasMore) {
+    const params = new URLSearchParams({
+      'Parameters.TabledSinceDate': sinceDate,
+      'Parameters.Take': String(take),
+      'Parameters.Skip': String(skip),
+      'Parameters.OrderBy': 'DateTabledDesc',
+    });
+
+    const url = `${EDMS_API}?${params.toString()}`;
+    const data = await fetchJson<EdmsResponse>(url, `EDMs skip=${skip}`);
+
+    if (!data || !data.Response || data.Response.length === 0) {
+      hasMore = false;
+      break;
+    }
+
+    for (const edm of data.Response) {
+      if (!edm.title) continue;
+
+      const title = `Early Day Motion: ${edm.title}`;
+      const edmUrl = `https://edm.parliament.uk/early-day-motion/${edm.id}`;
+      const fingerprint = makeFingerprint(edmUrl, edm.title);
+
+      if (seenFingerprints.has(fingerprint)) continue;
+      seenFingerprints.add(fingerprint);
+
+      const bodyParts: string[] = [];
+      if (edm.primarySponsor?.name) bodyParts.push(`Sponsor: ${edm.primarySponsor.name}`);
+      if (edm.numberOfSignatures) bodyParts.push(`Signatures: ${edm.numberOfSignatures}`);
+      if (edm.motionText) bodyParts.push(stripHtml(edm.motionText));
+      const body = bodyParts.join(' — ').slice(0, 2000);
+
+      const entityIds = enrichEntityIds(title, body);
+      const ragStatus = determineRagStatus(title, body);
+      const publishedAt = edm.dateTabled
+        ? new Date(edm.dateTabled).toISOString()
+        : new Date().toISOString();
+
+      allRows.push({
+        source_type: 'hansard',
+        source_name: 'Parliament - Early Day Motions',
+        title,
+        url: edmUrl,
+        published_at: publishedAt,
+        body: body || null,
+        entity_ids: entityIds,
+        rag_status: ragStatus.toLowerCase(),
+        relevance_score: 0.25,
+        fingerprint,
+        is_forward_scan: false,
+        raw_data: {
+          signatures: edm.numberOfSignatures,
+          status: edm.status,
+        },
+      });
+    }
+
+    skip += take;
+    if (skip >= 300) hasMore = false;
+
+    await delay(300);
+  }
+
+  console.log(`  Fetched ${allRows.length} EDMs`);
+  const result = await upsertBatch(allRows);
+  console.log(`  Inserted: ${result.inserted}, Skipped: ${result.skipped}`);
+  return result;
+}
+
+// -- 7. Oral Questions -------------------------------------------------------
+
+interface OralQuestion {
+  value?: {
+    id?: number;
+    questionText?: string;
+    answeringBodyName?: string;
+    questionDate?: string;
+    askingMember?: { name?: string };
+    answerText?: string;
+    uin?: string;
+  };
+}
+
+interface OralQuestionsResponse {
+  results?: OralQuestion[];
+  totalResults?: number;
+}
+
+export async function collectOralQuestions(): Promise<{ inserted: number; skipped: number }> {
+  console.log('\n--- Oral Questions ---');
+
+  const sinceDate = monthsAgo(12);
+  const seenFingerprints = new Set<string>();
+  const allRows: Array<Record<string, unknown>> = [];
+  let skip = 0;
+  const take = 50;
+  let hasMore = true;
+
+  while (hasMore) {
+    const params = new URLSearchParams({
+      answeringDateStart: sinceDate,
+      take: String(take),
+      skip: String(skip),
+    });
+
+    const url = `${ORAL_QUESTIONS_API}?${params.toString()}`;
+    const data = await fetchJson<OralQuestionsResponse>(url, `OralQuestions skip=${skip}`);
+
+    if (!data || !data.results || data.results.length === 0) {
+      hasMore = false;
+      break;
+    }
+
+    for (const item of data.results) {
+      const q = item.value;
+      if (!q) continue;
+
+      const questionText = q.questionText ? stripHtml(q.questionText) : 'Oral Question';
+      const title = questionText.slice(0, 300);
+      const dateSlug = q.questionDate ? q.questionDate.split('T')[0] : '';
+      const questionUrl = q.uin
+        ? `https://questions-statements.parliament.uk/oral-questions/detail/${q.uin}`
+        : `https://questions-statements.parliament.uk/oral-questions`;
+      const fingerprint = makeFingerprint(questionUrl, title);
+
+      if (seenFingerprints.has(fingerprint)) continue;
+      seenFingerprints.add(fingerprint);
+
+      const bodyParts: string[] = [];
+      if (q.askingMember?.name) bodyParts.push(`Asked by: ${q.askingMember.name}`);
+      if (q.answeringBodyName) bodyParts.push(`Answering body: ${q.answeringBodyName}`);
+      if (q.answerText) bodyParts.push(stripHtml(q.answerText));
+      const body = bodyParts.join(' — ').slice(0, 2000);
+
+      let entityIds = enrichEntityIds(title, body);
+      entityIds = enrichFromAnsweringBody(q.answeringBodyName, entityIds);
+
+      const ragStatus = determineRagStatus(title, body);
+      const publishedAt = q.questionDate
+        ? new Date(q.questionDate).toISOString()
+        : new Date().toISOString();
+
+      allRows.push({
+        source_type: 'hansard',
+        source_name: 'Parliament - Oral Questions',
+        title,
+        url: questionUrl,
+        published_at: publishedAt,
+        body: body || null,
+        entity_ids: entityIds,
+        rag_status: ragStatus.toLowerCase(),
+        relevance_score: 0.3,
+        fingerprint,
+        is_forward_scan: false,
+      });
+    }
+
+    skip += take;
+    if (skip >= 500) hasMore = false;
+
+    await delay(300);
+  }
+
+  console.log(`  Fetched ${allRows.length} oral questions`);
+  const result = await upsertBatch(allRows);
+  console.log(`  Inserted: ${result.inserted}, Skipped: ${result.skipped}`);
+  return result;
+}
+
 // == Combined collector ======================================================
 
 export async function collectParliament(): Promise<{ inserted: number; skipped: number }> {
@@ -709,6 +909,8 @@ export async function collectParliament(): Promise<{ inserted: number; skipped: 
     { name: 'Commons Divisions', fn: collectDivisions },
     { name: 'Lords Divisions', fn: collectLordsDivisions },
     { name: 'Written Statements', fn: collectWrittenStatements },
+    { name: 'Early Day Motions', fn: collectEdms },
+    { name: 'Oral Questions', fn: collectOralQuestions },
   ];
 
   for (const collector of collectors) {
