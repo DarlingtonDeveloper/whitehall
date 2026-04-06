@@ -70,6 +70,75 @@ export const DIRECT_SOURCES: DirectSourceConfig[] = [
   { name: 'Planning Inspectorate', url: 'https://www.gov.uk/government/organisations/planning-inspectorate', defaultEntityIds: ['planning-inspectorate'], maxItems: 30, sector: 'energy' },
 ];
 
+// ── Nav/footer junk filter ───────────────────────────────────────────────
+
+const NAV_JUNK_PATTERNS = [
+  // Generic site furniture
+  /terms and conditions/i,
+  /privacy policy/i,
+  /cookie/i,
+  /accessibility/i,
+  /follow us/i,
+  /sign up/i,
+  /subscribe/i,
+  /contact us/i,
+  /about us/i,
+  /careers/i,
+  /sitemap/i,
+  /^home$/i,
+  /^menu$/i,
+  /^search$/i,
+  /^close$/i,
+  /^back to top$/i,
+  /social media/i,
+  /facebook|twitter|linkedin|youtube|instagram/i,
+  /^skip to/i,
+  /^main content$/i,
+  /open government licence/i,
+  /copyright/i,
+  /disclaimer/i,
+  /freedom of information/i,
+  /complaints? procedure/i,
+  /anti.?slavery/i,
+  /modern slavery/i,
+  /website by /i,
+  /^rss$/i,
+  /newsletter/i,
+  /^share this/i,
+  /^print this/i,
+  /^download pdf/i,
+  /^get in touch$/i,
+  /report a problem/i,
+  /all .+ services and information/i,
+  /see all latest documents/i,
+  /change your cookie settings/i,
+  // GOV.UK generic topic navigation (scraped from org landing pages)
+  /^passports, travel/i,
+  /^crime, justice/i,
+  /^childcare and parenting/i,
+  /^guidance and regulation$/i,
+  /^citizenship and living/i,
+  /^working, jobs and pensions/i,
+  /^business and self-employed/i,
+  /^driving and transport$/i,
+  /^education and learning$/i,
+  /^visas and immigration$/i,
+  /^housing and local services$/i,
+  /^births, death, marriages/i,
+  /^benefits$/i,
+  /^disabled people$/i,
+  /^environment and countryside$/i,
+  /^money and tax$/i,
+  /^research and statistics$/i,
+  /^policy papers and consultations$/i,
+];
+
+function isNavJunk(title: string): boolean {
+  // Also check after stripping source name prefix (e.g. "Planning Inspectorate: ")
+  const stripped = title.replace(/^[^:]+:\s*/, '');
+  return NAV_JUNK_PATTERNS.some((p) => p.test(title) || p.test(stripped));
+}
+
 // ── Scraping helpers ──────────────────────────────────────────────────────
 
 function delay(ms: number): Promise<void> {
@@ -246,6 +315,9 @@ export async function collectDirectSources(): Promise<{ inserted: number; skippe
       for (const link of links) {
         if (collected >= source.maxItems) break;
 
+        // Skip nav/footer junk
+        if (isNavJunk(link.title)) continue;
+
         // Resolve relative URLs
         let fullUrl = link.href;
         if (fullUrl.startsWith('/')) {
@@ -255,6 +327,7 @@ export async function collectDirectSources(): Promise<{ inserted: number; skippe
         }
 
         const cleaned = cleanTitle(link.title);
+        if (isNavJunk(cleaned)) continue;
         const improved = improveStakeholderTitle(cleaned, source.name, null);
         const entityIds = enrichEntityIds(source.defaultEntityIds, improved, '');
         const ragStatus = determineRagStatus(improved, '');
