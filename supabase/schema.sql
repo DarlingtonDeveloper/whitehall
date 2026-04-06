@@ -55,6 +55,7 @@ CREATE TABLE IF NOT EXISTS chat_conversations (
   id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   client_id       TEXT,
   context_entity  TEXT,
+  context_type    TEXT DEFAULT 'intelligence',
   created_at      TIMESTAMPTZ DEFAULT NOW()
 );
 

@@ -11,6 +11,7 @@ export interface ChatConversation {
   id: string;
   client_id?: string;
   context_entity?: string;
+  context_type?: 'intelligence' | 'report';
   created_at: string;
 }
 
