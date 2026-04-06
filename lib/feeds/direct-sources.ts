@@ -99,10 +99,11 @@ function extractLinks(html: string): Array<{ title: string; href: string; contex
     const href = match[1];
     const title = stripHtml(match[2]).trim();
     if (title.length >= 20 && href) {
-      // Grab surrounding HTML for date hints (300 chars before + after the <a>)
-      const start = Math.max(0, match.index - 300);
-      const end = Math.min(html.length, match.index + match[0].length + 300);
-      const context = stripHtml(html.slice(start, end));
+      // Grab surrounding RAW HTML for date hints (800 chars before + after the <a>)
+      // Keep as raw HTML so we can match datetime attributes and <time> elements
+      const start = Math.max(0, match.index - 800);
+      const end = Math.min(html.length, match.index + match[0].length + 800);
+      const context = html.slice(start, end);
       links.push({ title, href, context });
     }
   }
@@ -119,15 +120,14 @@ const MONTHS: Record<string, number> = {
   jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
 };
 
+const MONTH_PATTERN = 'January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec';
+
 /**
- * Attempt to extract a publication date from surrounding text context.
- * Tries multiple common date formats. Returns ISO string or null.
+ * Try to parse a date string in common formats. Returns ISO string or null.
  */
-function extractDateFromContext(context: string): string | null {
-  // "26 March 2026", "1 Jan 2025", "26th March 2026"
-  const dmy = context.match(
-    /(\d{1,2})(?:st|nd|rd|th)?\s+(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})/i,
-  );
+function parseDateString(str: string): string | null {
+  // "19 May 2025", "26th March 2026"
+  const dmy = str.match(new RegExp(`(\\d{1,2})(?:st|nd|rd|th)?\\s+(${MONTH_PATTERN})\\s+(\\d{4})`, 'i'));
   if (dmy) {
     const d = parseInt(dmy[1], 10);
     const m = MONTHS[dmy[2].toLowerCase()];
@@ -137,10 +137,8 @@ function extractDateFromContext(context: string): string | null {
     }
   }
 
-  // "March 26, 2026", "Jan 1, 2025"
-  const mdy = context.match(
-    /(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})/i,
-  );
+  // "May 19, 2025"
+  const mdy = str.match(new RegExp(`(${MONTH_PATTERN})\\s+(\\d{1,2})(?:st|nd|rd|th)?,?\\s+(\\d{4})`, 'i'));
   if (mdy) {
     const m = MONTHS[mdy[1].toLowerCase()];
     const d = parseInt(mdy[2], 10);
@@ -150,8 +148,8 @@ function extractDateFromContext(context: string): string | null {
     }
   }
 
-  // ISO-ish: "2026-03-26", "2025-01-15"
-  const iso = context.match(/(\d{4})-(\d{2})-(\d{2})/);
+  // "2025-05-19" or "2025-05-19T..."
+  const iso = str.match(/(\d{4})-(\d{2})-(\d{2})/);
   if (iso) {
     const y = parseInt(iso[1], 10);
     const m = parseInt(iso[2], 10) - 1;
@@ -161,8 +159,37 @@ function extractDateFromContext(context: string): string | null {
     }
   }
 
-  // "26/03/2026" or "26.03.2026" (DD/MM/YYYY — UK format)
-  const ukDate = context.match(/(\d{1,2})[/.](\d{1,2})[/.](\d{4})/);
+  return null;
+}
+
+/**
+ * Attempt to extract a publication date from surrounding HTML context.
+ * Checks datetime attributes, <time> elements, then plain text patterns.
+ * Returns ISO string or null.
+ */
+function extractDateFromContext(context: string): string | null {
+  // 1. HTML datetime attributes: dateTime="19 May 2025" or datetime="2025-05-19"
+  const datetimeAttr = context.match(/dateTime="([^"]+)"|datetime="([^"]+)"/i);
+  if (datetimeAttr) {
+    const val = datetimeAttr[1] || datetimeAttr[2];
+    const parsed = parseDateString(val);
+    if (parsed) return parsed;
+  }
+
+  // 2. <time> element text content: <time ...>19 May 2025</time>
+  const timeEl = context.match(/<time[^>]*>([\s\S]*?)<\/time>/i);
+  if (timeEl) {
+    const parsed = parseDateString(stripHtml(timeEl[1]).trim());
+    if (parsed) return parsed;
+  }
+
+  // 3. Plain text fallback — strip HTML and try parseDateString
+  const stripped = stripHtml(context);
+  const parsed = parseDateString(stripped);
+  if (parsed) return parsed;
+
+  // 4. "26/03/2026" or "26.03.2026" (DD/MM/YYYY — UK format)
+  const ukDate = stripped.match(/(\d{1,2})[/.](\d{1,2})[/.](\d{4})/);
   if (ukDate) {
     const d = parseInt(ukDate[1], 10);
     const m = parseInt(ukDate[2], 10) - 1;

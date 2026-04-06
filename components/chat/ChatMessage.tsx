@@ -30,6 +30,9 @@ const ENTITY_NAMES = ENTITY_LIST.map((e) => ({
  * markdown-like formatting and entity name highlighting.
  */
 function parseContent(raw: string): React.ReactNode[] {
+  if (typeof window !== 'undefined') {
+    console.log('[ChatMessage] raw content:', raw.slice(0, 500));
+  }
   const lines = raw.split('\n');
   const nodes: React.ReactNode[] = [];
 
@@ -116,9 +119,11 @@ function formatInline(text: string, keyPrefix: string): React.ReactNode[] {
     }
 
     if (matchType === 'bold') {
+      // Recursively process bold content so links inside **[text](url)** render correctly
+      const innerNodes = formatInline(match[1], `${keyPrefix}-b-${partIndex}`);
       parts.push(
         <strong key={`${keyPrefix}-b-${partIndex}`} className="font-semibold text-wh-text-primary">
-          {match[1]}
+          {innerNodes}
         </strong>,
       );
       remaining = remaining.slice(earliestIdx + match[0].length);
