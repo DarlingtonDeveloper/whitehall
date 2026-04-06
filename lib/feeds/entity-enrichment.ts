@@ -69,9 +69,183 @@ export const KEYWORD_ENTITY_MAP: [RegExp, string][] = [
   [/\bgrid connection|grid queue|SSEP/i, 'desnz'],
 ];
 
+// ── Content-based entity patterns ─────────────────────────────────────────
+// Used by tagFromContent() to tag items based on their title + body text.
+// Complements the regex-based KEYWORD_ENTITY_MAP with broader coverage and
+// body-level entity IDs (e.g. 'neso', 'gbe') not just department IDs.
+
+export const CONTENT_ENTITY_PATTERNS: Record<string, string[]> = {
+  // Departments
+  'desnz': [
+    'energy', 'net zero', 'clean power', 'offshore wind', 'onshore wind',
+    'solar', 'nuclear', 'hydrogen', 'carbon capture', 'ccus',
+    'decarbonisation', 'energy security', 'energy bill', 'fuel poverty',
+    'heat network', 'heat pump', 'boiler', 'insulation',
+    'electricity', 'renewable', 'fossil fuel', 'north sea',
+    'oil and gas', 'mining', 'minerals',
+  ],
+  'dluhc': [
+    'housing', 'planning', 'building safety', 'building regulation',
+    'local government', 'levelling up', 'regeneration', 'council',
+    'homelessness', 'leasehold', 'freehold', 'cladding',
+    'building safety regulator',
+  ],
+  'defra': [
+    'biodiversity', 'nature', 'wildlife', 'farming',
+    'agriculture', 'food standards', 'water pollution', 'air quality',
+    'waste', 'recycling', 'flood', 'coastal erosion',
+  ],
+  'dhsc': [
+    'health', 'social care', 'hospital', 'ambulance',
+    'mental health', 'patient', 'vaccine', 'pharmaceutical',
+    'medicine', 'clinical trial',
+  ],
+  'dft': [
+    'transport', 'railway', 'road', 'aviation',
+    'airport', 'shipping', 'freight',
+  ],
+  'mod': [
+    'defence', 'military', 'armed forces', 'navy', 'army',
+    'procurement',
+  ],
+  'treasury': [
+    'fiscal', 'budget', 'spending review',
+    'public finance', 'borrowing',
+  ],
+  'home-office': [
+    'immigration', 'asylum', 'border', 'policing',
+    'counter-terrorism',
+  ],
+  'dsit': [
+    'science', 'innovation', 'artificial intelligence',
+    'digital', 'research', 'telecoms', 'broadband',
+  ],
+  'dbt': [
+    'trade', 'export', 'tariff', 'industrial strategy',
+  ],
+  'dfe': [
+    'education', 'school', 'university', 'teacher', 'pupil',
+    'student', 'curriculum',
+  ],
+  'moj': [
+    'justice', 'court', 'prison', 'probation', 'legal aid',
+    'sentencing', 'judiciary',
+  ],
+
+  // Regulators
+  'ofgem': [
+    'ofgem', 'energy regulation', 'price cap', 'energy tariff',
+    'energy supplier', 'energy market', 'network charging',
+    'grid connection', 'electricity distribution', 'gas distribution',
+  ],
+  'ofwat': [
+    'ofwat', 'water regulation', 'water company', 'sewage', 'water bill',
+    'water quality', 'water industry',
+  ],
+  'mhra': [
+    'mhra', 'medicines regulation', 'drug safety', 'medical device',
+    'marketing authorisation',
+  ],
+  'nice': [
+    'nice', 'health technology', 'appraisal', 'clinical guideline',
+    'cost effectiveness',
+  ],
+  'cqc': [
+    'care quality', 'care home', 'hospital inspection',
+    'care provider',
+  ],
+  'hse': [
+    'health and safety executive', 'workplace safety',
+    'building safety regulator', 'construction safety',
+  ],
+  'cma': [
+    'competition and markets', 'merger inquiry', 'market study',
+    'merger review',
+  ],
+
+  // Bodies
+  'neso': [
+    'neso', 'system operator', 'electricity system', 'grid balancing',
+    'strategic spatial energy plan',
+  ],
+  'gbe': [
+    'great british energy', 'gb energy', 'public energy company',
+  ],
+  'crown-estate': [
+    'crown estate', 'seabed', 'leasing round', 'marine estate',
+  ],
+  'nsta': [
+    'nsta', 'north sea transition', 'oil gas authority',
+    'licensing round', 'exploration licence',
+  ],
+  'ccc': [
+    'climate change committee', 'carbon budget', 'climate advisory',
+    'net zero assessment',
+  ],
+  'environment-agency': [
+    'environment agency', 'flood risk', 'pollution incident',
+    'environmental permit', 'water framework',
+  ],
+  'natural-england': [
+    'natural england', 'biodiversity net gain',
+    'habitat regulation',
+  ],
+  'planning-inspectorate': [
+    'planning inspectorate', 'planning appeal', 'development consent',
+    'nationally significant infrastructure',
+  ],
+  'nhs-improve': [
+    'nhs england', 'commissioning', 'nhs workforce',
+  ],
+  'ukhsa': [
+    'ukhsa', 'health security', 'vaccine programme',
+    'surveillance', 'outbreak',
+  ],
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────
+
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 /**
- * Enrich an item's entity IDs by scanning title + body against the shared
- * keyword-entity map.
+ * Tag items based on their content against CONTENT_ENTITY_PATTERNS.
+ * Short patterns (≤5 chars) use word-boundary matching to avoid false
+ * positives on common English words that happen to be acronyms.
+ */
+export function tagFromContent(text: string): string[] {
+  const lower = text.toLowerCase();
+  const matched: string[] = [];
+
+  for (const [entityId, patterns] of Object.entries(CONTENT_ENTITY_PATTERNS)) {
+    let found = false;
+    for (const pattern of patterns) {
+      if (pattern.length <= 5) {
+        // Short patterns — word boundary to avoid "nice report" → NICE
+        const re = new RegExp(`\\b${escapeRegex(pattern)}\\b`, 'i');
+        if (re.test(text)) {
+          found = true;
+          break;
+        }
+      } else {
+        if (lower.includes(pattern)) {
+          found = true;
+          break;
+        }
+      }
+    }
+    if (found) {
+      matched.push(entityId);
+    }
+  }
+
+  return matched;
+}
+
+/**
+ * Enrich an item's entity IDs by scanning title + body against BOTH the
+ * regex-based KEYWORD_ENTITY_MAP and the content-based CONTENT_ENTITY_PATTERNS.
  */
 export function enrichEntityIds(
   baseEntityIds: string[],
@@ -81,10 +255,16 @@ export function enrichEntityIds(
   const ids = new Set(baseEntityIds);
   const text = `${title} ${body}`;
 
+  // Pass 1: regex patterns (KEYWORD_ENTITY_MAP)
   for (const [pattern, entityId] of KEYWORD_ENTITY_MAP) {
     if (entityId && pattern.test(text)) {
       ids.add(entityId);
     }
+  }
+
+  // Pass 2: content-based patterns (CONTENT_ENTITY_PATTERNS)
+  for (const tag of tagFromContent(text)) {
+    ids.add(tag);
   }
 
   return Array.from(ids);
