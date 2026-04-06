@@ -16,6 +16,11 @@ import { enrichItems } from '@/lib/export/enrich';
 import { evaluateReport } from '@/lib/export/evaluate';
 import { supabase } from '@/lib/db';
 import { computeFeedRelevance } from '@/lib/feed/scoring';
+import { enrichThinItems } from '@/lib/feeds/enrich-content';
+import { verifySourceUrls, filterVerifiedItems } from '@/lib/feeds/verify-sources';
+import { deduplicateSemantic } from '@/lib/feeds/dedup-semantic';
+import { runWebSearchCollector } from '@/lib/feeds/web-search';
+import { runForwardScanCollector } from '@/lib/feeds/forward-scan';
 import type { LearnedSignals } from '@/lib/feed/scoring';
 
 const RELEVANCE_THRESHOLD = 0.25;
@@ -35,12 +40,39 @@ async function getLearnedSignals(clientId: string): Promise<LearnedSignals | und
 export async function generateDraftReport(
   clientId: string,
   dateRange?: { from: Date; to: Date },
+  options?: { runScan?: boolean },
 ): Promise<string> {
   const client = getClientBySlug(clientId);
   if (!client) throw new Error(`Unknown client: "${clientId}"`);
 
   const to = dateRange?.to ?? new Date();
   const from = dateRange?.from ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+
+  // 0a. Run client scan if requested (web search + forward scan)
+  if (options?.runScan !== false) {
+    try {
+      const [webResult, forwardResult] = await Promise.all([
+        runWebSearchCollector(client),
+        runForwardScanCollector(client),
+      ]);
+      console.log('[report] Scan:', {
+        web: webResult.items_found,
+        forward: forwardResult.items_found,
+      });
+    } catch (err) {
+      console.warn('[report] Scan failed (continuing):', err);
+    }
+  }
+
+  // 0b. Enrich thin items — fetch full page content for items with short body
+  try {
+    const enrichResult = await enrichThinItems();
+    if (enrichResult.enriched > 0) {
+      console.log(`[report] Enriched ${enrichResult.enriched} thin items`);
+    }
+  } catch (err) {
+    console.warn('[report] Content enrichment failed (continuing):', err);
+  }
 
   // 1. Gather items from Supabase
   const items = await gatherItems(client, from, to);
@@ -54,16 +86,47 @@ export async function generateDraftReport(
     }))
     .filter(item => item._relevance >= RELEVANCE_THRESHOLD)
     .sort((a, b) => b._relevance - a._relevance)
-    .slice(0, MAX_ITEMS);
+    .slice(0, 60); // Take more initially — dedup and verification will reduce
+
+  // 2b. Semantic deduplication — cluster same-development items from
+  // multiple sources, keep the best source per cluster
+  const deduped = deduplicateSemantic(scored);
+
+  // 2c. Source verification — HEAD check all URLs, exclude broken links
+  let verified = deduped;
+  const brokenItems: typeof deduped = [];
+  try {
+    const verifications = await verifySourceUrls(
+      deduped.map(i => ({ id: i.id, url: i.url ?? null })),
+    );
+    const { valid, broken } = filterVerifiedItems(deduped, verifications);
+    verified = valid;
+    brokenItems.push(...broken);
+    if (broken.length > 0) {
+      console.warn(`[report] ${broken.length} items excluded (broken URLs)`);
+    }
+  } catch (err) {
+    console.warn('[report] Source verification failed (continuing):', err);
+  }
+
+  // Take top items after dedup + verification
+  const selected = verified.slice(0, MAX_ITEMS);
 
   // 3. Group by monitoring theme
-  const grouped = groupByTheme(scored, client);
+  const grouped = groupByTheme(selected, client);
 
   // 4. Enrich with Claude (theme analysis + synthesis)
   const analysis = await enrichItems(grouped, client, { from, to });
 
+  // 4b. Record broken URLs in metadata
+  if (brokenItems.length > 0) {
+    analysis.metadata.sources_unavailable = brokenItems.map(
+      (b) => `${b.title} (${b.url} — broken link)`,
+    );
+  }
+
   // 5. Evaluate
-  const evalResult = await evaluateReport(analysis, scored, client);
+  const evalResult = await evaluateReport(analysis, selected, client);
   console.log('[report] Evaluation:', {
     template: evalResult.template_validation.passed,
     factuality: evalResult.factuality.mean_score,
@@ -90,7 +153,7 @@ export async function generateDraftReport(
       date_range_to: to.toISOString(),
       sections: analysis,
       original_sections: analysis,
-      feed_item_ids: scored.map(i => i.id),
+      feed_item_ids: selected.map(i => i.id),
     })
     .select('id')
     .single();
