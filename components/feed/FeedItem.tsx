@@ -112,27 +112,6 @@ export default function FeedItemCard({
         }
       }}
     >
-      {/* "Why relevant?" AI button — hover reveal */}
-      {clientName && onAskRelevance && (
-        <button
-          type="button"
-          onClick={(e) => {
-            e.stopPropagation();
-            onAskRelevance(item);
-          }}
-          className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center
-                     rounded-full bg-wh-bg border border-wh-border
-                     text-wh-text-secondary/50 hover:text-wh-accent-teal
-                     hover:border-wh-accent-teal transition-colors opacity-0
-                     group-hover:opacity-100 z-10"
-          title="Ask AI about this item"
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-          </svg>
-        </button>
-      )}
-
       {/* Row 1: source badge + time + score */}
       <div className="flex items-center justify-between gap-2 mb-1">
         <span
@@ -188,9 +167,9 @@ export default function FeedItemCard({
         </p>
       )}
 
-      {/* Row 4: entity tags */}
-      {item.entity_ids.length > 0 && (
-        <div className="mt-1.5 flex flex-wrap gap-1">
+      {/* Row 4: entity tags + AI button */}
+      {(item.entity_ids.length > 0 || (clientName && onAskRelevance)) && (
+        <div className="mt-1.5 flex items-center gap-1">
           {item.entity_ids.slice(0, 4).map((eid) => (
             <span
               key={eid}
@@ -203,6 +182,23 @@ export default function FeedItemCard({
             <span className="text-[9px] text-wh-text-secondary/40">
               +{item.entity_ids.length - 4}
             </span>
+          )}
+          {clientName && onAskRelevance && (
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAskRelevance(item);
+              }}
+              className="ml-auto w-5 h-5 flex items-center justify-center shrink-0
+                         rounded text-wh-text-secondary/30 hover:text-wh-accent-teal
+                         transition-colors opacity-0 group-hover:opacity-100"
+              title="Ask AI about this item"
+            >
+              <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+              </svg>
+            </button>
           )}
         </div>
       )}
