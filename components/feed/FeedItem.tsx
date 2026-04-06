@@ -121,15 +121,19 @@ export default function FeedItemCard({
             {formatPublishedTime(item.published_at)}
           </span>
           {showScore && relevanceScore !== undefined && relevanceScore >= 0.25 && (
-            <span
-              className="text-[10px] font-medium px-1.5 py-0.5 rounded min-w-[24px] text-center cursor-help"
-              title={`Relevance: ${Math.round(relevanceScore * 100)}% — ${relevanceScore >= 0.6 ? 'High' : relevanceScore >= 0.4 ? 'Medium' : 'Low'}. Scored on entity overlap, keyword matches, source quality, recency, and actionable content.`}
-              style={{
-                backgroundColor: getScoreBg(relevanceScore),
-                color: getScoreText(relevanceScore),
-              }}
-            >
-              {Math.round(relevanceScore * 100)}
+            <span className="relative group">
+              <span
+                className="text-[10px] font-medium px-1.5 py-0.5 rounded min-w-[24px] text-center cursor-help"
+                style={{
+                  backgroundColor: getScoreBg(relevanceScore),
+                  color: getScoreText(relevanceScore),
+                }}
+              >
+                {Math.round(relevanceScore * 100)}
+              </span>
+              <span className="pointer-events-none absolute bottom-full right-0 mb-1.5 hidden whitespace-nowrap rounded bg-wh-text-primary px-2 py-1 text-[10px] text-wh-bg shadow-lg group-hover:block">
+                Relevance score
+              </span>
             </span>
           )}
         </div>
