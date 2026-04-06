@@ -10,6 +10,10 @@ import * as crypto from 'crypto';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 
+import {
+  enrichEntityIds as enrichEntityIdsCentral,
+} from './entity-enrichment';
+
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env.local') });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
@@ -400,16 +404,7 @@ export function enrichEntityIds(
   title: string,
   body: string,
 ): string[] {
-  const ids = new Set(baseEntityIds);
-  const text = `${title} ${body}`;
-
-  for (const [pattern, entityId] of KEYWORD_ENTITY_MAP) {
-    if (entityId && pattern.test(text)) {
-      ids.add(entityId);
-    }
-  }
-
-  return Array.from(ids);
+  return enrichEntityIdsCentral(baseEntityIds, title, body);
 }
 
 // ── Atom XML parser (regex-based, no external deps) ──────────────────────
