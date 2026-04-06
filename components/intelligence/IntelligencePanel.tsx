@@ -13,6 +13,10 @@ import { getEntity } from '@/data/entities';
 import { getClientBySlug } from '@/data/clients';
 import { dispatchGraphCommand, type GraphCommand } from '@/lib/graphCommands';
 import { useGate } from '@/lib/useGate';
+import { supabase } from '@/lib/db';
+import { computePulseScore } from '@/lib/graph/pulse';
+import { ENTITY_LIST } from '@/data/entities';
+import type { FeedItem } from '@/types/feed';
 import FeedPanel from '@/components/feed/FeedPanel';
 import ChatMessage from '@/components/chat/ChatMessage';
 import SuggestedQuestions from '@/components/chat/SuggestedQuestions';
@@ -50,6 +54,67 @@ export default function IntelligencePanel() {
 
   const { selectedEntityId, selectedClientId } = usePanelStore();
   const [activeTab, setActiveTab] = useState<Tab>('chat');
+
+  // Feed data for dynamic suggestions and new-item indicator
+  const [recentFeedItems, setRecentFeedItems] = useState<FeedItem[]>([]);
+  const [newItemCount, setNewItemCount] = useState(0);
+  const lastFeedCheckRef = useRef<string>(new Date().toISOString());
+
+  useEffect(() => {
+    async function fetchRecent() {
+      const { data } = await supabase
+        .from('feed_items')
+        .select('id, entity_ids, published_at, title, source_type, source_name')
+        .gte('published_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
+        .order('published_at', { ascending: false })
+        .limit(200);
+      if (data) setRecentFeedItems(data as FeedItem[]);
+    }
+    fetchRecent();
+  }, [selectedClientId, selectedEntityId]);
+
+  // Compute pulse scores for suggestions
+  const pulseScoreMap = useRef(new Map<string, number>());
+  useEffect(() => {
+    const map = new Map<string, number>();
+    for (const entity of ENTITY_LIST) {
+      const score = computePulseScore(entity.id, recentFeedItems);
+      if (score > 0) map.set(entity.id, score);
+    }
+    pulseScoreMap.current = map;
+  }, [recentFeedItems]);
+
+  // Poll for new items every 60s
+  useEffect(() => {
+    const client = selectedClientId ? getClientBySlug(selectedClientId) : null;
+    if (!client) {
+      setNewItemCount(0);
+      return;
+    }
+
+    const entityIds = client.stakeholders.map((s) => s.entityId);
+    lastFeedCheckRef.current = new Date().toISOString();
+    setNewItemCount(0);
+
+    const checkNew = async () => {
+      try {
+        const { count } = await supabase
+          .from('feed_items')
+          .select('id', { count: 'exact', head: true })
+          .overlaps('entity_ids', entityIds)
+          .gte('created_at', lastFeedCheckRef.current);
+        if (count && count > 0) {
+          setNewItemCount((prev) => prev + count);
+        }
+        lastFeedCheckRef.current = new Date().toISOString();
+      } catch {
+        // Silent fail for polling
+      }
+    };
+
+    const interval = setInterval(checkNew, 60000);
+    return () => clearInterval(interval);
+  }, [selectedClientId]);
 
   // Chat state
   const [messages, setMessages] = useState<Message[]>([]);
@@ -273,8 +338,20 @@ export default function IntelligencePanel() {
 
         {/* Tab bar */}
         <div className="mt-2 flex gap-0.5">
-          <TabButton active={activeTab === 'feed'} onClick={() => setActiveTab('feed')}>
+          <TabButton
+            active={activeTab === 'feed'}
+            onClick={() => {
+              setActiveTab('feed');
+              setNewItemCount(0);
+              lastFeedCheckRef.current = new Date().toISOString();
+            }}
+          >
             Feed
+            {newItemCount > 0 && activeTab !== 'feed' && (
+              <span className="ml-1.5 inline-flex items-center justify-center w-5 h-5 text-[10px] font-medium rounded-full bg-wh-accent-teal text-white">
+                {newItemCount > 99 ? '99+' : newItemCount}
+              </span>
+            )}
           </TabButton>
           <TabButton active={activeTab === 'chat'} onClick={() => setActiveTab('chat')}>
             Chat
@@ -356,6 +433,8 @@ export default function IntelligencePanel() {
                 entityId={selectedEntityId ?? undefined}
                 onSelect={(q) => sendMessage(q)}
                 disabled={isLoading}
+                feedItems={recentFeedItems}
+                pulseScores={pulseScoreMap.current}
               />
             </div>
           )}

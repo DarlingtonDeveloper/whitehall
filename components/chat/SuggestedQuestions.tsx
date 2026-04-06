@@ -3,46 +3,16 @@
 import { useMemo } from 'react';
 import { getClientBySlug } from '@/data/clients';
 import { getEntity } from '@/data/entities';
+import { generateSuggestions } from '@/lib/chat/suggestions';
+import type { FeedItem } from '@/types/feed';
 
 interface SuggestedQuestionsProps {
   clientId?: string;
   entityId?: string;
   onSelect: (question: string) => void;
   disabled?: boolean;
-}
-
-function getQuestions(clientId?: string, entityId?: string): string[] {
-  // Entity-specific questions
-  if (entityId) {
-    const entity = getEntity(entityId);
-    const name = entity?.name ?? entityId;
-    return [
-      `What powers does ${name} have?`,
-      `What's happened here recently?`,
-      `Who leads ${name}?`,
-      `What bodies report to ${name}?`,
-    ];
-  }
-
-  // Client-specific questions
-  if (clientId) {
-    const client = getClientBySlug(clientId);
-    const name = client?.name ?? clientId;
-    return [
-      `What should ${name} focus on?`,
-      'Who are the key decision-makers?',
-      'What consultations are open?',
-      `Summarise ${name}'s stakeholder landscape`,
-    ];
-  }
-
-  // Pulse / default questions
-  return [
-    "What's the most active department?",
-    'Any consultations closing soon?',
-    "Summarise this week's activity",
-    'Which ministers have new portfolios?',
-  ];
+  feedItems?: FeedItem[];
+  pulseScores?: Map<string, number>;
 }
 
 export default function SuggestedQuestions({
@@ -50,11 +20,20 @@ export default function SuggestedQuestions({
   entityId,
   onSelect,
   disabled,
+  feedItems,
+  pulseScores,
 }: SuggestedQuestionsProps) {
-  const questions = useMemo(
-    () => getQuestions(clientId, entityId),
-    [clientId, entityId],
-  );
+  const questions = useMemo(() => {
+    const client = clientId ? getClientBySlug(clientId) : undefined;
+    const entity = entityId ? getEntity(entityId) : undefined;
+
+    return generateSuggestions({
+      client: client ?? undefined,
+      entity: entity ?? undefined,
+      recentFeedItems: feedItems,
+      pulseScores,
+    });
+  }, [clientId, entityId, feedItems, pulseScores]);
 
   return (
     <div className="flex flex-wrap gap-1.5 px-1">
