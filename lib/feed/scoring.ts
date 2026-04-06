@@ -24,10 +24,33 @@ export interface LearnedSignals {
   rag_adjustments: Record<string, { red_threshold: number; amber_threshold: number }>;
 }
 
+// Strip generic type words from project names to extract the distinctive
+// proper-noun part (e.g. "Sofia offshore wind" → "sofia").
+const GENERIC_PROJECT_SUFFIXES =
+  /\b(offshore|onshore|wind\s*farm|wind|renewables|energy|power|plant|project|farm|UK)\b/gi;
+
+function extractClientTerms(client: ClientConfig): string[] {
+  const terms: string[] = [client.name.toLowerCase()];
+
+  for (const p of client.projects || []) {
+    const full = p.toLowerCase();
+    terms.push(full);
+
+    // Also add the core proper-noun part
+    const core = p.replace(GENERIC_PROJECT_SUFFIXES, '').replace(/\s+/g, ' ').trim().toLowerCase();
+    if (core.length >= 4 && core !== full) {
+      terms.push(core);
+    }
+  }
+
+  return [...new Set(terms)];
+}
+
 export function computeFeedRelevance(
   item: FeedItem,
   client: ClientConfig,
   learnedSignals?: LearnedSignals,
+  debug: boolean = false,
 ): number {
   let score = 0;
   const text = `${item.title} ${item.body || ''}`.toLowerCase();
@@ -91,17 +114,14 @@ export function computeFeedRelevance(
   }
 
   // ── Source floors ──────────────────────────────────────────────────────
-  // The monitoring agent gave priority sources minimum scores to prevent
-  // relevant items from important entities being filtered out when keyword
-  // overlap is low. An Ofgem decision using language our keywords don't
-  // match should still surface.
+  // Priority sources get minimum scores to prevent relevant items from
+  // important entities being filtered out when keyword overlap is low.
 
   // Tier 1: Client named directly — almost always relevant
-  const clientNameTerms = [
-    client.name.toLowerCase(),
-    ...(client.projects || []).map(p => p.toLowerCase()),
-  ];
-  if (clientNameTerms.some(term => text.includes(term))) {
+  // Also match core project names (e.g. "Sofia" from "Sofia offshore wind")
+  const clientNameTerms = extractClientTerms(client);
+  const clientMentioned = clientNameTerms.some(term => text.includes(term));
+  if (clientMentioned) {
     score = Math.max(score, 0.60);
   }
 
@@ -129,5 +149,15 @@ export function computeFeedRelevance(
     score = Math.max(score, 0.20);
   }
 
-  return Math.min(score, 1.0);
+  const finalScore = Math.min(score, 1.0);
+
+  if (debug) {
+    console.log(`[SCORE] ${item.title.substring(0, 80)}`);
+    console.log(`  entities: ${(item.entity_ids || []).join(', ')}`);
+    console.log(`  entity=${Math.min(entityScore, 0.30).toFixed(2)} kw=${Math.min(kwMatches * 0.04, 0.25).toFixed(2)} source=${(sourceWeights[item.source_type] || 0.03).toFixed(2)}`);
+    console.log(`  clientFloor=${clientMentioned ? 0.60 : 0} primaryFloor=${hasPrimaryEntity ? 0.30 : 0} secondaryFloor=${hasSecondaryEntity && !hasPrimaryEntity ? 0.20 : 0}`);
+    console.log(`  final=${finalScore.toFixed(3)}`);
+  }
+
+  return finalScore;
 }
