@@ -7,7 +7,7 @@
 // Runs after collection and before scoring/report generation.
 // ---------------------------------------------------------------------------
 
-import { supabase } from '@/lib/db';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const THIN_CONTENT_THRESHOLD = 500;
 const MAX_BODY_LENGTH = 10_000;
@@ -15,16 +15,27 @@ const FETCH_TIMEOUT = 10_000;
 const BATCH_SIZE = 50;
 const DELAY_MS = 300; // Be respectful to GOV.UK
 
-export async function enrichThinItems(): Promise<{ enriched: number; failed: number }> {
+function getSupabase(): SupabaseClient {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY;
+  if (!url || !key) {
+    throw new Error('Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY');
+  }
+  return createClient(url, key);
+}
+
+export async function enrichThinItems(client?: SupabaseClient, offset = 0): Promise<{ enriched: number; failed: number }> {
+  const supabase = client ?? getSupabase();
   // Find items with thin or missing content
-  // We can't use `.lt` on text length in PostgREST, so fetch recent items
+  // We can't use `.lt` on text length in PostgREST, so fetch a page of items
   // and filter client-side.
+  const PAGE_SIZE = 1000;
   const { data: candidates, error } = await supabase
     .from('feed_items')
     .select('id, url, body, source_type')
     .not('url', 'is', null)
     .order('published_at', { ascending: false })
-    .limit(200);
+    .range(offset, offset + PAGE_SIZE - 1);
 
   if (error || !candidates?.length) return { enriched: 0, failed: 0 };
 

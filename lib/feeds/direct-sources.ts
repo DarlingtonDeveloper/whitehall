@@ -87,10 +87,11 @@ function extractOrigin(url: string): string {
 
 /**
  * Lightweight link extraction from HTML — pulls all <a> tags with href
- * and text longer than minTitleLength characters.
+ * and text longer than minTitleLength characters.  Also captures ~300 chars
+ * of surrounding HTML context for date extraction.
  */
-function extractLinks(html: string): Array<{ title: string; href: string }> {
-  const links: Array<{ title: string; href: string }> = [];
+function extractLinks(html: string): Array<{ title: string; href: string; context: string }> {
+  const links: Array<{ title: string; href: string; context: string }> = [];
   const regex = /<a\s[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/gi;
   let match: RegExpExecArray | null;
 
@@ -98,11 +99,80 @@ function extractLinks(html: string): Array<{ title: string; href: string }> {
     const href = match[1];
     const title = stripHtml(match[2]).trim();
     if (title.length >= 20 && href) {
-      links.push({ title, href });
+      // Grab surrounding HTML for date hints (300 chars before + after the <a>)
+      const start = Math.max(0, match.index - 300);
+      const end = Math.min(html.length, match.index + match[0].length + 300);
+      const context = stripHtml(html.slice(start, end));
+      links.push({ title, href, context });
     }
   }
 
   return links;
+}
+
+// ── Date extraction ─────────────────────────────────────────────────────
+
+const MONTHS: Record<string, number> = {
+  january: 0, february: 1, march: 2, april: 3, may: 4, june: 5,
+  july: 6, august: 7, september: 8, october: 9, november: 10, december: 11,
+  jan: 0, feb: 1, mar: 2, apr: 3, jun: 5,
+  jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11,
+};
+
+/**
+ * Attempt to extract a publication date from surrounding text context.
+ * Tries multiple common date formats. Returns ISO string or null.
+ */
+function extractDateFromContext(context: string): string | null {
+  // "26 March 2026", "1 Jan 2025", "26th March 2026"
+  const dmy = context.match(
+    /(\d{1,2})(?:st|nd|rd|th)?\s+(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{4})/i,
+  );
+  if (dmy) {
+    const d = parseInt(dmy[1], 10);
+    const m = MONTHS[dmy[2].toLowerCase()];
+    const y = parseInt(dmy[3], 10);
+    if (m !== undefined && y >= 2020 && y <= 2030) {
+      return new Date(y, m, d, 12, 0, 0).toISOString();
+    }
+  }
+
+  // "March 26, 2026", "Jan 1, 2025"
+  const mdy = context.match(
+    /(January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+(\d{1,2})(?:st|nd|rd|th)?,?\s+(\d{4})/i,
+  );
+  if (mdy) {
+    const m = MONTHS[mdy[1].toLowerCase()];
+    const d = parseInt(mdy[2], 10);
+    const y = parseInt(mdy[3], 10);
+    if (m !== undefined && y >= 2020 && y <= 2030) {
+      return new Date(y, m, d, 12, 0, 0).toISOString();
+    }
+  }
+
+  // ISO-ish: "2026-03-26", "2025-01-15"
+  const iso = context.match(/(\d{4})-(\d{2})-(\d{2})/);
+  if (iso) {
+    const y = parseInt(iso[1], 10);
+    const m = parseInt(iso[2], 10) - 1;
+    const d = parseInt(iso[3], 10);
+    if (y >= 2020 && y <= 2030) {
+      return new Date(y, m, d, 12, 0, 0).toISOString();
+    }
+  }
+
+  // "26/03/2026" or "26.03.2026" (DD/MM/YYYY — UK format)
+  const ukDate = context.match(/(\d{1,2})[/.](\d{1,2})[/.](\d{4})/);
+  if (ukDate) {
+    const d = parseInt(ukDate[1], 10);
+    const m = parseInt(ukDate[2], 10) - 1;
+    const y = parseInt(ukDate[3], 10);
+    if (y >= 2020 && y <= 2030 && m >= 0 && m <= 11 && d >= 1 && d <= 31) {
+      return new Date(y, m, d, 12, 0, 0).toISOString();
+    }
+  }
+
+  return null;
 }
 
 // ── Main collector ────────────────────────────────────────────────────────
@@ -162,13 +232,14 @@ export async function collectDirectSources(): Promise<{ inserted: number; skippe
         const entityIds = enrichEntityIds(source.defaultEntityIds, improved, '');
         const ragStatus = determineRagStatus(improved, '');
         const fingerprint = makeFingerprint(fullUrl, cleaned);
+        const publishedAt = extractDateFromContext(link.context) ?? new Date().toISOString();
 
         rows.push({
           source_type: 'stakeholder',
           source_name: source.name,
           title: improved,
           url: fullUrl,
-          published_at: new Date().toISOString(),
+          published_at: publishedAt,
           body: null,
           entity_ids: entityIds,
           rag_status: ragStatus.toLowerCase(),
@@ -180,15 +251,24 @@ export async function collectDirectSources(): Promise<{ inserted: number; skippe
         collected++;
       }
 
+      // Deduplicate by fingerprint (same link can appear multiple times on a page)
+      const seen = new Set<string>();
+      const dedupedRows = rows.filter((r) => {
+        const fp = r.fingerprint as string;
+        if (seen.has(fp)) return false;
+        seen.add(fp);
+        return true;
+      });
+
       // Upsert
       let inserted = 0;
       let skipped = 0;
 
-      for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-        const batch = rows.slice(i, i + BATCH_SIZE);
+      for (let i = 0; i < dedupedRows.length; i += BATCH_SIZE) {
+        const batch = dedupedRows.slice(i, i + BATCH_SIZE);
         const { data, error } = await supabase
           .from('feed_items')
-          .upsert(batch, { onConflict: 'fingerprint', ignoreDuplicates: true })
+          .upsert(batch, { onConflict: 'fingerprint', ignoreDuplicates: false })
           .select('id');
 
         if (error) {
@@ -201,7 +281,7 @@ export async function collectDirectSources(): Promise<{ inserted: number; skippe
         skipped += batch.length - (data?.length ?? 0);
       }
 
-      console.log(`  ${source.name}: ${links.length} links found, ${rows.length} collected (max ${source.maxItems}), ${inserted} inserted`);
+      console.log(`  ${source.name}: ${links.length} links found, ${dedupedRows.length} collected (max ${source.maxItems}), ${inserted} inserted`);
       totalInserted += inserted;
       totalSkipped += skipped;
     } catch (err: unknown) {
