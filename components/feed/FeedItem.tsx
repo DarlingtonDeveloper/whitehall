@@ -122,7 +122,8 @@ export default function FeedItemCard({
           </span>
           {showScore && relevanceScore !== undefined && relevanceScore >= 0.25 && (
             <span
-              className="text-[10px] font-medium px-1.5 py-0.5 rounded min-w-[24px] text-center"
+              className="text-[10px] font-medium px-1.5 py-0.5 rounded min-w-[24px] text-center cursor-help"
+              title={`Relevance: ${Math.round(relevanceScore * 100)}% — ${relevanceScore >= 0.6 ? 'High' : relevanceScore >= 0.4 ? 'Medium' : 'Low'}. Scored on entity overlap, keyword matches, source quality, recency, and actionable content.`}
               style={{
                 backgroundColor: getScoreBg(relevanceScore),
                 color: getScoreText(relevanceScore),
