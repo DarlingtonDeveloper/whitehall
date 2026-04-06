@@ -110,14 +110,14 @@ export default function ClientHealthDashboard({ client }: { client: ClientConfig
       value: metrics.itemsThisWeek,
       colour: 'var(--color-wh-text-primary)',
       zeroColour: 'var(--color-wh-text-secondary)',
-      feedFilter: { label: 'This week', dateRange: '7d' },
+      feedFilter: { label: 'This week', queryDateDays: 7 },
     },
     {
       label: 'Consultations',
       value: metrics.openConsultations,
       colour: '#f59e0b',
       zeroColour: 'var(--color-wh-text-secondary)',
-      feedFilter: { label: 'Consultations', dateRange: 'all', titleContains: 'consultation' },
+      feedFilter: { label: 'Consultations', sourceType: 'govuk', titleContains: 'consultation', queryDateDays: 90 },
     },
     {
       label: 'Bills',
@@ -131,21 +131,21 @@ export default function ClientHealthDashboard({ client }: { client: ClientConfig
       value: metrics.committeeInquiries,
       colour: 'var(--color-wh-text-primary)',
       zeroColour: 'var(--color-wh-text-secondary)',
-      feedFilter: { label: 'Committees', sourceType: 'committee' },
+      feedFilter: { label: 'Committees', sourceType: 'committee', queryDateDays: 30 },
     },
     {
       label: 'Petitions',
       value: metrics.activePetitions,
       colour: metrics.activePetitions > 50 ? '#ef4444' : '#f59e0b',
       zeroColour: 'var(--color-wh-text-secondary)',
-      feedFilter: { label: 'Petitions', sourceType: 'petition' },
+      feedFilter: { label: 'Petitions', sourceType: 'petition', queryDateDays: 7 },
     },
     {
       label: 'Trade press',
       value: metrics.tradePressCoverage,
       colour: '#f59e0b',
       zeroColour: 'var(--color-wh-text-secondary)',
-      feedFilter: { label: 'Trade press', sourceType: 'trade_press' },
+      feedFilter: { label: 'Trade press', sourceType: 'trade_press', queryDateDays: 7 },
     },
   ];
 

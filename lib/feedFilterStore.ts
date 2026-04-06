@@ -7,9 +7,12 @@ import { useSyncExternalStore } from 'react';
 
 export interface FeedFilter {
   label: string;
-  dateRange?: string;
   sourceType?: string;
   titleContains?: string;
+  /** Exact date window in days used by the dashboard count query.
+   *  When set, the feed re-queries Supabase with this cutoff
+   *  instead of relying on client-side filtering. */
+  queryDateDays?: number;
 }
 
 let activeFeedFilter: FeedFilter | null = null;

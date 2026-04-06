@@ -89,6 +89,12 @@ export default function FeedPanel({
     [activeSourceIds],
   );
 
+  // Serialise feedFilter so the effect only re-runs when values change
+  const feedFilterKey = useMemo(
+    () => (feedFilter ? JSON.stringify(feedFilter) : ''),
+    [feedFilter],
+  );
+
   useEffect(() => {
     if (propItems && propItems.length > 0) return;
 
@@ -97,6 +103,39 @@ export default function FeedPanel({
       setError(null);
 
       try {
+        // --- Metric filter active: run targeted server query ---
+        if (feedFilter && clientId && activeSourceIds && activeSourceIds.length > 0) {
+          let query = supabase
+            .from('feed_items')
+            .select('*')
+            .overlaps('entity_ids', activeSourceIds);
+
+          if (feedFilter.sourceType) {
+            query = query.eq('source_type', feedFilter.sourceType);
+          }
+          if (feedFilter.titleContains) {
+            query = query.ilike('title', `%${feedFilter.titleContains}%`);
+          }
+          if (feedFilter.queryDateDays) {
+            const cutoff = new Date(
+              Date.now() - feedFilter.queryDateDays * 24 * 60 * 60 * 1000,
+            ).toISOString();
+            query = query.gte('published_at', cutoff);
+          }
+
+          const { data, error: dbError } = await query
+            .order('published_at', { ascending: false })
+            .limit(500);
+
+          if (dbError) {
+            setError(dbError.message);
+          } else {
+            setItems((data as FeedItem[]) ?? []);
+          }
+          setLoading(false);
+          return;
+        }
+
         // --- Entity-based query ---
         if (entityId) {
           const { data, error: dbError } = await supabase
@@ -183,32 +222,21 @@ export default function FeedPanel({
 
     fetchItems();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entityId, clientId, propItems, activeSourceIdsKey, activeKeywordsKey]);
+  }, [entityId, clientId, propItems, activeSourceIdsKey, activeKeywordsKey, feedFilterKey]);
 
-  // Client-side filtering by search + date + metric filter, then sort
+  // Client-side filtering by search + date, then sort.
+  // When a metric feedFilter is active, items already match the filter
+  // from the server query — only apply search and relevance sorting.
   const filtered = useMemo(() => {
     let list = items;
 
-    // Apply metric filter from health dashboard
-    if (feedFilter) {
-      if (feedFilter.sourceType) {
-        list = list.filter((item) => item.source_type === feedFilter.sourceType);
+    // Only apply the date picker when no metric filter is active
+    // (metric filter already applied the correct date window server-side)
+    if (!feedFilter) {
+      const cutoff = getDateCutoff(dateRange);
+      if (cutoff) {
+        list = list.filter((item) => item.published_at >= cutoff);
       }
-      if (feedFilter.titleContains) {
-        const term = feedFilter.titleContains.toLowerCase();
-        list = list.filter((item) => item.title.toLowerCase().includes(term));
-      }
-      if (feedFilter.dateRange) {
-        const metricCutoff = getDateCutoff(feedFilter.dateRange as DateRange);
-        if (metricCutoff) {
-          list = list.filter((item) => item.published_at >= metricCutoff);
-        }
-      }
-    }
-
-    const cutoff = getDateCutoff(dateRange);
-    if (cutoff) {
-      list = list.filter((item) => item.published_at >= cutoff);
     }
 
     const q = search.toLowerCase().trim();
