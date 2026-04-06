@@ -44,6 +44,22 @@ export function generateSuggestions(context: SuggestionContext): string[] {
       );
     }
 
+    const tradePress = thisWeekItems.filter((i) => i.source_type === 'trade_press');
+    if (tradePress.length > 0) {
+      suggestions.push(
+        `${tradePress.length} trade press item${tradePress.length > 1 ? 's' : ''} — key industry coverage for ${context.client.name}?`,
+      );
+    }
+
+    const petitions = thisWeekItems.filter(
+      (i) => i.source_type === 'petition',
+    );
+    if (petitions.length > 0) {
+      suggestions.push(
+        `${petitions.length} active petition${petitions.length > 1 ? 's' : ''} — any reputational risk for ${context.client.name}?`,
+      );
+    }
+
     // Hot entity suggestion
     if (context.pulseScores) {
       const clientEntityIds = context.client.stakeholders.map((s) => s.entityId);

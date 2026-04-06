@@ -9,6 +9,8 @@ interface HealthMetrics {
   openConsultations: number;
   billsInProgress: number;
   committeeInquiries: number;
+  activePetitions: number;
+  tradePressCoverage: number;
 }
 
 async function fetchHealthMetrics(client: ClientConfig): Promise<HealthMetrics> {
@@ -17,7 +19,7 @@ async function fetchHealthMetrics(client: ClientConfig): Promise<HealthMetrics> 
   const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString();
   const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
 
-  const [items, consultations, bills, committees] = await Promise.all([
+  const [items, consultations, bills, committees, petitions, tradePress] = await Promise.all([
     supabase
       .from('feed_items')
       .select('id', { count: 'exact', head: true })
@@ -42,6 +44,17 @@ async function fetchHealthMetrics(client: ClientConfig): Promise<HealthMetrics> 
       .overlaps('entity_ids', stakeholderIds)
       .gte('published_at', thirtyDaysAgo)
       .eq('source_type', 'committee'),
+    supabase
+      .from('feed_items')
+      .select('id', { count: 'exact', head: true })
+      .overlaps('entity_ids', stakeholderIds)
+      .eq('source_type', 'petition'),
+    supabase
+      .from('feed_items')
+      .select('id', { count: 'exact', head: true })
+      .overlaps('entity_ids', stakeholderIds)
+      .gte('published_at', oneWeekAgo)
+      .eq('source_type', 'trade_press'),
   ]);
 
   return {
@@ -49,6 +62,8 @@ async function fetchHealthMetrics(client: ClientConfig): Promise<HealthMetrics> 
     openConsultations: consultations.count ?? 0,
     billsInProgress: bills.count ?? 0,
     committeeInquiries: committees.count ?? 0,
+    activePetitions: petitions.count ?? 0,
+    tradePressCoverage: tradePress.count ?? 0,
   };
 }
 
@@ -66,8 +81,8 @@ export default function ClientHealthDashboard({ client }: { client: ClientConfig
 
   if (loading || !metrics) {
     return (
-      <div className="grid grid-cols-4 gap-2 p-3 border-b border-wh-border">
-        {[...Array(4)].map((_, i) => (
+      <div className="grid grid-cols-6 gap-2 p-3 border-b border-wh-border">
+        {[...Array(6)].map((_, i) => (
           <div key={i} className="h-14 rounded-lg bg-wh-bg animate-pulse" />
         ))}
       </div>
@@ -95,10 +110,20 @@ export default function ClientHealthDashboard({ client }: { client: ClientConfig
       value: metrics.committeeInquiries,
       colour: 'var(--color-wh-text-primary)',
     },
+    {
+      label: 'Active petitions',
+      value: metrics.activePetitions,
+      colour: metrics.activePetitions > 0 ? '#ec4899' : 'var(--color-wh-text-secondary)',
+    },
+    {
+      label: 'Trade press',
+      value: metrics.tradePressCoverage,
+      colour: metrics.tradePressCoverage > 0 ? '#f97316' : 'var(--color-wh-text-secondary)',
+    },
   ];
 
   return (
-    <div className="grid grid-cols-4 gap-2 p-3 border-b border-wh-border">
+    <div className="grid grid-cols-6 gap-2 p-3 border-b border-wh-border">
       {cards.map((card) => (
         <div key={card.label} className="rounded-lg bg-wh-bg p-2.5">
           <div className="text-[10px] text-wh-text-secondary/70 uppercase tracking-wide mb-1">

@@ -10,6 +10,10 @@ const SOURCE_COLOURS: Record<FeedItemType['source_type'], string> = {
   legislation: 'bg-emerald-500/15 text-emerald-400',
   web_search: 'bg-amber-500/15 text-amber-400',
   forward_scan: 'bg-rose-500/15 text-rose-400',
+  trade_press: 'bg-orange-500/15 text-orange-400',
+  stakeholder: 'bg-cyan-500/15 text-cyan-400',
+  petition: 'bg-pink-500/15 text-pink-400',
+  research: 'bg-indigo-500/15 text-indigo-400',
 };
 
 const SOURCE_LABELS: Record<FeedItemType['source_type'], string> = {
@@ -19,6 +23,10 @@ const SOURCE_LABELS: Record<FeedItemType['source_type'], string> = {
   legislation: 'Legislation',
   web_search: 'Web',
   forward_scan: 'Forward Scan',
+  trade_press: 'Trade Press',
+  stakeholder: 'Stakeholder',
+  petition: 'Petition',
+  research: 'Research',
 };
 
 function relevanceBorder(score: number): string {
