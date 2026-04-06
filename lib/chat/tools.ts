@@ -31,18 +31,28 @@ export const chatTools = {
 
   feed_search: tool({
     description:
-      'Search recent feed items (parliamentary activity, consultations, press releases, appointments).',
+      'Search recent feed items (parliamentary activity, consultations, press releases, research briefings, petitions). Searches title, body text, and entity tags. Use specific keywords rather than broad queries. You can also pass entity IDs directly to get all recent items for specific government bodies.',
     inputSchema: z.object({
       query: z
         .string()
         .describe('Search query — keywords, entity names, or topics.'),
+      entityIds: z
+        .array(z.string())
+        .optional()
+        .describe(
+          'Optional entity IDs to search by (e.g. ["desnz", "ofgem"]). Returns items tagged to these entities.',
+        ),
       limit: z
         .number()
         .optional()
-        .describe('Maximum results. Default 5.'),
+        .describe('Maximum results. Default 10.'),
+      daysBack: z
+        .number()
+        .optional()
+        .describe('How many days back to search. Default 7.'),
     }),
-    execute: async ({ query, limit }): Promise<Record<string, unknown>> => {
-      return handleFeedSearch(query, limit);
+    execute: async ({ query, entityIds, limit, daysBack }): Promise<Record<string, unknown>> => {
+      return handleFeedSearch(query, entityIds, limit, daysBack);
     },
   }),
 
@@ -136,64 +146,120 @@ function handleEntityLookup(query: string): Record<string, unknown> {
   };
 }
 
-async function handleFeedSearch(query: string, limit?: number): Promise<Record<string, unknown>> {
+async function handleFeedSearch(
+  query: string,
+  entityIds?: string[],
+  limit?: number,
+  daysBack?: number,
+): Promise<Record<string, unknown>> {
   const maxLimit = Math.min(limit ?? 10, 20);
+  const cutoff = new Date(
+    Date.now() - (daysBack ?? 7) * 24 * 60 * 60 * 1000,
+  ).toISOString();
 
   try {
-    const escaped = query.replace(/[%_]/g, '\\$&');
-    const { data, error } = await supabase
-      .from('feed_items')
-      .select('id, title, url, source_type, source_name, published_at, entity_ids')
-      .or(`title.ilike.%${escaped}%,source_name.ilike.%${escaped}%`)
-      .order('published_at', { ascending: false })
-      .limit(maxLimit);
+    const allItems: Array<Record<string, unknown>> = [];
+    const seenIds = new Set<string>();
 
-    if (error) return { error: error.message, query };
+    // Path 1: search by entity IDs (most reliable for client briefings)
+    if (entityIds && entityIds.length > 0) {
+      const { data } = await supabase
+        .from('feed_items')
+        .select('id, title, url, source_type, source_name, published_at, entity_ids, body, rag_status')
+        .overlaps('entity_ids', entityIds)
+        .gte('published_at', cutoff)
+        .order('published_at', { ascending: false })
+        .limit(maxLimit);
 
-    if (!data || data.length === 0) {
-      // Fallback: entity-based search
+      for (const item of data ?? []) {
+        if (!seenIds.has(item.id)) {
+          seenIds.add(item.id);
+          allItems.push(item);
+        }
+      }
+    }
+
+    // Path 2: keyword search on title and body
+    if (allItems.length < maxLimit) {
+      const escaped = query.replace(/[%_]/g, '\\$&');
+      const remaining = maxLimit - allItems.length;
+      const { data, error } = await supabase
+        .from('feed_items')
+        .select('id, title, url, source_type, source_name, published_at, entity_ids, body, rag_status')
+        .or(`title.ilike.%${escaped}%,body.ilike.%${escaped}%,source_name.ilike.%${escaped}%`)
+        .gte('published_at', cutoff)
+        .order('published_at', { ascending: false })
+        .limit(remaining);
+
+      if (error) {
+        console.error('[feed_search] query error:', error.message);
+      }
+
+      for (const item of data ?? []) {
+        if (!seenIds.has(item.id)) {
+          seenIds.add(item.id);
+          allItems.push(item);
+        }
+      }
+    }
+
+    // Path 3: if keyword search found nothing, try entity name matching
+    if (allItems.length === 0) {
       const entities = searchEntities(query).slice(0, 5);
       if (entities.length > 0) {
-        const entityIds = entities.map((e) => e.id);
-        const { data: entityData } = await supabase
+        const matchedIds = entities.map((e) => e.id);
+        const { data } = await supabase
           .from('feed_items')
-          .select('id, title, url, source_type, source_name, published_at, entity_ids')
-          .overlaps('entity_ids', entityIds)
+          .select('id, title, url, source_type, source_name, published_at, entity_ids, body, rag_status')
+          .overlaps('entity_ids', matchedIds)
+          .gte('published_at', cutoff)
           .order('published_at', { ascending: false })
           .limit(maxLimit);
 
-        if (entityData && entityData.length > 0) {
+        for (const item of data ?? []) {
+          if (!seenIds.has(item.id)) {
+            seenIds.add(item.id);
+            allItems.push(item);
+          }
+        }
+
+        if (allItems.length > 0) {
           return {
             query,
             matchedVia: 'entity_ids',
-            results: entityData.map((item) => ({
-              title: item.title,
-              url: item.url,
-              source: item.source_name,
-              type: item.source_type,
-              date: item.published_at,
-              entities: item.entity_ids,
-            })),
+            matchedEntities: entities.map((e) => e.name),
+            results: formatResults(allItems),
           };
         }
       }
-      return { query, results: [], message: 'No feed items found.' };
+
+      return { query, results: [], message: 'No feed items found for this query or time period.' };
     }
 
     return {
       query,
-      results: data.map((item) => ({
-        title: item.title,
-        url: item.url,
-        source: item.source_name,
-        type: item.source_type,
-        date: item.published_at,
-        entities: item.entity_ids,
-      })),
+      resultCount: allItems.length,
+      results: formatResults(allItems),
     };
   } catch (err) {
+    console.error('[feed_search] error:', err);
     return { error: err instanceof Error ? err.message : 'Feed search failed', query };
   }
+}
+
+function formatResults(
+  items: Array<Record<string, unknown>>,
+): Array<Record<string, unknown>> {
+  return items.map((item) => ({
+    title: item.title,
+    url: item.url,
+    source: item.source_name,
+    type: item.source_type,
+    date: item.published_at,
+    entities: item.entity_ids,
+    rag_status: item.rag_status,
+    body_preview: typeof item.body === 'string' ? item.body.slice(0, 200) : null,
+  }));
 }
 
 function handleGraphAction(

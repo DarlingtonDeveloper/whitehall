@@ -63,14 +63,6 @@ export async function POST(request: Request) {
    * When the graph_action tool is invoked, we embed <!--GRAPH_CMD:{json}-->
    * markers in the text stream. The client parses these out before display
    * and dispatches them to the graph via a pub/sub bus.
-   *
-   * Why HTML comments instead of a structured sideband?
-   * 1. streamText returns a single text stream — there's no built-in
-   *    sideband for out-of-band metadata.
-   * 2. HTML comments are invisible if accidentally rendered as markdown,
-   *    and trivially parseable with a regex.
-   * 3. They can be emitted mid-stream (as soon as the tool resolves),
-   *    letting the graph react before the full response finishes.
    */
   const graphCommands: string[] = [];
 
@@ -80,30 +72,39 @@ export async function POST(request: Request) {
     messages,
     tools: chatTools,
     stopWhen: stepCountIs(5),
-    onStepFinish: ({ toolCalls, toolResults }) => {
-      if (!toolCalls || !toolResults) return;
-      for (const call of toolCalls) {
-        if (call.toolName !== 'graph_action') continue;
+    onStepFinish: (event) => {
+      try {
+        const { toolCalls, toolResults } = event;
+        if (!toolCalls || !toolResults) return;
+        for (const call of toolCalls) {
+          if (call.toolName !== 'graph_action') continue;
 
-        // AI SDK toolResults are objects with { toolCallId, output, ... }
-        // Match by toolCallId rather than assuming index alignment.
-        const matched = toolResults.find(
-          (r) => r.toolCallId === call.toolCallId,
-        );
-        if (!matched) continue;
-        const res = matched.output as Record<string, unknown> | undefined;
-        if (!res?.success) continue;
+          const matched = toolResults.find(
+            (r: Record<string, unknown>) =>
+              (r as { toolCallId?: string }).toolCallId === call.toolCallId,
+          );
+          if (!matched) continue;
 
-        const input = call.input as Record<string, unknown>;
-        const cmd: Record<string, unknown> = { type: input.action };
-        if (input.action === 'select_entity') {
-          cmd.entityId = res.entityId ?? input.entityId;
-        } else if (input.action === 'search') {
-          cmd.query = input.query;
-        } else if (input.action === 'focus_mode') {
-          cmd.enabled = input.enabled;
+          // AI SDK v6: result is in `output` or `result` depending on version
+          const res = ((matched as Record<string, unknown>).output ??
+            (matched as Record<string, unknown>).result) as
+            | Record<string, unknown>
+            | undefined;
+          if (!res?.success) continue;
+
+          const input = call.input as Record<string, unknown>;
+          const cmd: Record<string, unknown> = { type: input.action };
+          if (input.action === 'select_entity') {
+            cmd.entityId = res.entityId ?? input.entityId;
+          } else if (input.action === 'search') {
+            cmd.query = input.query;
+          } else if (input.action === 'focus_mode') {
+            cmd.enabled = input.enabled;
+          }
+          graphCommands.push(`<!--GRAPH_CMD:${JSON.stringify(cmd)}-->`);
         }
-        graphCommands.push(`<!--GRAPH_CMD:${JSON.stringify(cmd)}-->`);
+      } catch (err) {
+        console.error('[chat/route] onStepFinish error:', err);
       }
     },
   });
@@ -134,6 +135,7 @@ export async function POST(request: Request) {
 
         controller.close();
       } catch (err) {
+        console.error('[chat/route] stream error:', err);
         const errorMessage =
           err instanceof Error ? err.message : 'An unexpected error occurred.';
         controller.enqueue(encoder.encode(`\n\n[Error: ${errorMessage}]`));
