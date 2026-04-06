@@ -9,7 +9,7 @@
  *   npx tsx scripts/collect-govuk-search.ts
  */
 
-import { collectGovUKSearch, DOCUMENT_TYPES } from '../lib/feeds/govuk-search';
+import { collectAllGovUKSearch, TRACKED_ORGANISATIONS, DOCUMENT_TYPES } from '../lib/feeds/govuk-search';
 
 async function main() {
   const start = Date.now();
@@ -18,11 +18,11 @@ async function main() {
   console.log('║    GOV.UK Search API Collection          ║');
   console.log('╚══════════════════════════════════════════╝');
   console.log(`Started at: ${new Date().toISOString()}`);
+  console.log(`Tracked organisations: ${TRACKED_ORGANISATIONS.length}`);
   console.log(`Document types: ${DOCUMENT_TYPES.length}`);
-  console.log(`Types: ${DOCUMENT_TYPES.join(', ')}`);
 
   try {
-    const result = await collectGovUKSearch();
+    const result = await collectAllGovUKSearch();
 
     const elapsed = ((Date.now() - start) / 1000).toFixed(1);
     console.log('╔══════════════════════════════════════════╗');

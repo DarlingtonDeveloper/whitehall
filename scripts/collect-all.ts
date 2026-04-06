@@ -21,7 +21,7 @@
  */
 
 import { collectGovUK, GOVUK_FEEDS } from '../lib/feeds/govuk';
-import { collectGovUKSearch } from '../lib/feeds/govuk-search';
+import { collectAllGovUKSearch } from '../lib/feeds/govuk-search';
 import { collectHansard } from '../lib/feeds/hansard';
 import { collectParliament } from '../lib/feeds/parliament';
 import { collectLegislation } from '../lib/feeds/legislation';
@@ -68,8 +68,8 @@ async function main() {
   // Step 1: GOV.UK Atom feeds (recent items)
   results.govukAtom = await runCollector('GOV.UK Atom', collectGovUK);
 
-  // Step 2: GOV.UK Search API (12 months historical)
-  results.govukSearch = await runCollector('GOV.UK Search', collectGovUKSearch);
+  // Step 2: GOV.UK Search API — org-based + doc-type (12 months historical)
+  results.govukSearch = await runCollector('GOV.UK Search', collectAllGovUKSearch);
 
   // Step 3: Hansard (12 months)
   results.hansard = await runCollector('Hansard', collectHansard);

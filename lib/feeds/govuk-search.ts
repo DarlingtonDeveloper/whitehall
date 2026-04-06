@@ -1,8 +1,9 @@
 /**
  * GOV.UK Search API Collector
  *
- * Fetches 12 months of historical publications from the GOV.UK Search API
- * across all departments and document types, then upserts into Supabase.
+ * Two-pass collection strategy:
+ *   Pass 1 — Pull ALL publications from tracked organisations (no keyword filter)
+ *   Pass 2 — Pull by document type across all orgs (catches items from non-tracked orgs)
  *
  * Unlike the Atom feed collector (govuk.ts) which only gets recent items,
  * this collector paginates through the full Search API to backfill
@@ -43,7 +44,51 @@ const REQUEST_DELAY_MS = 300;
 
 const BATCH_SIZE = 25;
 
-/** Document types to collect across all departments. */
+// -- Tracked organisations for Pass 1 ----------------------------------------
+// Pull ALL publications from these organisations regardless of keywords.
+
+export const TRACKED_ORGANISATIONS = [
+  // Energy (RWE primary)
+  'department-for-energy-security-and-net-zero',
+  'ofgem',
+  'north-sea-transition-authority',
+  'nuclear-decommissioning-authority',
+  'coal-authority',
+  'uk-atomic-energy-authority',
+
+  // Planning (RWE secondary)
+  'planning-inspectorate',
+  'homes-england',
+
+  // Environment (RWE secondary)
+  'department-for-environment-food-rural-affairs',
+  'environment-agency',
+  'natural-england',
+  'marine-management-organisation',
+
+  // Health (Sanofi primary)
+  'department-of-health-and-social-care',
+  'medicines-and-healthcare-products-regulatory-agency',
+  'national-institute-for-health-and-care-excellence',
+  'care-quality-commission',
+  'nhs-england',
+  'uk-health-security-agency',
+
+  // Treasury
+  'hm-treasury',
+
+  // Cross-cutting
+  'cabinet-office',
+  'department-for-science-innovation-and-technology',
+  'department-for-business-and-trade',
+  'competition-and-markets-authority',
+  'national-audit-office',
+
+  // Crown bodies
+  'the-crown-estate',
+] as const;
+
+/** Document types to collect across all departments (Pass 2). */
 export const DOCUMENT_TYPES = [
   'news_story',
   'press_release',
@@ -115,15 +160,15 @@ function resolveEntityIds(result: SearchResult): string[] {
 
 /**
  * Fetch a single page from the GOV.UK Search API.
+ * Supports filtering by document type OR by organisation.
  */
 async function fetchSearchPage(
-  docType: string,
+  filters: { docType?: string; orgSlug?: string },
   start: number,
   count: number,
   timeoutMs = 20_000,
 ): Promise<SearchResponse | null> {
   const params = new URLSearchParams({
-    filter_content_store_document_type: docType,
     order: '-public_timestamp',
     count: String(count),
     start: String(start),
@@ -131,6 +176,14 @@ async function fetchSearchPage(
       'title,link,public_timestamp,description,content_store_document_type,organisations',
   });
 
+  if (filters.docType) {
+    params.set('filter_content_store_document_type', filters.docType);
+  }
+  if (filters.orgSlug) {
+    params.set('filter_organisations', filters.orgSlug);
+  }
+
+  const label = filters.orgSlug || filters.docType || 'unknown';
   const url = `${SEARCH_BASE_URL}?${params.toString()}`;
 
   try {
@@ -148,7 +201,7 @@ async function fetchSearchPage(
     clearTimeout(timer);
 
     if (!resp.ok) {
-      console.warn(`  [WARN] Search API returned ${resp.status} for ${docType} (start=${start})`);
+      console.warn(`  [WARN] Search API returned ${resp.status} for ${label} (start=${start})`);
       return null;
     }
 
@@ -156,16 +209,174 @@ async function fetchSearchPage(
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     if (message.includes('abort')) {
-      console.warn(`  [WARN] Search API timed out for ${docType} (start=${start})`);
+      console.warn(`  [WARN] Search API timed out for ${label} (start=${start})`);
     } else {
-      console.warn(`  [WARN] Search API fetch failed for ${docType} (start=${start}): ${message}`);
+      console.warn(`  [WARN] Search API fetch failed for ${label} (start=${start}): ${message}`);
     }
     return null;
   }
 }
 
-// -- Main collector -----------------------------------------------------------
+/**
+ * Process a page of search results into upsertable rows.
+ */
+function processSearchResults(
+  results: SearchResult[],
+  cutoffIso: string,
+  sourceName: string,
+): { rows: Array<Record<string, unknown>>; reachedCutoff: boolean } {
+  const rows: Array<Record<string, unknown>> = [];
+  let reachedCutoff = false;
 
+  for (const result of results) {
+    if (!result.link || !result.title) continue;
+
+    const pubDate = result.public_timestamp
+      ? new Date(result.public_timestamp).toISOString()
+      : null;
+
+    if (pubDate && pubDate < cutoffIso) {
+      reachedCutoff = true;
+      break;
+    }
+
+    if (!pubDate) continue;
+
+    const fullUrl = result.link.startsWith('http')
+      ? result.link
+      : `https://www.gov.uk${result.link}`;
+
+    const description = result.description || '';
+    const baseEntityIds = resolveEntityIds(result);
+    const entityIds = enrichEntityIds(baseEntityIds, result.title, description);
+    const ragStatus = determineRagStatus(result.title, description);
+    const fingerprint = makeFingerprint(fullUrl, result.title);
+
+    rows.push({
+      source_type: 'govuk',
+      source_name: sourceName,
+      title: result.title,
+      url: fullUrl,
+      published_at: pubDate,
+      body: description.slice(0, 2000) || null,
+      entity_ids: entityIds,
+      rag_status: ragStatus.toLowerCase(),
+      relevance_score: 0.3,
+      fingerprint,
+      is_forward_scan: false,
+    });
+  }
+
+  return { rows, reachedCutoff };
+}
+
+/**
+ * Upsert rows in batches.
+ */
+async function upsertRows(rows: Array<Record<string, unknown>>): Promise<{ inserted: number; skipped: number }> {
+  let inserted = 0;
+  let skipped = 0;
+
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    const batch = rows.slice(i, i + BATCH_SIZE);
+
+    const { data, error } = await supabase
+      .from('feed_items')
+      .upsert(batch, { onConflict: 'fingerprint', ignoreDuplicates: true })
+      .select('id');
+
+    if (error) {
+      console.warn(`    [ERR] Upsert failed: ${error.message}`);
+      skipped += batch.length;
+      continue;
+    }
+
+    const insertedCount = data?.length ?? 0;
+    inserted += insertedCount;
+    skipped += batch.length - insertedCount;
+  }
+
+  return { inserted, skipped };
+}
+
+// -- Pass 1: Organisation-based collector ------------------------------------
+
+/**
+ * Pull ALL publications from tracked organisations. No keyword filtering —
+ * the scoring system decides relevance.
+ */
+export async function collectGovUKByOrg(): Promise<{ inserted: number; skipped: number }> {
+  let totalInserted = 0;
+  let totalSkipped = 0;
+
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - 365);
+  const cutoffIso = cutoffDate.toISOString();
+
+  console.log(`\n=== GOV.UK Search — Pass 1: By Organisation ===`);
+  console.log(`Tracked organisations: ${TRACKED_ORGANISATIONS.length}`);
+  console.log(`Cutoff date:           ${cutoffIso.slice(0, 10)} (365 days ago)\n`);
+
+  for (const orgSlug of TRACKED_ORGANISATIONS) {
+    let start = 0;
+    let totalForOrg = 0;
+    let insertedForOrg = 0;
+    let skippedForOrg = 0;
+    let done = false;
+
+    while (!done) {
+      const page = await fetchSearchPage({ orgSlug }, start, PAGE_SIZE);
+
+      if (!page) {
+        if (start === 0) break;
+        start += PAGE_SIZE;
+        await delay(REQUEST_DELAY_MS);
+        continue;
+      }
+
+      if (start === 0) {
+        totalForOrg = page.total;
+      }
+
+      if (page.results.length === 0) break;
+
+      const orgLabel = GOVUK_TO_ENTITY[orgSlug]
+        ? GOVUK_TO_ENTITY[orgSlug].join(',')
+        : orgSlug;
+      const { rows, reachedCutoff } = processSearchResults(
+        page.results,
+        cutoffIso,
+        `GOV.UK - ${orgLabel}`,
+      );
+
+      const result = await upsertRows(rows);
+      insertedForOrg += result.inserted;
+      skippedForOrg += result.skipped;
+
+      if (reachedCutoff) done = true;
+      start += PAGE_SIZE;
+      if (start >= totalForOrg) done = true;
+
+      await delay(REQUEST_DELAY_MS);
+    }
+
+    console.log(`  ${orgSlug}: ${insertedForOrg} inserted, ${skippedForOrg} skipped`);
+    totalInserted += insertedForOrg;
+    totalSkipped += skippedForOrg;
+
+    await delay(REQUEST_DELAY_MS);
+  }
+
+  console.log(`\nPass 1 complete: ${totalInserted} inserted, ${totalSkipped} skipped\n`);
+  return { inserted: totalInserted, skipped: totalSkipped };
+}
+
+// -- Pass 2: Document-type-based collector (supplementary) -------------------
+
+/**
+ * Pull by document type across ALL organisations. Catches items from
+ * organisations not in the tracked list.
+ */
 export async function collectGovUKSearch(): Promise<{ inserted: number; skipped: number }> {
   let totalInserted = 0;
   let totalSkipped = 0;
@@ -174,7 +385,7 @@ export async function collectGovUKSearch(): Promise<{ inserted: number; skipped:
   cutoffDate.setDate(cutoffDate.getDate() - 365);
   const cutoffIso = cutoffDate.toISOString();
 
-  console.log(`\n=== GOV.UK Search API Collector ===`);
+  console.log(`\n=== GOV.UK Search — Pass 2: By Document Type ===`);
   console.log(`Document types: ${DOCUMENT_TYPES.length}`);
   console.log(`Cutoff date:    ${cutoffIso.slice(0, 10)} (365 days ago)\n`);
 
@@ -185,14 +396,12 @@ export async function collectGovUKSearch(): Promise<{ inserted: number; skipped:
     let totalForType = 0;
     let insertedForType = 0;
     let skippedForType = 0;
-    let reachedCutoff = false;
+    let done = false;
 
-    // Paginate through all results
-    while (true) {
-      const page = await fetchSearchPage(docType, start, PAGE_SIZE);
+    while (!done) {
+      const page = await fetchSearchPage({ docType }, start, PAGE_SIZE);
 
       if (!page) {
-        // Request failed; skip to next page (or break if first page)
         if (start === 0) break;
         start += PAGE_SIZE;
         await delay(REQUEST_DELAY_MS);
@@ -206,78 +415,20 @@ export async function collectGovUKSearch(): Promise<{ inserted: number; skipped:
 
       if (page.results.length === 0) break;
 
-      // Filter and map results
-      const rows: Array<Record<string, unknown>> = [];
+      const { rows, reachedCutoff } = processSearchResults(
+        page.results,
+        cutoffIso,
+        `GOV.UK Search - ${docType}`,
+      );
 
-      for (const result of page.results) {
-        // Skip items without required fields
-        if (!result.link || !result.title) continue;
+      const result = await upsertRows(rows);
+      insertedForType += result.inserted;
+      skippedForType += result.skipped;
 
-        // Check cutoff date
-        const pubDate = result.public_timestamp
-          ? new Date(result.public_timestamp).toISOString()
-          : null;
-
-        if (pubDate && pubDate < cutoffIso) {
-          reachedCutoff = true;
-          break;
-        }
-
-        // Skip if no valid timestamp at all
-        if (!pubDate) continue;
-
-        const fullUrl = result.link.startsWith('http')
-          ? result.link
-          : `https://www.gov.uk${result.link}`;
-
-        const description = result.description || '';
-        const baseEntityIds = resolveEntityIds(result);
-        const entityIds = enrichEntityIds(baseEntityIds, result.title, description);
-        const ragStatus = determineRagStatus(result.title, description);
-        const fingerprint = makeFingerprint(fullUrl, result.title);
-
-        rows.push({
-          source_type: 'govuk',
-          source_name: `GOV.UK Search - ${docType}`,
-          title: result.title,
-          url: fullUrl,
-          published_at: pubDate,
-          body: description.slice(0, 2000) || null,
-          entity_ids: entityIds,
-          rag_status: ragStatus.toLowerCase(),
-          relevance_score: 0.3,
-          fingerprint,
-          is_forward_scan: false,
-        });
-      }
-
-      // Upsert in batches of 25
-      for (let i = 0; i < rows.length; i += BATCH_SIZE) {
-        const batch = rows.slice(i, i + BATCH_SIZE);
-
-        const { data, error } = await supabase
-          .from('feed_items')
-          .upsert(batch, { onConflict: 'fingerprint', ignoreDuplicates: true })
-          .select('id');
-
-        if (error) {
-          console.warn(`    [ERR] Upsert failed: ${error.message}`);
-          skippedForType += batch.length;
-          continue;
-        }
-
-        const insertedCount = data?.length ?? 0;
-        insertedForType += insertedCount;
-        skippedForType += batch.length - insertedCount;
-      }
-
-      // Stop if we've gone past the cutoff or exhausted results
-      if (reachedCutoff) break;
-
+      if (reachedCutoff) done = true;
       start += PAGE_SIZE;
-      if (start >= totalForType) break;
+      if (start >= totalForType) done = true;
 
-      // Be polite
       await delay(REQUEST_DELAY_MS);
     }
 
@@ -285,13 +436,36 @@ export async function collectGovUKSearch(): Promise<{ inserted: number; skipped:
     totalInserted += insertedForType;
     totalSkipped += skippedForType;
 
-    // Delay between document types
     await delay(REQUEST_DELAY_MS);
   }
 
-  console.log(`\n=== GOV.UK Search Collection Complete ===`);
-  console.log(`Total inserted: ${totalInserted}`);
-  console.log(`Total skipped:  ${totalSkipped}\n`);
-
+  console.log(`\nPass 2 complete: ${totalInserted} inserted, ${totalSkipped} skipped\n`);
   return { inserted: totalInserted, skipped: totalSkipped };
+}
+
+// -- Combined collector -------------------------------------------------------
+
+/**
+ * Run both passes: org-based (broad) then document-type (supplementary).
+ */
+export async function collectAllGovUKSearch(): Promise<{ inserted: number; skipped: number }> {
+  console.log(`\n${'='.repeat(60)}`);
+  console.log('  GOV.UK Search API — Combined Collector');
+  console.log(`${'='.repeat(60)}`);
+
+  const orgResult = await collectGovUKByOrg();
+  const docResult = await collectGovUKSearch();
+
+  const total = {
+    inserted: orgResult.inserted + docResult.inserted,
+    skipped: orgResult.skipped + docResult.skipped,
+  };
+
+  console.log(`\n=== GOV.UK Search Combined Complete ===`);
+  console.log(`Pass 1 (by org):      ${orgResult.inserted} inserted`);
+  console.log(`Pass 2 (by doc type): ${docResult.inserted} inserted`);
+  console.log(`Total inserted:       ${total.inserted}`);
+  console.log(`Total skipped:        ${total.skipped}\n`);
+
+  return total;
 }
