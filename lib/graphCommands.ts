@@ -7,7 +7,9 @@ export type GraphCommand =
   | { type: 'select_entity'; entityId: string }
   | { type: 'search'; query: string }
   | { type: 'reset' }
-  | { type: 'focus_mode'; enabled: boolean };
+  | { type: 'focus_mode'; enabled: boolean }
+  | { type: 'highlight_entities'; entityIds: string[] }
+  | { type: 'clear_highlight' };
 
 type Listener = (cmd: GraphCommand) => void;
 const listeners = new Set<Listener>();

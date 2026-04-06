@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useCallback, useEffect } from 'react';
+import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import type { ElementDefinition } from 'cytoscape';
 
 import { ENTITIES, ENTITY_LIST } from '@/data/entities';
@@ -15,7 +15,9 @@ import type { FeedItem } from '@/types/feed';
 import type { Entity } from '@/types/entity';
 import type { GraphFilter } from '@/components/sidebar/types';
 import { usePanelStore, selectEntity } from '@/lib/panelStore';
-import EntityGraph from './EntityGraph';
+import { subscribeToGraphCommands } from '@/lib/graphCommands';
+import { startBreathingAnimations, stopBreathingAnimations } from '@/lib/graph/animations';
+import EntityGraph, { type EntityGraphHandle } from './EntityGraph';
 import GraphTooltip from './GraphTooltip';
 
 // ---------------------------------------------------------------------------
@@ -210,12 +212,36 @@ export default function PulseView({ filter }: PulseViewProps) {
   const [hoveredEntity, setHoveredEntity] = useState<string | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
+  const graphRef = useRef<EntityGraphHandle>(null);
+
+  // Subscribe to feed highlight commands
+  useEffect(() => {
+    return subscribeToGraphCommands((cmd) => {
+      const cy = graphRef.current?.getCy();
+      if (!cy) return;
+
+      if (cmd.type === 'highlight_entities') {
+        cy.elements().addClass('feed-dimmed');
+        for (const id of cmd.entityIds) {
+          const node = cy.getElementById(id);
+          if (node.length) {
+            node.removeClass('feed-dimmed').addClass('feed-highlighted');
+            node.connectedEdges().removeClass('feed-dimmed');
+          }
+        }
+      }
+
+      if (cmd.type === 'clear_highlight') {
+        cy.elements().removeClass('feed-dimmed feed-highlighted');
+      }
+    });
+  }, []);
 
   useEffect(() => {
     async function fetchFeed() {
       const { data } = await supabase
         .from('feed_items')
-        .select('entity_ids, published_at')
+        .select('id, entity_ids, published_at, title, source_type, source_name')
         .gte('published_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString())
         .order('published_at', { ascending: false })
         .limit(200);
@@ -233,6 +259,17 @@ export default function PulseView({ filter }: PulseViewProps) {
     return scores;
   }, [feedItems]);
 
+  // Pre-compute latest feed item per entity (for tooltip)
+  const latestFeedByEntity = useMemo(() => {
+    const map = new Map<string, FeedItem>();
+    for (const item of feedItems) {
+      for (const eid of item.entity_ids ?? []) {
+        if (!map.has(eid)) map.set(eid, item);
+      }
+    }
+    return map;
+  }, [feedItems]);
+
   // Determine graph mode
   const isFocused = !!selectedEntityId || !!selectedClientId;
 
@@ -241,6 +278,20 @@ export default function PulseView({ filter }: PulseViewProps) {
     if (selectedClientId) return buildClientFocusElements(selectedClientId, pulseScores);
     return buildFullElements(pulseScores, filter);
   }, [pulseScores, filter, selectedEntityId, selectedClientId]);
+
+  // Start breathing animations on the full graph view
+  useEffect(() => {
+    if (isFocused) return;
+    // Delay slightly so graph layout can settle
+    const timer = setTimeout(() => {
+      const cy = graphRef.current?.getCy();
+      if (cy) startBreathingAnimations(cy, pulseScores, getPulseLevel);
+    }, 600);
+    return () => {
+      clearTimeout(timer);
+      stopBreathingAnimations(graphRef.current?.getCy() ?? undefined);
+    };
+  }, [isFocused, pulseScores]);
 
   const graphLayout = isFocused ? 'concentric' : 'preset';
   const focusNodeId = selectedEntityId ?? null;
@@ -266,13 +317,19 @@ export default function PulseView({ filter }: PulseViewProps) {
   return (
     <div className="relative h-full w-full" onMouseMove={handleMouseMove}>
       <EntityGraph
+        ref={graphRef}
         elements={elements}
         layout={graphLayout}
         onNodeClick={handleNodeClick}
         onNodeHover={handleNodeHover}
         focusNodeId={focusNodeId}
       />
-      <GraphTooltip entityId={hoveredEntity} position={tooltipPos} />
+      <GraphTooltip
+        entityId={hoveredEntity}
+        position={tooltipPos}
+        pulseLevel={hoveredEntity ? getPulseLevel(pulseScores.get(hoveredEntity) ?? 0) : 'none'}
+        latestFeedItem={hoveredEntity ? latestFeedByEntity.get(hoveredEntity) ?? null : null}
+      />
     </div>
   );
 }

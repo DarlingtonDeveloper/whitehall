@@ -163,4 +163,25 @@ export const graphStyles: StylesheetStyle[] = [
       'opacity': 0.03,
     },
   },
+  // Feed hover: dimmed elements
+  {
+    selector: '.feed-dimmed',
+    style: {
+      'opacity': 0.15,
+      'transition-property': 'opacity',
+      'transition-duration': '200ms',
+    } as any,
+  },
+  // Feed hover: highlighted entities
+  {
+    selector: '.feed-highlighted',
+    style: {
+      'opacity': 1,
+      'border-width': 3,
+      'border-color': '#2dd4bf',
+      'border-opacity': 1,
+      'transition-property': 'opacity, border-width, border-color',
+      'transition-duration': '200ms',
+    } as any,
+  },
 ];

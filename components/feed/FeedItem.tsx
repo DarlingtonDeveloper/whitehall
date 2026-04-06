@@ -1,6 +1,7 @@
 'use client';
 
 import type { FeedItem as FeedItemType } from '@/types/feed';
+import { dispatchGraphCommand } from '@/lib/graphCommands';
 
 const SOURCE_COLOURS: Record<FeedItemType['source_type'], string> = {
   govuk: 'bg-teal-500/15 text-teal-400',
@@ -52,7 +53,20 @@ export default function FeedItemCard({ item }: FeedItemCardProps) {
 
   return (
     <div
-      className={`border-l-2 ${borderClass} border-b border-b-wh-border/50 px-3 py-2.5 transition-colors hover:bg-wh-border/20`}
+      className={`border-l-2 ${borderClass} border-b border-b-wh-border/50 px-3 py-2.5 transition-colors hover:bg-wh-border/20 cursor-pointer`}
+      onMouseEnter={() => {
+        if (item.entity_ids.length > 0) {
+          dispatchGraphCommand({ type: 'highlight_entities', entityIds: item.entity_ids });
+        }
+      }}
+      onMouseLeave={() => {
+        dispatchGraphCommand({ type: 'clear_highlight' });
+      }}
+      onClick={() => {
+        if (item.entity_ids.length > 0) {
+          dispatchGraphCommand({ type: 'select_entity', entityId: item.entity_ids[0] });
+        }
+      }}
     >
       {/* Top row: source badge + time */}
       <div className="flex items-center justify-between gap-2">

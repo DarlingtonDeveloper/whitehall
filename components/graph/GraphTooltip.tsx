@@ -2,59 +2,80 @@
 
 import { getEntity } from '@/data/entities';
 import { ENTITY_COLOURS, getEntityColour } from '@/data/colours';
+import { getPulseColour } from '@/lib/graph/pulse';
+import type { FeedItem } from '@/types/feed';
 
 interface GraphTooltipProps {
   entityId: string | null;
   position: { x: number; y: number };
+  pulseLevel?: 'none' | 'low' | 'medium' | 'high';
+  latestFeedItem?: FeedItem | null;
 }
 
-export default function GraphTooltip({ entityId, position }: GraphTooltipProps) {
+function formatSubtype(subtype: string): string {
+  return subtype
+    .replace(/-/g, ' ')
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+export default function GraphTooltip({
+  entityId,
+  position,
+  pulseLevel = 'none',
+  latestFeedItem = null,
+}: GraphTooltipProps) {
   if (!entityId) return null;
 
   const entity = getEntity(entityId);
   if (!entity) return null;
 
   const colourEntry = ENTITY_COLOURS[entity.category]?.[entity.subtype];
-  const badgeLabel = colourEntry?.label ?? entity.subtype;
-  const badgeColour = getEntityColour(entity.tags);
-
-  const description =
-    entity.description.length > 120
-      ? entity.description.slice(0, 120) + '...'
-      : entity.description;
+  const badgeLabel = colourEntry?.label ?? formatSubtype(entity.subtype);
 
   return (
     <div
-      className="pointer-events-none fixed z-50 max-w-xs rounded-lg border border-wh-border bg-wh-panel px-3 py-2.5 shadow-xl shadow-black/40"
+      className="pointer-events-none fixed z-50 w-72 rounded-lg border border-wh-border bg-wh-panel p-3 shadow-xl shadow-black/40"
       style={{
         left: position.x + 12,
         top: position.y - 8,
       }}
     >
-      <p className="text-xs font-semibold text-wh-text-primary">
-        {entity.name}
-      </p>
-
-      <div className="mt-1 flex items-center gap-1.5">
-        <span
-          className="inline-block h-2 w-2 rounded-full"
-          style={{ backgroundColor: badgeColour }}
+      {/* Entity name + pulse dot */}
+      <div className="flex items-start justify-between gap-2 mb-1.5">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-wh-text-primary truncate">
+            {entity.name}
+          </p>
+          {entity.currentHolder && (
+            <p className="text-xs text-wh-text-secondary truncate">
+              {entity.currentHolder}
+            </p>
+          )}
+        </div>
+        <div
+          className="w-2.5 h-2.5 rounded-full flex-shrink-0 mt-1"
+          style={{ backgroundColor: getPulseColour(pulseLevel) }}
         />
-        <span className="text-[10px] font-medium text-wh-text-secondary">
+      </div>
+
+      {/* Subtype badge */}
+      <div className="mb-1.5">
+        <span className="text-[10px] px-1.5 py-0.5 rounded bg-wh-bg text-wh-text-secondary border border-wh-border">
           {badgeLabel}
         </span>
       </div>
 
-      {entity.currentHolder && (
-        <p className="mt-1.5 text-[10px] text-wh-text-secondary">
-          <span className="text-wh-text-secondary/60">Holder: </span>
-          {entity.currentHolder}
-        </p>
+      {/* Latest feed item */}
+      {latestFeedItem ? (
+        <div className="text-xs text-wh-text-secondary leading-relaxed border-t border-wh-border pt-1.5 truncate">
+          <span className="text-wh-text-secondary/50">Latest: </span>
+          {latestFeedItem.title}
+        </div>
+      ) : (
+        <div className="text-xs text-wh-text-secondary/50 border-t border-wh-border pt-1.5">
+          No recent activity
+        </div>
       )}
-
-      <p className="mt-1 text-[10px] leading-relaxed text-wh-text-secondary/70">
-        {description}
-      </p>
     </div>
   );
 }

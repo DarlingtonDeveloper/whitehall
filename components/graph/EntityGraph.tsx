@@ -1,8 +1,12 @@
 'use client';
 
-import { useRef, useEffect, useCallback } from 'react';
+import { useRef, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
 import cytoscape, { Core, ElementDefinition } from 'cytoscape';
 import { graphStyles } from './graphStyles';
+
+export interface EntityGraphHandle {
+  getCy: () => Core | null;
+}
 
 interface EntityGraphProps {
   elements: ElementDefinition[];
@@ -18,7 +22,7 @@ interface EntityGraphProps {
 /** Zoom level past which labels are shown on all visible nodes. */
 const LABEL_ZOOM_THRESHOLD = 1.8;
 
-export default function EntityGraph({
+const EntityGraph = forwardRef<EntityGraphHandle, EntityGraphProps>(function EntityGraph({
   elements,
   layout = 'preset',
   onNodeClick,
@@ -27,9 +31,13 @@ export default function EntityGraph({
   className = '',
   minZoom = 0.15,
   maxZoom = 4,
-}: EntityGraphProps) {
+}, ref) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
+
+  useImperativeHandle(ref, () => ({
+    getCy: () => cyRef.current,
+  }));
 
   // Keep callbacks in refs so effect doesn't re-run when they change.
   const onNodeClickRef = useRef(onNodeClick);
@@ -183,4 +191,6 @@ export default function EntityGraph({
       style={{ backgroundColor: 'transparent' }}
     />
   );
-}
+});
+
+export default EntityGraph;
