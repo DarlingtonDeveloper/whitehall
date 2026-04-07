@@ -17,6 +17,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 import { supabase } from '@/lib/db';
 import crypto from 'crypto';
 import type { ClientConfig } from '@/types/client';
+import { withRetry } from '@/lib/ai/retry';
 
 interface SearchResult {
   title: string;
@@ -26,7 +27,10 @@ interface SearchResult {
   source_name: string;
 }
 
-const DELAY_MS = 1_000;
+// Matches monitoring agent: 2s within batch, 45s between batches of 4
+const BATCH_SIZE = 4;
+const WITHIN_BATCH_DELAY_MS = 2_000;
+const BETWEEN_BATCH_DELAY_MS = 45_000;
 
 export function buildSearchQueries(client: ClientConfig): string[] {
   const now = new Date();
@@ -76,7 +80,7 @@ export function buildSearchQueries(client: ClientConfig): string[] {
 }
 
 async function executeSearchQuery(query: string): Promise<SearchResult[]> {
-  const { text } = await generateText({
+  const { text } = await withRetry(() => generateText({
     model: anthropic('claude-sonnet-4-20250514'),
     maxOutputTokens: 2048,
     prompt: `You are a UK public affairs research assistant. Search for recent developments matching this query:
@@ -98,7 +102,7 @@ Rules:
 - If you cannot find relevant results, return an empty array []
 
 Return ONLY the JSON array, no other text.`,
-  });
+  }));
 
   const cleaned = text.replace(/```json\s*|```\s*/g, '').trim();
   try {
@@ -127,52 +131,65 @@ export async function runWebSearchCollector(
   const queries = buildSearchQueries(client);
   let totalItems = 0;
 
-  for (const query of queries) {
-    try {
-      const results = await executeSearchQuery(query);
+  // Process in batches of BATCH_SIZE with delays between batches
+  // Matches monitoring agent's collect_two_pass batching pattern
+  for (let i = 0; i < queries.length; i += BATCH_SIZE) {
+    const batch = queries.slice(i, i + BATCH_SIZE);
 
-      for (const result of results) {
-        if (!result.title || !result.url) continue;
+    for (const query of batch) {
+      try {
+        const results = await executeSearchQuery(query);
 
-        const fingerprint = makeFingerprint(result.url, result.title);
+        for (const result of results) {
+          if (!result.title || !result.url) continue;
 
-        // Auto-tag entities
-        const text = `${result.title} ${result.snippet}`.toLowerCase();
-        const entityIds: string[] = [];
-        for (const s of client.stakeholders) {
-          if (
-            text.includes(s.entityId.toLowerCase()) ||
-            text.includes(s.role.toLowerCase())
-          ) {
-            entityIds.push(s.entityId);
+          const fingerprint = makeFingerprint(result.url, result.title);
+
+          // Auto-tag entities
+          const text = `${result.title} ${result.snippet}`.toLowerCase();
+          const entityIds: string[] = [];
+          for (const s of client.stakeholders) {
+            if (
+              text.includes(s.entityId.toLowerCase()) ||
+              text.includes(s.role.toLowerCase())
+            ) {
+              entityIds.push(s.entityId);
+            }
           }
+
+          const { error } = await supabase.from('feed_items').upsert(
+            {
+              source_type: 'web_search',
+              source_name: result.source_name || extractDomain(result.url),
+              title: result.title,
+              url: result.url,
+              published_at: result.date
+                ? new Date(result.date).toISOString()
+                : new Date().toISOString(),
+              body: result.snippet,
+              entity_ids: entityIds,
+              fingerprint,
+              is_forward_scan: false,
+              relevance_score: 0,
+            },
+            { onConflict: 'fingerprint', ignoreDuplicates: true },
+          );
+
+          if (!error) totalItems++;
         }
-
-        const { error } = await supabase.from('feed_items').upsert(
-          {
-            source_type: 'web_search',
-            source_name: result.source_name || extractDomain(result.url),
-            title: result.title,
-            url: result.url,
-            published_at: result.date
-              ? new Date(result.date).toISOString()
-              : new Date().toISOString(),
-            body: result.snippet,
-            entity_ids: entityIds,
-            fingerprint,
-            is_forward_scan: false,
-            relevance_score: 0,
-          },
-          { onConflict: 'fingerprint', ignoreDuplicates: true },
-        );
-
-        if (!error) totalItems++;
+      } catch (err) {
+        console.warn(`[web-search] Query failed: "${query}"`, err);
       }
-    } catch (err) {
-      console.warn(`[web-search] Query failed: "${query}"`, err);
+
+      // 2s within-batch delay (matches monitoring agent)
+      await new Promise((resolve) => setTimeout(resolve, WITHIN_BATCH_DELAY_MS));
     }
 
-    await new Promise((resolve) => setTimeout(resolve, DELAY_MS));
+    // 45s between-batch delay for rate limit cooldown (matches monitoring agent)
+    if (i + BATCH_SIZE < queries.length) {
+      console.warn(`[web-search] Batch complete, waiting ${BETWEEN_BATCH_DELAY_MS / 1000}s for rate limit cooldown...`);
+      await new Promise((resolve) => setTimeout(resolve, BETWEEN_BATCH_DELAY_MS));
+    }
   }
 
   return { items_found: totalItems, queries_run: queries.length };

@@ -118,6 +118,28 @@ export async function generateDraftReport(
     );
   }
 
+  // 4c. Citation verification — flag any source_items fingerprints not in collected items
+  // Matches monitoring agent's _verify_citations
+  const validFingerprints = new Set(selected.map(i => i.fingerprint).filter(Boolean));
+  for (const section of Object.values(analysis.sections)) {
+    const originalCount = section.items?.length ?? 0;
+    // Remove items with zero valid source_items (no provenance)
+    if (section.items) {
+      section.items = section.items.filter((item: { source_items?: string[]; confidence: number; ref: string }) => {
+        const validSources = (item.source_items || []).filter(fp => validFingerprints.has(fp));
+        if (validSources.length === 0 && (item.source_items || []).length > 0) {
+          // Lower confidence for broken citations
+          item.confidence = Math.max(0.3, item.confidence - 0.2);
+          console.warn(`[report] ${item.ref}: broken source_items citations, confidence reduced`);
+        }
+        return true; // Keep item but mark as low-confidence
+      });
+    }
+    if (section.items && section.items.length < originalCount) {
+      console.warn(`[report] Removed ${originalCount - section.items.length} items with no provenance`);
+    }
+  }
+
   // 5. Evaluate
   const evalResult = await evaluateReport(analysis, selected, client);
 

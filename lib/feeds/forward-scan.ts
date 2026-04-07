@@ -12,6 +12,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 import { supabase } from '@/lib/db';
 import crypto from 'crypto';
 import type { ClientConfig } from '@/types/client';
+import { withRetry } from '@/lib/ai/retry';
 
 interface ForwardResult {
   title: string;
@@ -22,7 +23,8 @@ interface ForwardResult {
   source_name: string;
 }
 
-const DELAY_MS = 1_000;
+// 2s delay between queries (matches monitoring agent's within-batch delay)
+const DELAY_MS = 2_000;
 
 function makeFingerprint(url: string, title: string): string {
   return crypto.createHash('sha256').update(`${url}||${title}`).digest('hex');
@@ -38,7 +40,7 @@ export async function runForwardScanCollector(
 
   for (const query of queries) {
     try {
-      const { text } = await generateText({
+      const { text } = await withRetry(() => generateText({
         model: anthropic('claude-sonnet-4-20250514'),
         maxOutputTokens: 2048,
         prompt: `You are a UK public affairs research assistant. Find upcoming events and deadlines for:
@@ -60,7 +62,7 @@ Rules:
 - If you cannot find relevant upcoming events, return an empty array []
 
 Return ONLY the JSON array, no other text.`,
-      });
+      }));
 
       const cleaned = text.replace(/```json\s*|```\s*/g, '').trim();
       let results: ForwardResult[];

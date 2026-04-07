@@ -1,7 +1,12 @@
 // ---------------------------------------------------------------------------
-// LLM enrichment — runs theme analyses in parallel (Sonnet), then a single
-// synthesis pass to produce cross-cutting sections. Direct port of the
-// monitoring agent's analyse/ pipeline, using the Vercel AI SDK.
+// LLM enrichment — runs theme analyses sequentially (Sonnet), then a single
+// Opus synthesis pass with extended thinking. Direct port of the monitoring
+// agent's analyse/ pipeline, using the Vercel AI SDK.
+//
+// Key design decisions matching the monitoring agent:
+//   - Theme analyses run sequentially (one at a time) to respect rate limits
+//   - Synthesis uses Opus with extended thinking for highest-quality output
+//   - All API calls wrapped in withRetry for 429 backoff
 // ---------------------------------------------------------------------------
 
 import { generateText } from 'ai';
@@ -11,6 +16,7 @@ import type { FeedItem } from '@/types/feed';
 import type { AnalysisJSON } from './types';
 import { buildThemePrompt, buildSynthesisPrompt } from './prompts';
 import { logTrace, withTiming } from '@/lib/observability/opik';
+import { withRetry, mapWithConcurrency } from '@/lib/ai/retry';
 
 function formatDate(d: Date): string {
   return d.toLocaleDateString('en-GB', {
@@ -52,14 +58,15 @@ export async function enrichItems(
   }));
 
   // -----------------------------------------------------------------------
-  // Run theme analyses in parallel — one Sonnet call per theme
+  // Run theme analyses with bounded concurrency (2) — withRetry handles
+  // any 429s with 15s backoff so limited parallelism is safe and faster.
   // -----------------------------------------------------------------------
-  const themePromises = themeOrder.map(async (theme) => {
+  const themeResults = await mapWithConcurrency(themeOrder, 2, async (theme) => {
     const items = groupedItems[theme.id] || [];
     if (items.length === 0) {
       return {
         themeId: theme.id,
-        result: { items: [], no_developments: true },
+        result: { items: [], no_developments: true } as Record<string, unknown>,
       };
     }
 
@@ -72,11 +79,13 @@ export async function enrichItems(
     );
 
     const { result: genResult, duration_ms } = await withTiming(() =>
-      generateText({
-        model: anthropic('claude-sonnet-4-20250514'),
-        maxOutputTokens: 4096,
-        prompt,
-      }),
+      withRetry(() =>
+        generateText({
+          model: anthropic('claude-sonnet-4-20250514'),
+          maxOutputTokens: 4096,
+          prompt,
+        }),
+      ),
     );
 
     const { text } = genResult;
@@ -109,13 +118,14 @@ export async function enrichItems(
     };
   });
 
-  const themeResults = await Promise.all(themePromises);
-
   // Build sections object keyed by theme ID
   const sections: Record<string, unknown> = {};
   for (const { themeId, result } of themeResults) {
     sections[themeId] = result;
   }
+
+  // Ensure all sections have required structure (matches monitoring agent's _ensure_section_structure)
+  ensureSectionStructure(sections, client);
 
   // -----------------------------------------------------------------------
   // Identify forward-scan items for the forward look section
@@ -128,8 +138,8 @@ export async function enrichItems(
   );
 
   // -----------------------------------------------------------------------
-  // Synthesis pass — one Sonnet call to produce executive summary, forward
-  // look, emerging themes, actions tracker, coverage summary
+  // Synthesis pass — Opus with extended thinking (matches monitoring agent's
+  // synthesiser.py: MODEL_SYNTHESIS = "claude-opus-4-6" with 16k thinking)
   // -----------------------------------------------------------------------
   const synthesisPrompt = buildSynthesisPrompt(
     sections,
@@ -139,11 +149,13 @@ export async function enrichItems(
   );
 
   const { result: synthesisResult, duration_ms: synthDuration } = await withTiming(() =>
-    generateText({
-      model: anthropic('claude-sonnet-4-20250514'),
-      maxOutputTokens: 4096,
-      prompt: synthesisPrompt,
-    }),
+    withRetry(() =>
+      generateText({
+        model: anthropic('claude-opus-4-6'),
+        maxOutputTokens: 16384,
+        prompt: synthesisPrompt,
+      }),
+    ),
   );
 
   const { text: synthesisText } = synthesisResult;
@@ -152,7 +164,7 @@ export async function enrichItems(
     {
       client_id: client.id,
       step: 'synthesis',
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-opus-4-6',
       items_count: allItems.length,
     },
     synthesisPrompt,
@@ -172,6 +184,14 @@ export async function enrichItems(
     actions_tracker: [],
     coverage_summary: [],
   });
+
+  // Validate expected keys (matches monitoring agent's synthesis validation)
+  const expectedKeys = ['executive_summary', 'forward_look', 'emerging_themes', 'actions_tracker', 'coverage_summary'] as const;
+  for (const key of expectedKeys) {
+    if (!synthesis[key]) {
+      console.warn(`[enrich] Synthesis missing key: ${key}`);
+    }
+  }
 
   // -----------------------------------------------------------------------
   // Assemble final analysis JSON matching the monitoring agent schema
@@ -198,4 +218,46 @@ export async function enrichItems(
     actions_tracker: synthesis.actions_tracker,
     coverage_summary: synthesis.coverage_summary,
   };
+}
+
+/**
+ * Ensure all theme sections have their required keys.
+ * Matches monitoring agent's _ensure_section_structure exactly.
+ */
+function ensureSectionStructure(
+  sections: Record<string, unknown>,
+  client: ClientConfig,
+) {
+  // Build defaults from client theme config — media needs coverage_table,
+  // parliamentary needs routine_mentions, etc.
+  const themeDefaults: Record<string, Record<string, unknown>> = {
+    'political_parliamentary': { items: [], routine_mentions: [] },
+    'media_coverage': { coverage_table: [], significant_items: [] },
+    'social_media': {
+      summary: '',
+      metrics: {
+        total_mentions: 'N/A',
+        sentiment_breakdown: 'N/A',
+        top_engagement_post: 'N/A',
+        trend_vs_previous: 'N/A',
+      },
+      notable_posts: [],
+    },
+    'competitor_industry': { table: [] },
+    'stakeholder_third_party': { items: [], no_developments: true },
+  };
+
+  for (const theme of client.monitoringThemes) {
+    const defaults = themeDefaults[theme.id] || { items: [] };
+    if (!sections[theme.id]) {
+      sections[theme.id] = defaults;
+    } else {
+      const section = sections[theme.id] as Record<string, unknown>;
+      for (const [key, defaultVal] of Object.entries(defaults)) {
+        if (!(key in section)) {
+          section[key] = defaultVal;
+        }
+      }
+    }
+  }
 }

@@ -5,6 +5,10 @@
 //   2. Factuality check (LLM-as-judge: is the summary grounded in sources?)
 //   3. Specificity check (LLM-as-judge: is client_relevance project-specific?)
 //
+// Model: Opus (matches monitoring agent's MODEL_JUDGE = "claude-opus-4-6")
+// The monitoring agent uses Opus for evaluation because judge accuracy is
+// critical — a bad judge score leads to incorrect confidence caps on items.
+//
 // Traces are logged to Supabase pipeline_traces and optionally forwarded
 // to Opik REST API (matching the monitoring agent's @track decorators).
 // ---------------------------------------------------------------------------
@@ -15,6 +19,10 @@ import type { ClientConfig } from '@/types/client';
 import type { FeedItem } from '@/types/feed';
 import type { AnalysisJSON } from './types';
 import { logTrace } from '@/lib/observability/opik';
+import { withRetry } from '@/lib/ai/retry';
+
+// Matches monitoring agent's judge.py: MODEL_JUDGE = "claude-opus-4-6"
+const MODEL_JUDGE = 'claude-opus-4-6' as const;
 
 // ---------------------------------------------------------------------------
 // 1. Template validator — ~30 deterministic checks matching
@@ -204,10 +212,11 @@ export async function runFactualityCheck(
 
   for (const c of cases) {
     try {
-      const { text } = await generateText({
-        model: anthropic('claude-sonnet-4-20250514'),
-        maxOutputTokens: 256,
-        prompt: `You are evaluating whether an analysis summary is factually grounded in the source material.
+      const { text } = await withRetry(() =>
+        generateText({
+          model: anthropic(MODEL_JUDGE),
+          maxOutputTokens: 256,
+          prompt: `You are evaluating whether an analysis summary is factually grounded in the source material.
 
 SOURCE MATERIAL:
 ${c.sourceText}
@@ -218,7 +227,8 @@ ${c.summary}
 Score 0-1 how well the analysis is supported by the source material. 1.0 = fully supported, 0.0 = completely fabricated.
 
 Return ONLY a JSON object: {"score": <number>, "reason": "<string>"}`,
-      });
+        }),
+      );
 
       const parsed = JSON.parse(text.replace(/```json\s*|```\s*/g, '').trim());
       const score = Number(parsed.score) || 0;
@@ -282,10 +292,11 @@ export async function runSpecificityCheck(
 
   for (const c of cases) {
     try {
-      const { text } = await generateText({
-        model: anthropic('claude-sonnet-4-20250514'),
-        maxOutputTokens: 256,
-        prompt: `You are evaluating a public affairs monitoring report for ${client.name}.
+      const { text } = await withRetry(() =>
+        generateText({
+          model: anthropic(MODEL_JUDGE),
+          maxOutputTokens: 256,
+          prompt: `You are evaluating a public affairs monitoring report for ${client.name}.
 
 The following 'client relevance' text should explain why a development matters specifically to ${client.name} — referencing their specific projects, commercial position, pipeline, or strategic priorities.
 
@@ -302,7 +313,8 @@ SCORING:
 - 0.1: Completely generic. Could apply to any company.
 
 Return ONLY a JSON object: {"score": <number>, "reason": "<string>"}`,
-      });
+        }),
+      );
 
       const parsed = JSON.parse(text.replace(/```json\s*|```\s*/g, '').trim());
       const score = Number(parsed.score) || 0;
@@ -383,7 +395,7 @@ export async function evaluateReport(
     {
       client_id: client.id,
       step: 'factuality_eval',
-      model: 'claude-sonnet-4-20250514',
+      model: MODEL_JUDGE,
     },
     `Evaluated ${factuality.total_checked} items`,
     `Mean: ${factuality.mean_score}, Flagged: ${factuality.flagged_items.join(', ')}`,
