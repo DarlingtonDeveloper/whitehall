@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/db';
 import { getClientBySlug } from '@/data/clients';
 import { generateReport } from '@/lib/export/docx-generator';
+import { checkRateLimit } from '@/lib/security/rateLimit';
+import { logAudit } from '@/lib/audit';
 import type { AnalysisJSON } from '@/lib/export/types';
 
 export const dynamic = 'force-dynamic';
@@ -11,6 +13,16 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> },
 ) {
   const { id } = await params;
+
+  // Rate limiting: 10 exports per hour
+  const ip = request.headers.get('x-forwarded-for') || 'anonymous';
+  if (!checkRateLimit(`export:${ip}`, 10, 3_600_000)) {
+    logAudit('rate_limit_hit', 'report_export', id, { ip }, request);
+    return NextResponse.json(
+      { error: 'Rate limit exceeded. Max 10 exports per hour.' },
+      { status: 429 },
+    );
+  }
 
   const { data: draft, error } = await supabase
     .from('report_drafts')

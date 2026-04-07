@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { getClientBySlug } from '@/data/clients';
 import { runWebSearchCollector } from '@/lib/feeds/web-search';
 import { runForwardScanCollector } from '@/lib/feeds/forward-scan';
+import { checkRateLimit } from '@/lib/security/rateLimit';
+import { logAudit } from '@/lib/audit';
 
 export const maxDuration = 120;
 export const dynamic = 'force-dynamic';
@@ -27,6 +29,15 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: 'clientId is required' },
       { status: 400 },
+    );
+  }
+
+  // Rate limiting: 3 scans per hour per client
+  if (!checkRateLimit(`scan:${clientId}`, 3, 3_600_000)) {
+    logAudit('rate_limit_hit', 'scan', clientId, undefined, request);
+    return NextResponse.json(
+      { error: 'Rate limit exceeded. Max 3 scans per hour per client.' },
+      { status: 429 },
     );
   }
 

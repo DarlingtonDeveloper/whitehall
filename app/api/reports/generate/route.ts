@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { getClientBySlug, ALL_CLIENTS } from '@/data/clients';
 import { generateDraftReport } from '@/lib/report/generate';
+import { checkRateLimit } from '@/lib/security/rateLimit';
+import { logAudit } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -22,6 +24,17 @@ export async function POST(request: Request) {
   }
 
   const { clientId, from, to } = body;
+
+  // Rate limiting: 5 report generations per hour
+  const ip = request.headers.get('x-forwarded-for') || 'anonymous';
+  if (!checkRateLimit(`report-gen:${ip}`, 5, 3_600_000)) {
+    logAudit('rate_limit_hit', 'report_generate', clientId, { ip }, request);
+    return NextResponse.json(
+      { error: 'Rate limit exceeded. Max 5 report generations per hour.' },
+      { status: 429 },
+    );
+  }
+
   const dateRange = from && to
     ? { from: new Date(from), to: new Date(to) }
     : undefined;

@@ -6,6 +6,7 @@ import { getPowers } from '@/data/powers';
 import { getRelationships } from '@/data/relationships';
 import { supabase } from '@/lib/db';
 import { computeFeedRelevance } from '@/lib/feed/scoring';
+import { sanitiseFeedContent } from '@/lib/security/sanitise';
 import type { FeedItem } from '@/types/feed';
 
 // ---------------------------------------------------------------------------
@@ -299,14 +300,16 @@ function formatResults(
   items: Array<Record<string, unknown>>,
 ): Array<Record<string, unknown>> {
   return items.map((item) => ({
-    title: item.title,
+    title: sanitiseFeedContent(String(item.title ?? '')),
     url: item.url,
     source: item.source_name,
     type: item.source_type,
     date: item.published_at,
     entities: item.entity_ids,
     rag_status: item.rag_status,
-    body_preview: typeof item.body === 'string' ? item.body.slice(0, 200) : null,
+    body_preview: typeof item.body === 'string'
+      ? sanitiseFeedContent(item.body.slice(0, 200))
+      : null,
   }));
 }
 
@@ -467,7 +470,7 @@ async function handleFeedTopItems(
       return {
         rank: i + 1,
         relevance_score: Math.round(score * 100),
-        title: item.title,
+        title: sanitiseFeedContent(item.title),
         url: item.url ?? null,
         source_name: item.source_name,
         source_type: item.source_type,
@@ -479,7 +482,7 @@ async function handleFeedTopItems(
         is_consultation: isConsultation,
         has_deadline_language: isDeadline,
         event_date: item.event_date ?? null,
-        body_preview: item.body ? item.body.substring(0, 300) : null,
+        body_preview: item.body ? sanitiseFeedContent(item.body.substring(0, 300)) : null,
       };
     });
 
@@ -600,7 +603,7 @@ function formatDeadlineItem(item: FeedItem, client: Parameters<typeof computeFee
     : null;
 
   return {
-    title: item.title,
+    title: sanitiseFeedContent(item.title),
     url: item.url ?? null,
     source_name: item.source_name,
     source_type: item.source_type,
@@ -610,7 +613,7 @@ function formatDeadlineItem(item: FeedItem, client: Parameters<typeof computeFee
     is_urgent: daysUntil !== null && daysUntil < 14,
     relevance_score: Math.round(score * 100),
     entity_ids: item.entity_ids,
-    body_preview: item.body ? item.body.substring(0, 300) : null,
+    body_preview: item.body ? sanitiseFeedContent(item.body.substring(0, 300)) : null,
   };
 }
 

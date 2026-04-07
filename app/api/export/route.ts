@@ -4,6 +4,8 @@ import { gatherItems, groupByTheme } from '@/lib/export/gather';
 import { enrichItems } from '@/lib/export/enrich';
 import { evaluateReport } from '@/lib/export/evaluate';
 import { generateReport } from '@/lib/export/docx-generator';
+import { checkRateLimit } from '@/lib/security/rateLimit';
+import { logAudit } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -33,6 +35,16 @@ export async function POST(request: Request) {
     return NextResponse.json(
       { error: 'A "clientId" field is required.' },
       { status: 400 },
+    );
+  }
+
+  // Rate limiting: 5 exports per hour
+  const ip = request.headers.get('x-forwarded-for') || 'anonymous';
+  if (!checkRateLimit(`full-export:${ip}`, 5, 3_600_000)) {
+    logAudit('rate_limit_hit', 'export', clientId, { ip }, request);
+    return NextResponse.json(
+      { error: 'Rate limit exceeded. Max 5 exports per hour.' },
+      { status: 429 },
     );
   }
 

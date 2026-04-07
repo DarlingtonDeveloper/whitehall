@@ -2,6 +2,9 @@ import { streamText, stepCountIs } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { buildSystemPrompt, type ChatViewState } from '@/lib/chat/systemPrompt';
 import { chatTools } from '@/lib/chat/tools';
+import { validateChatMessage, validateConversationLength } from '@/lib/security/validateInput';
+import { checkRateLimit } from '@/lib/security/rateLimit';
+import { logAudit } from '@/lib/audit';
 
 export const dynamic = 'force-dynamic';
 
@@ -42,6 +45,35 @@ export async function POST(request: Request) {
     return new Response(
       JSON.stringify({ error: 'A "message" field is required.' }),
       { status: 400, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
+  // Input validation
+  const msgCheck = validateChatMessage(message);
+  if (!msgCheck.valid) {
+    return new Response(
+      JSON.stringify({ error: msgCheck.error }),
+      { status: 400, headers: { 'Content-Type': 'application/json' } },
+    );
+  }
+
+  if (history && Array.isArray(history)) {
+    const convCheck = validateConversationLength(history.length);
+    if (!convCheck.valid) {
+      return new Response(
+        JSON.stringify({ error: convCheck.error }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } },
+      );
+    }
+  }
+
+  // Rate limiting: 30 requests per minute (keyed by IP for pre-auth)
+  const ip = request.headers.get('x-forwarded-for') || 'anonymous';
+  if (!checkRateLimit(`chat:${ip}`, 30, 60_000)) {
+    logAudit('rate_limit_hit', 'chat', undefined, { ip }, request);
+    return new Response(
+      JSON.stringify({ error: 'Rate limit exceeded. Try again shortly.' }),
+      { status: 429, headers: { 'Content-Type': 'application/json' } },
     );
   }
 
