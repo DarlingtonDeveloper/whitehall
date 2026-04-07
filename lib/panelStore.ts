@@ -69,6 +69,9 @@ export function clearEntity() {
 
 export function selectClient(clientId: string | null) {
   state = { ...state, selectedClientId: clientId, disabledSourceIds: [] };
+  if (typeof document !== 'undefined' && clientId) {
+    document.cookie = `wh-client=${clientId}; path=/; max-age=${30 * 24 * 60 * 60}; SameSite=Lax`;
+  }
   emit();
 }
 

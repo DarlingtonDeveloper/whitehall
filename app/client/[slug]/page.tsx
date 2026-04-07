@@ -1,6 +1,7 @@
+import { Suspense } from 'react';
 import { notFound } from 'next/navigation';
 import Shell from '@/components/layout/Shell';
-import FeedPanel from '@/components/feed/FeedPanel';
+import FeedDataLoader from '@/components/feed/FeedDataLoader';
 import { getClientBySlug, ALL_CLIENTS } from '@/data/clients';
 import { getEntity } from '@/data/entities';
 import ConstellationView from '@/components/graph/ConstellationView';
@@ -69,15 +70,32 @@ export default async function ClientPage({
             <ConstellationView clientId={slug} />
           </div>
 
-          {/* Right: Intelligence feed */}
+          {/* Right: Intelligence feed — server-rendered initial data */}
           <div className="flex w-80 shrink-0 flex-col border-l border-wh-border bg-wh-panel">
-            <FeedPanel
-              clientId={slug}
-            />
+            <Suspense fallback={<FeedSkeleton />}>
+              <FeedDataLoader
+                clientId={slug}
+                stakeholderIds={client.stakeholders.map((s) => s.entityId)}
+              />
+            </Suspense>
           </div>
         </div>
       </div>
     </Shell>
+  );
+}
+
+function FeedSkeleton() {
+  return (
+    <div className="flex flex-col gap-2 p-4">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="animate-pulse">
+          <div className="h-2 w-16 rounded bg-wh-border/60" />
+          <div className="mt-2 h-3 w-full rounded bg-wh-border/40" />
+          <div className="mt-1 h-3 w-3/4 rounded bg-wh-border/30" />
+        </div>
+      ))}
+    </div>
   );
 }
 

@@ -12,6 +12,8 @@
     "@ai-sdk/anthropic": "^3.0.66",
     "@supabase/supabase-js": "^2.101.1",
     "@types/cytoscape": "^3.21.9",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "ai": "^6.0.146",
     "cytoscape": "^3.33.1",
     "docx": "^9.6.1",

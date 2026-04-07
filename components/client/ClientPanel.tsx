@@ -705,11 +705,37 @@ interface ReportListItem {
   created_at: string;
 }
 
+const STEP_LABELS: Record<string, string> = {
+  scan: 'Scanning sources',
+  scan_complete: 'Sources scanned',
+  enrich_content: 'Enriching content',
+  enrich_content_complete: 'Content enriched',
+  gather: 'Gathering items',
+  gather_complete: 'Items gathered',
+  score: 'Scoring relevance',
+  score_complete: 'Scoring complete',
+  dedup: 'Removing duplicates',
+  dedup_complete: 'Dedup complete',
+  verify: 'Verifying sources',
+  verify_complete: 'Sources verified',
+  group: 'Grouping themes',
+  group_complete: 'Themes grouped',
+  enrich: 'AI analysis',
+  enrich_complete: 'Analysis complete',
+  evaluate: 'Quality checks',
+  evaluate_complete: 'Checks done',
+  save: 'Saving draft',
+  complete: 'Report ready',
+};
+
 function ReportListButton({ clientId }: { clientId: string }) {
   const [open, setOpen] = useState(false);
   const [reports, setReports] = useState<ReportListItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [generating, setGenerating] = useState(false);
+  const [progressStep, setProgressStep] = useState<string | null>(null);
+  const [progressDetail, setProgressDetail] = useState<string | null>(null);
+  const [stepCount, setStepCount] = useState(0);
 
   useEffect(() => {
     if (!open) return;
@@ -728,20 +754,51 @@ function ReportListButton({ clientId }: { clientId: string }) {
 
   const handleGenerate = async () => {
     setGenerating(true);
+    setProgressStep(null);
+    setProgressDetail(null);
+    setStepCount(0);
+
     try {
       const res = await fetch('/api/reports/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ clientId }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.draftId) {
-          window.location.href = `/client/${clientId}/report/${data.draftId}`;
+
+      const reader = res.body?.getReader();
+      if (!reader) return;
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+            setProgressStep(event.step);
+            setProgressDetail(event.detail ?? null);
+            setStepCount((c) => c + 1);
+
+            if (event.step === 'complete' && event.detail) {
+              window.location.href = `/client/${clientId}/report/${event.detail}`;
+            }
+            if (event.step === 'error') {
+              console.error('[report] Generation error:', event.detail);
+            }
+          } catch { /* skip malformed */ }
         }
       }
     } finally {
       setGenerating(false);
+      setProgressStep(null);
     }
   };
 
@@ -770,6 +827,29 @@ function ReportListButton({ clientId }: { clientId: string }) {
               {generating ? 'Generating...' : '+ New Report'}
             </button>
           </div>
+
+          {/* Streaming progress */}
+          {generating && progressStep && (
+            <div className="border-b border-wh-border px-3 py-2 space-y-1.5">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 rounded-full bg-wh-accent-teal animate-pulse" />
+                <span className="text-[10px] font-medium text-wh-text-primary">
+                  {STEP_LABELS[progressStep] ?? progressStep}
+                </span>
+              </div>
+              {progressDetail && (
+                <p className="text-[9px] text-wh-text-secondary/60 pl-4">
+                  {progressDetail}
+                </p>
+              )}
+              <div className="h-0.5 rounded-full bg-wh-border/60 overflow-hidden">
+                <div
+                  className="h-full rounded-full bg-wh-accent-teal transition-all duration-300"
+                  style={{ width: `${Math.min((stepCount / 14) * 100, 100)}%` }}
+                />
+              </div>
+            </div>
+          )}
 
           <div className="max-h-60 overflow-y-auto">
             {loading && (
