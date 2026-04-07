@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo, useState, useEffect, type KeyboardEvent } from 'react';
+import { useMemo, useState, useEffect, useRef, useCallback, type KeyboardEvent } from 'react';
+import { createPortal } from 'react-dom';
 import type { ClientConfig } from '@/types/client';
 import { getEntity } from '@/data/entities';
 import { selectEntity, selectClient, usePanelStore, toggleSource, openIntelligence } from '@/lib/panelStore';
@@ -81,7 +82,7 @@ export default function ClientPanel({ client }: { client: ClientConfig }) {
   return (
     <div className="flex h-full flex-col">
       {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto overscroll-contain px-3 py-3 space-y-3">
+      <div className="flex-1 overflow-y-auto overscroll-contain px-3 py-3 space-y-3" data-report-progress-target>
         {/* Header: name + sector + X button */}
         <div className="px-1">
           <div className="flex items-center justify-between">
@@ -679,7 +680,7 @@ function ThemeBlock({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Report list button + dropdown                                      */
+/*  Report list button + portal dropdown + generation progress          */
 /* ------------------------------------------------------------------ */
 
 const STATUS_STYLES: Record<ReportStatus, string> = {
@@ -706,37 +707,78 @@ interface ReportListItem {
   created_at: string;
 }
 
-const STEP_LABELS: Record<string, string> = {
-  scan: 'Scanning sources',
-  scan_complete: 'Sources scanned',
-  enrich_content: 'Enriching content',
-  enrich_content_complete: 'Content enriched',
-  gather: 'Gathering items',
-  gather_complete: 'Items gathered',
-  score: 'Scoring relevance',
-  score_complete: 'Scoring complete',
-  dedup: 'Removing duplicates',
-  dedup_complete: 'Dedup complete',
-  verify: 'Verifying sources',
-  verify_complete: 'Sources verified',
-  group: 'Grouping themes',
-  group_complete: 'Themes grouped',
-  enrich: 'AI analysis',
-  enrich_complete: 'Analysis complete',
-  evaluate: 'Quality checks',
-  evaluate_complete: 'Checks done',
-  save: 'Saving draft',
-  complete: 'Report ready',
-};
+/** Pipeline steps in order — used to render the full progress timeline */
+const PIPELINE_STEPS = [
+  { key: 'scan', label: 'Scanning sources', doneKey: 'scan_complete' },
+  { key: 'enrich_content', label: 'Enriching content', doneKey: 'enrich_content_complete' },
+  { key: 'gather', label: 'Gathering items', doneKey: 'gather_complete' },
+  { key: 'score', label: 'Scoring relevance', doneKey: 'score_complete' },
+  { key: 'dedup', label: 'Deduplicating', doneKey: 'dedup_complete' },
+  { key: 'verify', label: 'Verifying sources', doneKey: 'verify_complete' },
+  { key: 'group', label: 'Grouping themes', doneKey: 'group_complete' },
+  { key: 'enrich', label: 'AI analysis', doneKey: 'enrich_complete' },
+  { key: 'evaluate', label: 'Quality checks', doneKey: 'evaluate_complete' },
+  { key: 'save', label: 'Saving draft', doneKey: 'complete' },
+] as const;
+
+interface GenerationState {
+  generating: boolean;
+  completedSteps: Set<string>;
+  activeStep: string | null;
+  stepDetails: Record<string, string>;
+  error: string | null;
+}
 
 function ReportListButton({ clientId }: { clientId: string }) {
   const [open, setOpen] = useState(false);
   const [reports, setReports] = useState<ReportListItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [generating, setGenerating] = useState(false);
-  const [progressStep, setProgressStep] = useState<string | null>(null);
-  const [progressDetail, setProgressDetail] = useState<string | null>(null);
-  const [stepCount, setStepCount] = useState(0);
+  const [genState, setGenState] = useState<GenerationState>({
+    generating: false,
+    completedSteps: new Set(),
+    activeStep: null,
+    stepDetails: {},
+    error: null,
+  });
+
+  // Portal dropdown positioning
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [dropdownPos, setDropdownPos] = useState<{ top: number; left: number } | null>(null);
+
+  const updateDropdownPos = useCallback(() => {
+    if (!buttonRef.current) return;
+    const rect = buttonRef.current.getBoundingClientRect();
+    setDropdownPos({ top: rect.top, left: rect.left });
+  }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    updateDropdownPos();
+    window.addEventListener('scroll', updateDropdownPos, true);
+    window.addEventListener('resize', updateDropdownPos);
+    return () => {
+      window.removeEventListener('scroll', updateDropdownPos, true);
+      window.removeEventListener('resize', updateDropdownPos);
+    };
+  }, [open, updateDropdownPos]);
+
+  // Close dropdown on outside click
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    const handler = (e: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node) &&
+        buttonRef.current &&
+        !buttonRef.current.contains(e.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, [open]);
 
   useEffect(() => {
     if (!open) return;
@@ -754,10 +796,14 @@ function ReportListButton({ clientId }: { clientId: string }) {
   }, [open, clientId]);
 
   const handleGenerate = async () => {
-    setGenerating(true);
-    setProgressStep(null);
-    setProgressDetail(null);
-    setStepCount(0);
+    setGenState({
+      generating: true,
+      completedSteps: new Set(),
+      activeStep: null,
+      stepDetails: {},
+      error: null,
+    });
+    setOpen(false); // Close dropdown — progress shows in panel
 
     try {
       const res = await fetch('/api/reports/generate', {
@@ -784,103 +830,218 @@ function ReportListButton({ clientId }: { clientId: string }) {
           if (!line.startsWith('data: ')) continue;
           try {
             const event = JSON.parse(line.slice(6));
-            setProgressStep(event.step);
-            setProgressDetail(event.detail ?? null);
-            setStepCount((c) => c + 1);
+
+            setGenState((prev) => {
+              const completed = new Set(prev.completedSteps);
+              const details = { ...prev.stepDetails };
+
+              // Mark step as completed if it's a _complete event
+              if (event.step.endsWith('_complete') || event.step === 'complete') {
+                completed.add(event.step);
+              }
+
+              // Store detail for the step
+              if (event.detail) {
+                details[event.step] = event.detail;
+              }
+
+              // Find active step (first non-completed pipeline step)
+              let active: string | null = event.step;
+              if (event.step === 'complete' || event.step === 'error') {
+                active = null;
+              }
+
+              return {
+                ...prev,
+                completedSteps: completed,
+                activeStep: active,
+                stepDetails: details,
+                error: event.step === 'error' ? event.detail : prev.error,
+              };
+            });
 
             if (event.step === 'complete' && event.detail) {
               window.location.href = `/client/${clientId}/report/${event.detail}`;
-            }
-            if (event.step === 'error') {
-              console.error('[report] Generation error:', event.detail);
             }
           } catch { /* skip malformed */ }
         }
       }
     } finally {
-      setGenerating(false);
-      setProgressStep(null);
+      setGenState((prev) => ({ ...prev, generating: false }));
     }
   };
 
-  return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen(!open)}
-        className="w-full rounded-md border border-wh-border px-3 py-1.5 text-xs font-medium text-wh-text-secondary transition-colors hover:bg-wh-border/50 hover:text-wh-text-primary"
-      >
-        Reports
-      </button>
+  const dropdown = open && dropdownPos && createPortal(
+    <div
+      ref={dropdownRef}
+      className="fixed z-[9999] w-72 rounded-lg border border-wh-border bg-wh-panel shadow-lg"
+      style={{
+        left: dropdownPos.left,
+        top: dropdownPos.top - 4,
+        transform: 'translateY(-100%)',
+      }}
+    >
+      <div className="flex items-center justify-between border-b border-wh-border px-3 py-2">
+        <span className="text-[10px] font-semibold uppercase tracking-wider text-wh-text-secondary/70">
+          Reports
+        </span>
+        <button
+          type="button"
+          onClick={handleGenerate}
+          disabled={genState.generating}
+          className="rounded bg-wh-accent-teal/15 px-2 py-0.5 text-[10px] font-medium text-wh-accent-teal transition-colors hover:bg-wh-accent-teal/25 disabled:opacity-50"
+        >
+          {genState.generating ? 'Generating...' : '+ New Report'}
+        </button>
+      </div>
 
-      {open && (
-        <div className="absolute left-0 bottom-full z-50 mb-1 w-72 rounded-lg border border-wh-border bg-wh-panel shadow-lg">
-          <div className="flex items-center justify-between border-b border-wh-border px-3 py-2">
-            <span className="text-[10px] font-semibold uppercase tracking-wider text-wh-text-secondary/70">
-              Reports
+      <div className="max-h-60 overflow-y-auto">
+        {loading && (
+          <div className="p-3 text-[10px] text-wh-text-secondary/50">Loading...</div>
+        )}
+        {!loading && reports.length === 0 && (
+          <div className="p-3 text-[10px] text-wh-text-secondary/50">No reports yet.</div>
+        )}
+        {reports.map((r) => (
+          <a
+            key={r.id}
+            href={`/client/${clientId}/report/${r.id}`}
+            className="flex items-center gap-2 border-b border-wh-border/30 px-3 py-2 transition-colors hover:bg-wh-border/20 last:border-0"
+          >
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] text-wh-text-primary">
+                {new Date(r.date_range_from).toLocaleDateString('en-GB')} – {new Date(r.date_range_to).toLocaleDateString('en-GB')}
+              </p>
+              <p className="text-[9px] text-wh-text-secondary/50">
+                {new Date(r.created_at).toLocaleDateString('en-GB')}
+              </p>
+            </div>
+            <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-medium ${STATUS_STYLES[r.status]}`}>
+              {STATUS_LABELS[r.status]}
             </span>
-            <button
-              type="button"
-              onClick={handleGenerate}
-              disabled={generating}
-              className="rounded bg-wh-accent-teal/15 px-2 py-0.5 text-[10px] font-medium text-wh-accent-teal transition-colors hover:bg-wh-accent-teal/25 disabled:opacity-50"
-            >
-              {generating ? 'Generating...' : '+ New Report'}
-            </button>
-          </div>
+          </a>
+        ))}
+      </div>
+    </div>,
+    document.body,
+  );
 
-          {/* Streaming progress */}
-          {generating && progressStep && (
-            <div className="border-b border-wh-border px-3 py-2 space-y-1.5">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full bg-wh-accent-teal animate-pulse" />
-                <span className="text-[10px] font-medium text-wh-text-primary">
-                  {STEP_LABELS[progressStep] ?? progressStep}
-                </span>
-              </div>
-              {progressDetail && (
-                <p className="text-[9px] text-wh-text-secondary/60 pl-4">
-                  {progressDetail}
-                </p>
-              )}
-              <div className="h-0.5 rounded-full bg-wh-border/60 overflow-hidden">
+  return (
+    <>
+      <div className="relative">
+        <button
+          ref={buttonRef}
+          type="button"
+          onClick={() => setOpen(!open)}
+          className="w-full rounded-md border border-wh-border px-3 py-1.5 text-xs font-medium text-wh-text-secondary transition-colors hover:bg-wh-border/50 hover:text-wh-text-primary"
+        >
+          Reports
+        </button>
+        {dropdown}
+      </div>
+
+      {/* Full pipeline progress — renders via portal into the panel scroll area */}
+      {genState.generating && (
+        <ReportGenerationProgress state={genState} />
+      )}
+    </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Pipeline progress panel — shows full step-by-step timeline          */
+/* ------------------------------------------------------------------ */
+
+function ReportGenerationProgress({ state }: { state: GenerationState }) {
+  const [portalTarget] = useState<HTMLElement | null>(
+    () => document.querySelector('[data-report-progress-target]'),
+  );
+
+  const content = (
+    <div className="mx-3 my-3 rounded-lg border border-wh-border bg-wh-bg/50 p-4">
+      <div className="flex items-center gap-2 mb-4">
+        <div className="h-2 w-2 rounded-full bg-wh-accent-teal animate-pulse" />
+        <span className="text-xs font-semibold text-wh-text-primary">Generating report</span>
+      </div>
+
+      <div className="space-y-0">
+        {PIPELINE_STEPS.map((step, i) => {
+          const isCompleted = state.completedSteps.has(step.doneKey);
+          const isActive =
+            !isCompleted &&
+            state.activeStep !== null &&
+            (state.activeStep === step.key || state.activeStep === step.doneKey);
+          const detail = state.stepDetails[step.doneKey] || state.stepDetails[step.key];
+          const isLast = i === PIPELINE_STEPS.length - 1;
+
+          return (
+            <div key={step.key} className="flex gap-3">
+              {/* Timeline line + dot */}
+              <div className="flex flex-col items-center">
                 <div
-                  className="h-full rounded-full bg-wh-accent-teal transition-all duration-300"
-                  style={{ width: `${Math.min((stepCount / 14) * 100, 100)}%` }}
-                />
+                  className={`h-4 w-4 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
+                    isCompleted
+                      ? 'bg-wh-accent-teal/20'
+                      : isActive
+                      ? 'bg-wh-accent-teal/10 ring-2 ring-wh-accent-teal/30'
+                      : 'bg-wh-border/40'
+                  }`}
+                >
+                  {isCompleted ? (
+                    <svg className="h-2.5 w-2.5 text-wh-accent-teal" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                    </svg>
+                  ) : isActive ? (
+                    <div className="h-1.5 w-1.5 rounded-full bg-wh-accent-teal animate-pulse" />
+                  ) : (
+                    <div className="h-1.5 w-1.5 rounded-full bg-wh-text-secondary/20" />
+                  )}
+                </div>
+                {!isLast && (
+                  <div
+                    className={`w-px flex-1 min-h-[16px] transition-colors duration-300 ${
+                      isCompleted ? 'bg-wh-accent-teal/30' : 'bg-wh-border/40'
+                    }`}
+                  />
+                )}
+              </div>
+
+              {/* Label + detail */}
+              <div className={`pb-3 ${isLast ? 'pb-0' : ''}`}>
+                <span
+                  className={`text-[11px] font-medium transition-colors duration-300 ${
+                    isCompleted
+                      ? 'text-wh-text-secondary/60'
+                      : isActive
+                      ? 'text-wh-text-primary'
+                      : 'text-wh-text-secondary/30'
+                  }`}
+                >
+                  {step.label}
+                </span>
+                {detail && (isCompleted || isActive) && (
+                  <p className="text-[9px] text-wh-text-secondary/50 mt-0.5">
+                    {detail}
+                  </p>
+                )}
               </div>
             </div>
-          )}
+          );
+        })}
+      </div>
 
-          <div className="max-h-60 overflow-y-auto">
-            {loading && (
-              <div className="p-3 text-[10px] text-wh-text-secondary/50">Loading...</div>
-            )}
-            {!loading && reports.length === 0 && (
-              <div className="p-3 text-[10px] text-wh-text-secondary/50">No reports yet.</div>
-            )}
-            {reports.map((r) => (
-              <a
-                key={r.id}
-                href={`/client/${clientId}/report/${r.id}`}
-                className="flex items-center gap-2 border-b border-wh-border/30 px-3 py-2 transition-colors hover:bg-wh-border/20 last:border-0"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-[10px] text-wh-text-primary">
-                    {new Date(r.date_range_from).toLocaleDateString('en-GB')} – {new Date(r.date_range_to).toLocaleDateString('en-GB')}
-                  </p>
-                  <p className="text-[9px] text-wh-text-secondary/50">
-                    {new Date(r.created_at).toLocaleDateString('en-GB')}
-                  </p>
-                </div>
-                <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-medium ${STATUS_STYLES[r.status]}`}>
-                  {STATUS_LABELS[r.status]}
-                </span>
-              </a>
-            ))}
-          </div>
+      {state.error && (
+        <div className="mt-3 rounded-md bg-red-500/10 px-3 py-2">
+          <p className="text-[10px] font-medium text-red-400">Generation failed</p>
+          <p className="text-[9px] text-red-400/70 mt-0.5">{state.error}</p>
         </div>
       )}
     </div>
   );
+
+  // Render into the panel scroll area if available, otherwise inline
+  if (portalTarget) {
+    return createPortal(content, portalTarget);
+  }
+  return content;
 }
