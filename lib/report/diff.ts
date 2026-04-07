@@ -6,7 +6,7 @@
 // ---------------------------------------------------------------------------
 
 import type { AnalysisJSON, AnalysedItem } from '@/lib/export/types';
-import type { ReportDiff, ReportChatMessage } from '@/types/report';
+import type { ReportDiff } from '@/types/report';
 
 export function computeReportDiff(
   original: AnalysisJSON,

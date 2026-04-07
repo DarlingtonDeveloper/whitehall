@@ -60,7 +60,7 @@ export default function IntelligencePanel() {
   const [gatePw, setGatePw] = useState('');
   const [gateError, setGateError] = useState(false);
 
-  const { selectedEntityId, selectedClientId, disabledSourceIds } = usePanelStore();
+  const { selectedEntityId, selectedClientId } = usePanelStore();
   const [activeTab, setActiveTab] = useState<Tab>('chat');
 
   // Feed data for dynamic suggestions and new-item indicator
@@ -348,6 +348,7 @@ export default function IntelligencePanel() {
             value={gatePw}
             onChange={(e) => setGatePw(e.target.value)}
             placeholder="Password"
+            aria-label="Password"
             autoFocus
             className={`w-full rounded-lg border bg-wh-panel px-3 py-2 text-center text-sm text-wh-text-primary placeholder:text-wh-text-secondary/40 outline-none transition-colors ${
               gateError

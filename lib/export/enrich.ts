@@ -176,8 +176,8 @@ export async function enrichItems(
   // -----------------------------------------------------------------------
   // Assemble final analysis JSON matching the monitoring agent schema
   // -----------------------------------------------------------------------
-  const itemsAnalysed = Object.values(sections).reduce(
-    (sum: number, s: any) => sum + (s.items?.length || 0),
+  const itemsAnalysed = (Object.values(sections) as Array<{ items?: unknown[] }>).reduce(
+    (sum, s) => sum + (s.items?.length || 0),
     0,
   );
 

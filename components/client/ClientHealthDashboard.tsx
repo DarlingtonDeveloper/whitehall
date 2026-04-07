@@ -87,12 +87,15 @@ export default function ClientHealthDashboard({ client }: { client: ClientConfig
   const activeFilter = useFeedFilter();
 
   useEffect(() => {
-    setLoading(true);
+    let cancelled = false;
     fetchHealthMetrics(client).then((m) => {
-      setMetrics(m);
-      setLoading(false);
+      if (!cancelled) {
+        setMetrics(m);
+        setLoading(false);
+      }
     });
-  }, [client.id]);
+    return () => { cancelled = true; };
+  }, [client]);
 
   if (loading || !metrics) {
     return (

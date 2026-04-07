@@ -3,7 +3,6 @@ import Shell from '@/components/layout/Shell';
 import { getClientBySlug } from '@/data/clients';
 import { supabase } from '@/lib/db';
 import ReportBuilder from '@/components/report/ReportBuilder';
-import type { AnalysisJSON } from '@/lib/export/types';
 import type { ReportDraft } from '@/types/report';
 
 export const dynamic = 'force-dynamic';
@@ -31,7 +30,6 @@ export default async function ReportPage({
     <Shell>
       <ReportBuilder
         draft={draft}
-        clientId={slug}
         clientName={client.name}
       />
     </Shell>

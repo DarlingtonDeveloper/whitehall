@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useEffect, useCallback, useImperativeHandle, forwardRef } from 'react';
+import { useRef, useEffect, useImperativeHandle, forwardRef } from 'react';
 import cytoscape, { Core, ElementDefinition } from 'cytoscape';
 import { graphStyles } from './graphStyles';
 
@@ -41,9 +41,9 @@ const EntityGraph = forwardRef<EntityGraphHandle, EntityGraphProps>(function Ent
 
   // Keep callbacks in refs so effect doesn't re-run when they change.
   const onNodeClickRef = useRef(onNodeClick);
-  onNodeClickRef.current = onNodeClick;
   const onNodeHoverRef = useRef(onNodeHover);
-  onNodeHoverRef.current = onNodeHover;
+  useEffect(() => { onNodeClickRef.current = onNodeClick; }, [onNodeClick]);
+  useEffect(() => { onNodeHoverRef.current = onNodeHover; }, [onNodeHover]);
 
   // -----------------------------------------------------------------------
   // Initialise Cytoscape instance
@@ -181,7 +181,6 @@ const EntityGraph = forwardRef<EntityGraphHandle, EntityGraphProps>(function Ent
       cyRef.current = null;
     };
     // We only re-initialise when elements or layout change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [elements, layout, focusNodeId, minZoom, maxZoom]);
 
   return (

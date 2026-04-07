@@ -302,47 +302,6 @@ export const GOVUK_FEEDS: GovUKFeedConfig[] = [
   },
 ];
 
-// ── Keyword-to-entity mapping for supplemental tagging ───────────────────
-
-const KEYWORD_ENTITY_MAP: [RegExp, string][] = [
-  [/\bDESNZ\b|energy security|net zero|clean power|offshore wind|onshore wind/i, 'desnz'],
-  [/\bDHSC\b|health and social care|NHS workforce/i, 'dhsc'],
-  [/\bDfE\b|department for education|schools|curriculum/i, 'dfe'],
-  [/\bDfT\b|department for transport|railways|roads|aviation/i, 'dft'],
-  [/\bDLUHC\b|housing|planning reform|local government|levelling up/i, 'dluhc'],
-  [/\bDefra\b|environment|biodiversity|water quality|farming/i, 'defra'],
-  [/\bHM Treasury\b|treasury|fiscal|budget statement/i, 'treasury'],
-  [/\bHome Office\b|immigration|policing|borders/i, 'home-office'],
-  [/\bMoD\b|ministry of defence|armed forces|military/i, 'mod'],
-  [/\bMoJ\b|ministry of justice|prisons|courts|sentencing/i, 'moj'],
-  [/\bFCDO\b|foreign.{0,10}commonwealth|overseas development/i, 'fcdo'],
-  [/\bCabinet Office\b|civil service reform/i, 'co'],
-  [/\bDBT\b|business and trade|trade policy|export/i, 'dbt'],
-  [/\bDCMS\b|culture.{0,10}media|sport|creative industries/i, 'dcms'],
-  [/\bDSIT\b|science.{0,10}innovation|technology policy/i, 'dsit'],
-  [/\bDWP\b|work and pensions|universal credit|state pension/i, 'dwp'],
-  [/\bOfgem\b|energy regulation|price cap|RIIO/i, 'ofgem'],
-  [/\bOfwat\b|water regulation/i, 'ofwat'],
-  [/\bOfcom\b|telecoms regulation|broadband|spectrum/i, 'ofcom'],
-  [/\bEnvironment Agency\b|flood risk|pollution incident/i, 'environment-agency'],
-  [/\bHMRC\b|tax.{0,10}(policy|reform|revenue)|customs/i, 'hmrc'],
-  [/\bMHRA\b|medicines regulation|drug approval/i, 'mhra'],
-  [/\bNICE\b|health technology assessment|clinical guideline/i, 'nice'],
-  [/\bCQC\b|care quality|inspection regime/i, 'cqc'],
-  [/\bCMA\b|competition.{0,10}markets|merger (inquiry|review)/i, 'cma'],
-  [/\bPlanning Inspectorate\b|NSIP|nationally significant/i, 'planning-inspectorate'],
-  [/\bNHS England\b|NHSE\b|commissioning/i, 'nhs-improve'],
-  [/\bUKHSA\b|health security|vaccine programme/i, 'ukhsa'],
-  [/\bNatural England\b|habitat|protected species/i, 'natural-england'],
-  [/\bFood Standards Agency\b|FSA\b|food safety/i, 'fsa'],
-  [/\bHSE\b|health and safety executive|workplace safety/i, 'hse'],
-  [/\bconsultation\b/i, ''], // no entity, just for RAG
-  [/\bnuclear\b|Sizewell|Hinkley/i, 'desnz'],
-  [/\bhydrogen\b/i, 'desnz'],
-  [/\bCCUS\b|carbon capture/i, 'desnz'],
-  [/\bNHS\b/i, 'dhsc'],
-];
-
 // ── URL builders ─────────────────────────────────────────────────────────
 
 function buildFeedUrl(slug: string, type: FeedType): string {

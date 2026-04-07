@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useSyncExternalStore } from 'react';
+import { useCallback, useSyncExternalStore } from 'react';
 
 const STORAGE_KEY = 'wh-intel-unlocked';
 

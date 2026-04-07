@@ -250,7 +250,7 @@ function parseRssXml(xml: string): ParsedRssItem[] {
     const linkMatch =
       block.match(/<link[^>]*>([\s\S]*?)<\/link>/i) ||
       block.match(/<link[^>]*href="([^"]+)"/i);
-    let url = linkMatch ? linkMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() : '';
+    const url = linkMatch ? linkMatch[1].replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1').trim() : '';
 
     // Description / summary / content
     const descMatch =

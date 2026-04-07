@@ -22,13 +22,12 @@ function applyTheme(theme: Theme) {
 }
 
 export default function ThemeToggle() {
-  const [theme, setTheme] = useState<Theme>('dark');
+  const [theme, setTheme] = useState<Theme>(getStoredTheme);
 
+  // Apply theme classes on mount (SSR defaults to 'dark')
   useEffect(() => {
-    const stored = getStoredTheme();
-    setTheme(stored);
-    applyTheme(stored);
-  }, []);
+    applyTheme(theme);
+  }, [theme]);
 
   const toggle = useCallback(() => {
     setTheme((prev) => {

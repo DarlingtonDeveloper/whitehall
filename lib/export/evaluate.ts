@@ -13,8 +13,8 @@ import { generateText } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import type { ClientConfig } from '@/types/client';
 import type { FeedItem } from '@/types/feed';
-import type { AnalysisJSON, AnalysedItem, ThemeSection } from './types';
-import { logTrace, withTiming } from '@/lib/observability/opik';
+import type { AnalysisJSON } from './types';
+import { logTrace } from '@/lib/observability/opik';
 
 // ---------------------------------------------------------------------------
 // 1. Template validator — ~30 deterministic checks matching

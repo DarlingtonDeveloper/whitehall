@@ -88,13 +88,6 @@ export async function POST(request: Request) {
     //    [UNVERIFIED] markers in the DOCX output.
     if (!skipEval) {
       const evalResult = await evaluateReport(analysis, items, client);
-      console.log('[export] Evaluation:', {
-        template: evalResult.template_validation.passed,
-        factuality: evalResult.factuality.mean_score,
-        specificity: evalResult.specificity.mean_score,
-        overall: evalResult.overall_pass,
-        flagged: evalResult.flagged_refs,
-      });
 
       // Reduce confidence for flagged items (matches monitoring agent behaviour)
       for (const section of Object.values(analysis.sections)) {

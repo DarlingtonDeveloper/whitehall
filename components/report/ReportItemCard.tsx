@@ -72,7 +72,7 @@ export default function ReportItemCard({
         <button
           onClick={(e) => { e.stopPropagation(); cycleRag(); }}
           className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${RAG_STYLES[item.rag]} transition-colors hover:opacity-80`}
-          title={`RAG: ${item.rag} (click to cycle)`}
+          aria-label={`RAG: ${item.rag} (click to cycle)`}
         />
         <div className="flex-1 min-w-0">
           <EditableText
@@ -98,7 +98,7 @@ export default function ReportItemCard({
         <button
           onClick={(e) => { e.stopPropagation(); onRemove(); }}
           className="shrink-0 rounded p-0.5 text-wh-text-secondary/30 transition-colors hover:bg-red-500/10 hover:text-red-400"
-          title="Remove item"
+          aria-label="Remove item"
         >
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -180,6 +180,7 @@ function EditableText({
 
   useEffect(() => {
     if (isEditing) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: sync draft to prop on edit entry
       setDraft(value);
       setTimeout(() => inputRef.current?.focus(), 0);
     }

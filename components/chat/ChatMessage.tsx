@@ -52,9 +52,6 @@ function rejoinWrappedLinks(text: string): string {
 }
 
 function parseContent(raw: string): React.ReactNode[] {
-  if (typeof window !== 'undefined') {
-    console.log('[ChatMessage] raw content:', raw.slice(0, 500));
-  }
   const joined = rejoinWrappedLinks(raw);
   const lines = joined.split('\n');
   const nodes: React.ReactNode[] = [];

@@ -311,10 +311,11 @@ export default function FilterPanel({
                 value={filter.search}
                 onChange={(e) => onSearch(e.target.value)}
                 placeholder="Search entities..."
+                aria-label="Search entities"
                 className="w-full bg-transparent text-xs text-wh-text-primary placeholder:text-wh-text-secondary/40 outline-none"
               />
               {filter.search && (
-                <button onClick={() => onSearch('')} className="text-wh-text-secondary/40 hover:text-wh-text-primary">
+                <button onClick={() => onSearch('')} aria-label="Clear search" className="text-wh-text-secondary/40 hover:text-wh-text-primary">
                   <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                   </svg>

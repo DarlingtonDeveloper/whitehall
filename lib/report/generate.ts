@@ -51,14 +51,10 @@ export async function generateDraftReport(
   // 0a. Run client scan if requested (web search + forward scan)
   if (options?.runScan !== false) {
     try {
-      const [webResult, forwardResult] = await Promise.all([
+      await Promise.all([
         runWebSearchCollector(client),
         runForwardScanCollector(client),
       ]);
-      console.log('[report] Scan:', {
-        web: webResult.items_found,
-        forward: forwardResult.items_found,
-      });
     } catch (err) {
       console.warn('[report] Scan failed (continuing):', err);
     }
@@ -66,10 +62,7 @@ export async function generateDraftReport(
 
   // 0b. Enrich thin items — fetch full page content for items with short body
   try {
-    const enrichResult = await enrichThinItems();
-    if (enrichResult.enriched > 0) {
-      console.log(`[report] Enriched ${enrichResult.enriched} thin items`);
-    }
+    await enrichThinItems();
   } catch (err) {
     console.warn('[report] Content enrichment failed (continuing):', err);
   }
@@ -127,12 +120,6 @@ export async function generateDraftReport(
 
   // 5. Evaluate
   const evalResult = await evaluateReport(analysis, selected, client);
-  console.log('[report] Evaluation:', {
-    template: evalResult.template_validation.passed,
-    factuality: evalResult.factuality.mean_score,
-    specificity: evalResult.specificity.mean_score,
-    overall: evalResult.overall_pass,
-  });
 
   // Cap confidence for flagged items
   for (const section of Object.values(analysis.sections)) {

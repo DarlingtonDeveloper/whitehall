@@ -170,7 +170,6 @@ function buildClientFocusElements(
   if (!config) return [];
 
   const stakeholderIds = new Set(config.stakeholders.map((s) => s.entityId));
-  const priorityMap = new Map(config.stakeholders.map((s) => [s.entityId, s.priority]));
   const primaryIds = new Set(
     config.stakeholders.filter((s) => s.priority === 'primary').map((s) => s.entityId),
   );
@@ -283,13 +282,14 @@ export default function PulseView({ filter }: PulseViewProps) {
   useEffect(() => {
     if (isFocused) return;
     // Delay slightly so graph layout can settle
+    const ref = graphRef.current;
     const timer = setTimeout(() => {
-      const cy = graphRef.current?.getCy();
+      const cy = ref?.getCy();
       if (cy) startBreathingAnimations(cy, pulseScores, getPulseLevel);
     }, 600);
     return () => {
       clearTimeout(timer);
-      stopBreathingAnimations(graphRef.current?.getCy() ?? undefined);
+      stopBreathingAnimations(ref?.getCy() ?? undefined);
     };
   }, [isFocused, pulseScores]);
 

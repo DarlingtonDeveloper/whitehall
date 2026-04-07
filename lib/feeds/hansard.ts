@@ -62,37 +62,6 @@ const SEARCH_TERMS = [
   'carbon capture', 'nuclear', 'hydrogen',
 ];
 
-// ── Keyword-to-entity mapping ────────────────────────────────────────────
-
-const KEYWORD_ENTITY_MAP: [RegExp, string][] = [
-  [/\bDESNZ\b|energy security|net zero|clean power|offshore wind|onshore wind|energy\b/i, 'desnz'],
-  [/\bDHSC\b|health and social care|NHS\b/i, 'dhsc'],
-  [/\bDfE\b|department for education|school|curriculum/i, 'dfe'],
-  [/\bDfT\b|department for transport|rail|road|aviation/i, 'dft'],
-  [/\bDLUHC\b|housing|planning\b|local government|levelling up/i, 'dluhc'],
-  [/\bDefra\b|environment|biodiversity|farming|water quality/i, 'defra'],
-  [/\bTreasury\b|fiscal|budget/i, 'treasury'],
-  [/\bHome Office\b|immigration\b|policing|border/i, 'home-office'],
-  [/\bMinistry of Defence\b|MoD\b|armed forces|military|defence\b/i, 'mod'],
-  [/\bMinistry of Justice\b|MoJ\b|prisons|courts|sentencing/i, 'moj'],
-  [/\bForeign Office\b|FCDO\b|overseas development/i, 'fcdo'],
-  [/\bCabinet Office\b|civil service reform/i, 'co'],
-  [/\bDBT\b|business and trade|trade policy/i, 'dbt'],
-  [/\bDCMS\b|culture.{0,10}media|creative industries/i, 'dcms'],
-  [/\bDSIT\b|science.{0,10}innovation|technology policy/i, 'dsit'],
-  [/\bDWP\b|work and pensions|universal credit|state pension/i, 'dwp'],
-  [/\bOfgem\b|energy regulation/i, 'ofgem'],
-  [/\bMHRA\b|medicines regulation/i, 'mhra'],
-  [/\bNICE\b|health technology/i, 'nice'],
-  [/\bCQC\b|care quality/i, 'cqc'],
-  [/\bCMA\b|competition.{0,10}markets/i, 'cma'],
-  [/\bNHS England\b|NHSE\b/i, 'nhs-improve'],
-  [/\bconsultation\b/i, ''],
-  [/\bnuclear\b|Sizewell|Hinkley/i, 'desnz'],
-  [/\bhydrogen\b/i, 'desnz'],
-  [/\bCCUS\b|carbon capture/i, 'desnz'],
-];
-
 // ── Hansard result types ─────────────────────────────────────────────────
 
 interface HansardContribution {

@@ -9,18 +9,18 @@ import ReportChat from './ReportChat';
 
 interface ReportBuilderProps {
   draft: ReportDraft;
-  clientId: string;
   clientName: string;
 }
 
-export default function ReportBuilder({ draft, clientId, clientName }: ReportBuilderProps) {
+export default function ReportBuilder({ draft, clientName }: ReportBuilderProps) {
   const [content, setContent] = useState<AnalysisJSON>(draft.sections);
   const [status, setStatus] = useState<ReportStatus>(draft.status);
   const [activeSection, setActiveSection] = useState<string | null>(null);
   const [activeItemRef, setActiveItemRef] = useState<string | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const handleMutation = useCallback((mutation: ReportMutation) => {
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const handleMutation = useCallback((_mutation: ReportMutation) => {
     // Refresh content from server after mutation
     fetch(`/api/reports/${draft.id}`)
       .then(res => res.json())
@@ -134,7 +134,6 @@ export default function ReportBuilder({ draft, clientId, clientName }: ReportBui
         <div className="w-[360px] shrink-0 border-l border-wh-border bg-wh-panel">
           <ReportChat
             reportId={draft.id}
-            clientId={clientId}
             activeSection={activeSection}
             activeItemRef={activeItemRef}
             onMutation={handleMutation}

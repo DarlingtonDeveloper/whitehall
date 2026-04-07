@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Vendored/generated files:
+    "bundled.js",
+    // CLI scripts (not production code):
+    "scripts/**",
   ]),
 ]);
 

@@ -7,34 +7,42 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
-  const { id } = await params;
+  try {
+    const { id } = await params;
 
-  const { data, error } = await supabase
-    .from('report_drafts')
-    .select('*')
-    .eq('id', id)
-    .single();
+    const { data, error } = await supabase
+      .from('report_drafts')
+      .select('*')
+      .eq('id', id)
+      .single();
 
-  if (error || !data) {
+    if (error || !data) {
+      return NextResponse.json(
+        { error: 'Report not found' },
+        { status: 404 },
+      );
+    }
+
+    // Optionally include chat messages
+    const url = new URL(request.url);
+    if (url.searchParams.get('include') === 'messages') {
+      const { data: messages } = await supabase
+        .from('report_chat_messages')
+        .select('*')
+        .eq('report_draft_id', id)
+        .order('created_at', { ascending: true });
+
+      return NextResponse.json({ ...data, messages: messages ?? [] });
+    }
+
+    return NextResponse.json(data);
+  } catch (err) {
+    console.error('[reports/GET] Error:', err);
     return NextResponse.json(
-      { error: 'Report not found' },
-      { status: 404 },
+      { error: 'Internal server error' },
+      { status: 500 },
     );
   }
-
-  // Optionally include chat messages
-  const url = new URL(request.url);
-  if (url.searchParams.get('include') === 'messages') {
-    const { data: messages } = await supabase
-      .from('report_chat_messages')
-      .select('*')
-      .eq('report_draft_id', id)
-      .order('created_at', { ascending: true });
-
-    return NextResponse.json({ ...data, messages: messages ?? [] });
-  }
-
-  return NextResponse.json(data);
 }
 
 export async function PATCH(

@@ -49,13 +49,21 @@ export async function POST(request: Request) {
     );
   }
 
-  const [webResults, forwardResults] = await Promise.all([
-    runWebSearchCollector(client),
-    runForwardScanCollector(client),
-  ]);
+  try {
+    const [webResults, forwardResults] = await Promise.all([
+      runWebSearchCollector(client),
+      runForwardScanCollector(client),
+    ]);
 
-  return NextResponse.json({
-    web_search: webResults,
-    forward_scan: forwardResults,
-  });
+    return NextResponse.json({
+      web_search: webResults,
+      forward_scan: forwardResults,
+    });
+  } catch (err) {
+    console.error('[scan] Collection failed:', err);
+    return NextResponse.json(
+      { error: 'Scan failed', detail: err instanceof Error ? err.message : 'Unknown error' },
+      { status: 500 },
+    );
+  }
 }

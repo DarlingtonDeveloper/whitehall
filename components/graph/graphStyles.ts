@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- Cytoscape CSS types don't cover all runtime properties (data(), transitions) */
 import type { StylesheetStyle } from 'cytoscape';
 
 export const graphStyles: StylesheetStyle[] = [

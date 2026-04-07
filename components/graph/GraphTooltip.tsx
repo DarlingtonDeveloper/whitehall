@@ -1,7 +1,7 @@
 'use client';
 
 import { getEntity } from '@/data/entities';
-import { ENTITY_COLOURS, getEntityColour } from '@/data/colours';
+import { ENTITY_COLOURS } from '@/data/colours';
 import { getPulseColour } from '@/lib/graph/pulse';
 import type { FeedItem } from '@/types/feed';
 

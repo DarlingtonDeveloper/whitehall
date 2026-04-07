@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useCallback, useRef, useEffect, type KeyboardEvent } from 'react';
+import { useMemo, useState, useEffect, type KeyboardEvent } from 'react';
 import type { ClientConfig } from '@/types/client';
 import { getEntity } from '@/data/entities';
 import { selectEntity, selectClient, usePanelStore, toggleSource, openIntelligence } from '@/lib/panelStore';
@@ -65,7 +65,7 @@ export default function ClientPanel({ client }: { client: ClientConfig }) {
       .order('published_at', { ascending: false })
       .limit(500)
       .then(({ data }) => setFeedItems((data as FeedItem[]) ?? []));
-  }, [client.id]);
+  }, [client.id, client.stakeholders]);
 
   // Compute per-entity item counts and pulse levels
   const entityStats = useMemo(() => {
@@ -100,7 +100,7 @@ export default function ClientPanel({ client }: { client: ClientConfig }) {
               className="w-6 h-6 flex items-center justify-center rounded
                          text-wh-text-secondary/50 hover:text-wh-text-primary
                          hover:bg-wh-bg transition-colors shrink-0"
-              title="Close client view"
+              aria-label="Close client view"
             >
               <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -335,9 +335,10 @@ function ReportStatusLine({ clientId }: { clientId: string }) {
   }
 
   const allItems = Object.values(report.sections?.sections || {})
-    .flatMap((s: any) => s.items || []);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .flatMap((s: any) => s.items || []) as Array<{ rag?: string }>;
   const itemCount = allItems.length;
-  const redCount = allItems.filter((i: any) => i.rag === 'RED').length;
+  const redCount = allItems.filter((i) => i.rag === 'RED').length;
 
   return (
     <div className="text-xs text-wh-text-secondary/60 mt-1">

@@ -12,7 +12,6 @@ import type { ReportMutation } from '@/types/report';
 
 interface ReportChatProps {
   reportId: string;
-  clientId: string;
   activeSection: string | null;
   activeItemRef: string | null;
   onMutation: (mutation: ReportMutation) => void;
@@ -32,7 +31,6 @@ function nextId() {
 
 export default function ReportChat({
   reportId,
-  clientId,
   activeSection,
   activeItemRef,
   onMutation,
@@ -231,6 +229,7 @@ export default function ReportChat({
             onChange={e => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Edit report items..."
+            aria-label="Report edit instructions"
             disabled={isLoading}
             rows={1}
             className="flex-1 resize-none rounded-xl border border-wh-border bg-wh-panel px-3.5 py-2.5 text-sm text-wh-text-primary placeholder:text-wh-text-secondary/50 transition-all focus:border-wh-accent-teal/50 focus:outline-none disabled:opacity-50"
@@ -238,6 +237,7 @@ export default function ReportChat({
           <button
             type="submit"
             disabled={isLoading || !input.trim()}
+            aria-label="Send message"
             className="flex h-[38px] w-[38px] shrink-0 items-center justify-center rounded-xl bg-wh-accent-teal/15 text-wh-accent-teal transition-all hover:bg-wh-accent-teal/25 disabled:opacity-30"
           >
             <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">

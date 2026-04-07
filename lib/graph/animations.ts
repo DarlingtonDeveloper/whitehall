@@ -2,6 +2,7 @@
 // Breathing animation for high-pulse nodes — subtle scale oscillation that
 // makes active entities visually distinct before any interaction.
 // ---------------------------------------------------------------------------
+/* eslint-disable @typescript-eslint/no-explicit-any -- Cytoscape animation API uses string easing names not in types */
 
 import type { Core } from 'cytoscape';
 

@@ -89,40 +89,6 @@ export const LEGISLATION_FEEDS: LegislationFeedConfig[] = [
   },
 ];
 
-// -- Keyword-to-entity mapping for legislation tagging ----------------------
-
-const KEYWORD_ENTITY_MAP: [RegExp, string][] = [
-  [/\bDESNZ\b|energy security|net zero|clean power|offshore wind|onshore wind|electricity|gas/i, 'desnz'],
-  [/\bDHSC\b|health and social care|NHS workforce|public health|medicines|pharmacy/i, 'dhsc'],
-  [/\bDfE\b|department for education|schools|curriculum|higher education|student/i, 'dfe'],
-  [/\bDfT\b|department for transport|railways|roads|aviation|shipping|motor vehicle/i, 'dft'],
-  [/\bDLUHC\b|housing|planning|local government|levelling up|building safety|tenants/i, 'dluhc'],
-  [/\bDefra\b|environment|biodiversity|water quality|farming|agriculture|fisheries|waste/i, 'defra'],
-  [/\bHM Treasury\b|treasury|fiscal|finance act|taxation/i, 'treasury'],
-  [/\bHome Office\b|immigration|policing|borders|asylum|extradition|firearms/i, 'home-office'],
-  [/\bMoD\b|ministry of defence|armed forces|military|defence/i, 'mod'],
-  [/\bMoJ\b|ministry of justice|prisons|courts|sentencing|criminal justice|legal aid/i, 'moj'],
-  [/\bFCDO\b|foreign.{0,10}commonwealth|overseas development|sanctions|diplomatic/i, 'fcdo'],
-  [/\bCabinet Office\b|civil service/i, 'co'],
-  [/\bDBT\b|business and trade|trade policy|export|import duties|tariff/i, 'dbt'],
-  [/\bDCMS\b|culture.{0,10}media|sport|creative industries|broadcasting|gambling/i, 'dcms'],
-  [/\bDSIT\b|science.{0,10}innovation|technology policy|artificial intelligence/i, 'dsit'],
-  [/\bDWP\b|work and pensions|universal credit|state pension|social security|employment support/i, 'dwp'],
-  [/\bOfgem\b|energy regulation|price cap|RIIO/i, 'ofgem'],
-  [/\bOfwat\b|water regulation/i, 'ofwat'],
-  [/\bOfcom\b|telecoms regulation|broadband|spectrum|communications act/i, 'ofcom'],
-  [/\bEnvironment Agency\b|flood risk|pollution incident/i, 'environment-agency'],
-  [/\bHMRC\b|tax.{0,10}(policy|reform|revenue)|customs|VAT|income tax/i, 'hmrc'],
-  [/\bMHRA\b|medicines regulation|drug approval/i, 'mhra'],
-  [/\bCQC\b|care quality|inspection regime/i, 'cqc'],
-  [/\bCMA\b|competition.{0,10}markets|merger (inquiry|review)/i, 'cma'],
-  [/\bHSE\b|health and safety executive|workplace safety/i, 'hse'],
-  [/\bNHS\b/i, 'dhsc'],
-  [/\bnuclear\b|Sizewell|Hinkley/i, 'desnz'],
-  [/\bhydrogen\b/i, 'desnz'],
-  [/\bCCUS\b|carbon capture/i, 'desnz'],
-];
-
 // -- Fingerprint helper -----------------------------------------------------
 
 export function makeFingerprint(url: string, title: string): string {

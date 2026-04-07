@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/purity -- Server component: Date.now() is intentionally called per-request */
 /**
  * Server component — fetches initial feed data at request time
  * so the user sees content immediately instead of a loading skeleton.
