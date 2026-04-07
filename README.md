@@ -2,105 +2,107 @@
 
 AI-powered political intelligence platform built for [WA Communications](https://www.wacomms.co.uk/), a UK public affairs consultancy. Whitehall maps the structure of UK government — departments, ministers, regulators, public bodies, and their statutory powers — and layers real-time parliamentary activity on top, giving analysts a live picture of who matters, what's changing, and what it means for their clients.
 
+**What it replaces:** 3-4 hours of manual monitoring per client per week — scanning GOV.UK, Hansard, legislation feeds, select committee pages, trade press, and petitions — automated into a scored, themed, report-ready feed with AI-generated weekly monitoring reports.
+
+![Next.js](https://img.shields.io/badge/Next.js_16-black?logo=next.js) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white) ![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?logo=supabase&logoColor=white) ![Claude](https://img.shields.io/badge/Claude_Sonnet-D97706?logo=anthropic&logoColor=white) ![Tailwind](https://img.shields.io/badge/Tailwind_CSS_4-06B6D4?logo=tailwindcss&logoColor=white) ![Vercel](https://img.shields.io/badge/Vercel-000?logo=vercel)
+
 ## Stack
 
 | Layer | Technology |
 |-------|-----------|
-| Framework | Next.js 16 (App Router) |
+| Framework | Next.js 16 (App Router, SSR, streaming) |
 | Language | TypeScript 5, React 19 |
 | Styling | Tailwind CSS 4, CSS custom properties |
 | Database | Supabase (PostgreSQL) |
-| AI | Vercel AI SDK (`ai` + `@ai-sdk/anthropic`), Claude Sonnet |
-| Graph | Cytoscape.js |
-| Reports | docx (OOXML generation) |
+| AI | Vercel AI SDK + `@ai-sdk/anthropic`, Claude Sonnet 4 |
+| Graph | Cytoscape.js (compound nodes, force-directed layout) |
+| Reports | `docx` (OOXML generation) |
+| Analytics | Vercel Analytics + Speed Insights |
 
-## Features
-
-### Interactive Entity Graph
-Visualises 300+ UK government entities — ministerial departments, NDPBs, executive agencies, regulators, select committees — as an interactive network. Three view modes: hierarchical entity graph, constellation layout, and pulse view (recency-weighted activity heatmap).
-
-### AI Chat (Intelligence Panel)
-Streaming chat powered by the Vercel AI SDK with four tools the model can invoke mid-conversation:
-
-- **entity_lookup** — search entities by name, ID, or current holder
-- **feed_search** — query recent parliamentary activity, consultations, and press releases from Supabase
-- **stakeholder_map** — retrieve a client's full stakeholder map with priority tiers
-- **graph_action** — manipulate the graph visualisation (select entity, search, filter, focus mode)
-
-Graph commands are embedded as `<!--GRAPH_CMD:{json}-->` HTML comment markers in the text stream and dispatched client-side via a pub/sub bus. See `lib/graphCommands.ts`.
-
-### Feed Aggregation
-Collectors pull from five UK government data sources and deduplicate into the `feed_items` table:
-
-| Source | Module | Data |
-|--------|--------|------|
-| GOV.UK Atom | `lib/feeds/govuk.ts` | Department publications |
-| GOV.UK Search API | `lib/feeds/govuk-search.ts` | 12-month historical archive |
-| Hansard | `lib/feeds/hansard.ts` | Parliamentary speeches and debates |
-| Parliament APIs | `lib/feeds/parliament.ts` | Bills, questions, divisions, statements |
-| legislation.gov.uk | `lib/feeds/legislation.ts` | New and amended legislation |
-
-Run all collectors: `npx tsx scripts/collect-all.ts`
-
-### Weekly Monitoring Reports (DOCX)
-End-to-end report generation pipeline matching the output of the standalone [wa-monitoring-agent](https://github.com/DarlingtonDeveloper/wa-monitoring-agent):
-
-1. **Gather** — two-query Supabase merge (entity overlap + keyword match) with client-side dedup
-2. **Group** — deterministic theme classifier routes items to monitoring themes
-3. **Enrich** — parallel Claude calls per theme, then cross-cutting synthesis
-4. **Evaluate** — template validation (30 structural checks) + LLM-as-judge factuality/specificity
-5. **Generate** — branded DOCX with cover page, executive summary, RAG-rated item cards, theme sections, forward look, actions tracker
-
-Triggered via the "Generate briefing" button on any client view, or `POST /api/export`.
-
-### Multi-Client Support
-Each client configuration defines stakeholders (with priority tiers), monitoring themes, policy/industry keywords, competitors, and projects. The system prompt, feed filtering, and report generation all adapt to the active client context.
-
-## Getting Started
-
-### Prerequisites
-
-- Node.js 20+
-- A Supabase project
-- An Anthropic API key
-
-### Setup
+## Quick Start
 
 ```bash
-# Install dependencies
+git clone https://github.com/DarlingtonDeveloper/whitehall.git
+cd whitehall
 npm install
-
-# Configure environment
-cp .env.local.example .env.local
-# Then fill in:
-#   ANTHROPIC_API_KEY=sk-ant-...
-#   NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
-#   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY=eyJ...
+cp .env.example .env.local
+# Fill in your API keys (see Environment Variables below)
+npm run dev
 ```
 
-### Database
+### Database Setup
 
 Apply the schema to your Supabase project:
 
 ```bash
-# Via Supabase SQL editor, run:
+# Via Supabase SQL editor, paste contents of:
 cat supabase/schema.sql
 ```
 
-This creates the `feed_items`, `client_feed_scores`, `client_scans`, `chat_conversations`, `chat_messages`, and `enriched_items` tables.
-
-### Run
+### Populate Feed Data
 
 ```bash
-# Development
-npm run dev
-
-# Populate feed data (optional — runs all 5 collectors)
+# Run all 12 collectors (GOV.UK, Hansard, Parliament, legislation, RSS, committees, petitions, research)
 npx tsx scripts/collect-all.ts
 
-# Production build
-npm run build && npm start
+# Or seed with demo data
+npx tsx scripts/seed-feeds.ts
 ```
+
+## Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` | Yes | Supabase anon/public key (safe for client-side) |
+| `SUPABASE_SERVICE_ROLE_KEY` | No | Server-side Supabase key (bypasses RLS). Falls back to publishable key |
+| `ANTHROPIC_API_KEY` | Yes | Claude API key for chat, report enrichment, web search, forward scan |
+| `OPIK_API_KEY` | No | Opik observability (forwards traces alongside Supabase logging) |
+| `OPIK_API_URL` | No | Opik endpoint (defaults to `http://localhost:5173`) |
+| `NEXT_PUBLIC_APP_URL` | No | App base URL for OG images (defaults to `https://whitehall.vercel.app`) |
+| `CRON_SECRET` | No | Bearer token for cron route protection (when implemented) |
+
+See [`.env.example`](.env.example) for a template.
+
+## Available Scripts
+
+### npm scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start development server |
+| `npm run build` | Production build |
+| `npm start` | Start production server |
+| `npm run lint` | Run ESLint |
+
+### Collection scripts (`scripts/`)
+
+| Script | Command | Description |
+|--------|---------|-------------|
+| `collect-all.ts` | `npx tsx scripts/collect-all.ts` | Run all 10 collectors in sequence |
+| `collect-govuk.ts` | `npx tsx scripts/collect-govuk.ts` | GOV.UK Atom feeds (35 departments) |
+| `collect-govuk-search.ts` | `npx tsx scripts/collect-govuk-search.ts` | GOV.UK Search API (26 orgs, 17 doc types, 365-day lookback) |
+| `collect-hansard.ts` | `npx tsx scripts/collect-hansard.ts` | Hansard debates and statements |
+| `collect-parliament.ts` | `npx tsx scripts/collect-parliament.ts` | Bills, questions, divisions, statements, EDMs, oral questions |
+| `collect-legislation.ts` | `npx tsx scripts/collect-legislation.ts` | legislation.gov.uk (9 Atom feeds) |
+| `collect-rss.ts` | `npx tsx scripts/collect-rss.ts` | Trade press RSS feeds (25 sources) |
+| `collect-direct-sources.ts` | `npx tsx scripts/collect-direct-sources.ts` | Web scraping (19 government/regulator pages) |
+| `collect-committees.ts` | `npx tsx scripts/collect-committees.ts` | Select committee pages (13 committees) |
+| `collect-petitions.ts` | `npx tsx scripts/collect-petitions.ts` | Parliament petitions API |
+| `collect-research-briefings.ts` | `npx tsx scripts/collect-research-briefings.ts` | Commons & Lords Library briefings |
+
+### Utility scripts
+
+| Script | Command | Description |
+|--------|---------|-------------|
+| `enrich-content.ts` | `npx tsx scripts/enrich-content.ts` | Fetch full page content for thin items (<500 chars) |
+| `retag-all.ts` | `npx tsx scripts/retag-all.ts` | Re-tag all items with content-aware entity enrichment |
+| `clean-titles.ts` | `npx tsx scripts/clean-titles.ts` | Backfill clean titles on existing items |
+| `seed-feeds.ts` | `npx tsx scripts/seed-feeds.ts` | Insert ~50 demo items |
+| `delete-seed.ts` | `npx tsx scripts/delete-seed.ts` | Remove demo items |
+| `debug-scoring.ts` | `npx tsx scripts/debug-scoring.ts ["query"] [--client id]` | Score breakdown for items matching a query |
+| `verify-monitoring-agent-items.ts` | `npx tsx scripts/verify-monitoring-agent-items.ts` | Check coverage against monitoring agent items |
+| `eval-against-ground-truth.ts` | `npx tsx scripts/eval-against-ground-truth.ts --report-id <id> --ground-truth <path>` | Compare report against human selections |
 
 ## Project Structure
 
@@ -108,125 +110,80 @@ npm run build && npm start
 whitehall/
 ├── app/
 │   ├── api/
-│   │   ├── chat/route.ts          # POST /api/chat — streaming AI chat
-│   │   └── export/route.ts        # POST /api/export — DOCX report generation
-│   ├── client/[slug]/page.tsx     # Client dashboard
-│   ├── entity/[id]/page.tsx       # Entity detail page
-│   ├── layout.tsx                 # Root layout (theme, fonts)
-│   ├── page.tsx                   # Home — renders Shell + PulseContent
-│   └── globals.css                # Tailwind + CSS custom properties
+│   │   ├── chat/route.ts              # Streaming AI chat with tool use
+│   │   ├── export/route.ts            # Full DOCX report generation
+│   │   ├── scan/route.ts              # Web search + forward scan
+│   │   └── reports/
+│   │       ├── generate/route.ts      # Streaming report generation with SSE progress
+│   │       └── [id]/
+│   │           ├── route.ts           # GET/PATCH report draft
+│   │           ├── chat/route.ts      # Report editing chat with mutation tools
+│   │           └── export/route.ts    # Export approved report as DOCX
+│   ├── client/[slug]/
+│   │   ├── page.tsx                   # Client dashboard (stakeholders, graph, feed)
+│   │   ├── opengraph-image.tsx        # Dynamic OG image (edge runtime)
+│   │   └── report/[id]/page.tsx       # Report builder
+│   ├── entity/[id]/
+│   │   ├── page.tsx                   # Entity detail (panel, feed)
+│   │   └── opengraph-image.tsx        # Dynamic OG image (edge runtime)
+│   ├── layout.tsx                     # Root layout (theme, fonts, analytics)
+│   └── page.tsx                       # Pulse view (home)
 │
 ├── components/
-│   ├── chat/                      # ChatDrawer, ChatMessage, SuggestedQuestions
-│   ├── client/                    # ClientPanel, ClientSwitcher
-│   ├── entity/                    # EntityPanel, BudgetTab, PowersTab, etc.
-│   ├── export/                    # ExportButton
-│   ├── feed/                      # FeedItem, FeedPanel
-│   ├── graph/                     # EntityGraph, ConstellationView, PulseView
-│   ├── intelligence/              # IntelligencePanel
-│   ├── layout/                    # Shell, NavBar, PanelContext, ThemeToggle
-│   ├── pulse/                     # PulseContent
-│   └── sidebar/                   # FilterPanel, GraphLegend, PulseSidebar
+│   ├── chat/                          # ChatDrawer, ChatMessage, SuggestedQuestions
+│   ├── client/                        # ClientPanel, ClientHealthDashboard, ClientSwitcher
+│   ├── entity/                        # EntityPanel, BudgetTab, PowersTab, RelationshipsTab, StaffTab
+│   ├── feed/                          # FeedPanel, FeedItem, FeedDataLoader (server component)
+│   ├── graph/                         # EntityGraph, ConstellationView, PulseView, GraphTooltip
+│   ├── intelligence/                  # IntelligencePanel
+│   ├── layout/                        # Shell, NavBar, ThemeToggle
+│   ├── report/                        # ReportBuilder, ReportChat, ReportContent, ReportOutline, ReportItemCard
+│   └── sidebar/                       # PulseSidebar, FilterPanel, GraphLegend
 │
 ├── lib/
-│   ├── chat/                      # systemPrompt.ts, tools.ts (AI SDK tool defs)
-│   ├── export/                    # gather, enrich, evaluate, docx-generator, prompts
-│   ├── feeds/                     # govuk, hansard, parliament, legislation collectors
-│   ├── graph/                     # layout, pulse scoring, shapes, tiers
-│   ├── graphCommands.ts           # Pub/sub bus for chat → graph commands
-│   └── db.ts                      # Supabase client
+│   ├── chat/                          # systemPrompt.ts, tools.ts
+│   ├── export/                        # gather, enrich, evaluate, docx-generator, prompts, types
+│   ├── feed/                          # scoring.ts (relevance algorithm)
+│   ├── feeds/                         # 12 collectors + enrichment + dedup + verification
+│   ├── report/                        # generate.ts, tools.ts, mutations.ts, diff.ts, feedback.ts
+│   ├── security/                      # sanitise.ts, validateInput.ts, rateLimit.ts
+│   ├── observability/                 # opik.ts (tracing)
+│   ├── db.ts                          # Supabase client (public + service)
+│   ├── audit.ts                       # Audit logging
+│   └── ...                            # Stores: panelStore, feedFilterStore, feedViewStore, chatActions, graphCommands, clientOverrides
 │
 ├── data/
-│   ├── _extracted/                # Source JSON (entities, powers, budgets, etc.)
-│   ├── clients/                   # Client configs (rwe.ts, sanofi.ts)
-│   ├── entities.ts                # Entity lookup + search
-│   ├── powers.ts                  # Statutory powers
-│   ├── relationships.ts           # Parent/child entity relationships
-│   └── ...                        # budgets, tags, jurisdictions, staff, colours
+│   ├── _extracted/                    # Source JSON (entities, powers, budgets, staff)
+│   ├── clients/                       # Client configs (rwe.ts, sanofi.ts)
+│   ├── entities.ts                    # 764 UK government entities
+│   ├── powers.ts, relationships.ts    # Statutory powers and entity relationships
+│   └── budgets.ts, staff.ts, tags.ts  # Financial, personnel, and classification data
 │
-├── types/                         # TypeScript interfaces (entity, client, feed, chat)
-├── scripts/                       # Feed collection and seeding scripts
-├── supabase/                      # Database schema (schema.sql)
-└── public/                        # Static assets
+├── types/                             # TypeScript interfaces (entity, client, feed, report, chat)
+├── scripts/                           # 20 collection, enrichment, and debugging scripts
+├── supabase/                          # Database schema (schema.sql)
+├── docs/                              # Detailed documentation
+└── middleware.ts                       # Edge middleware (client routing hint)
 ```
 
-## API Routes
+## Documentation
 
-### `POST /api/chat`
-
-Streaming AI chat endpoint.
-
-**Request:**
-```json
-{
-  "message": "Who is the Secretary of State for Energy?",
-  "clientId": "rwe",
-  "entityId": "desnz",
-  "history": [
-    { "role": "user", "content": "..." },
-    { "role": "assistant", "content": "..." }
-  ]
-}
-```
-
-**Response:** `text/plain` stream with optional `<!--GRAPH_CMD:{...}-->` markers.
-
-### `POST /api/export`
-
-Generates a branded DOCX weekly monitoring report.
-
-**Request:**
-```json
-{
-  "clientId": "rwe",
-  "dateRange": { "from": "2025-03-01", "to": "2025-03-07" },
-  "skipEval": false
-}
-```
-
-**Response:** Binary DOCX file (`application/vnd.openxmlformats-officedocument.wordprocessingml.document`).
-
-## Evaluation
-
-The report pipeline includes a three-stage evaluation layer ported from the monitoring agent:
-
-| Check | Method | Threshold | What it catches |
-|-------|--------|-----------|-----------------|
-| Template validation | Deterministic (30 checks) | 0 errors | Missing fields, invalid RAG/escalation values, uncalibrated confidence |
-| Factuality | LLM-as-judge | > 0.7 | Summaries not grounded in source material |
-| Specificity | LLM-as-judge | > 0.5 | Generic client_relevance that doesn't reference specific projects |
-
-Items flagged by either LLM judge get their confidence capped at 0.5, which triggers `[UNVERIFIED]` markers in the DOCX output.
-
-## Architecture Decisions
-
-Key design decisions are documented inline. The notable ones:
-
-- **Graph command side-channel** (`app/api/chat/route.ts`): `streamText` returns a single text stream with no built-in sideband. Graph commands are embedded as HTML comment markers — invisible if accidentally rendered, trivially parseable, and emittable mid-stream.
-
-- **Two-query merge** (`lib/export/gather.ts`): Supabase PostgREST cannot combine array-overlap with OR'd ilike patterns in a single query. Two separate queries (entity overlap + keyword match) are merged and deduplicated client-side.
-
-- **Inverse-recency pulse scoring** (`lib/graph/pulse.ts`): `1/max(hoursAgo, 1)` weights recent items exponentially higher. A single item from 1 hour ago (score: 1.0) outweighs 25 items from 24 hours ago (score: ~0.04 each ≈ 1.0 total).
-
-- **Longest-first entity matching** (`components/chat/ChatMessage.tsx`): Entity names are sorted by length descending before regex matching to prevent "Department for Energy" from matching before "Department for Energy Security and Net Zero".
-
-## Environment Variables
-
-| Variable | Required | Description |
-|----------|----------|-------------|
-| `ANTHROPIC_API_KEY` | Yes | Claude API key for chat and report enrichment |
-| `NEXT_PUBLIC_SUPABASE_URL` | Yes | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY` | Yes | Supabase anon/public key |
+| Document | Description |
+|----------|-------------|
+| [Architecture](docs/architecture.md) | System overview, data flow, rendering strategy, tech decisions |
+| [Data Model](docs/data-model.md) | Entity types, database schema, client configuration |
+| [Collectors](docs/collectors.md) | All 12 feed sources with APIs, entity tagging, dedup |
+| [Scoring](docs/scoring.md) | Feed relevance algorithm (6 components, learned signals) |
+| [Chat](docs/chat.md) | Intelligence and report chat: tools, prompts, graph commands |
+| [Reports](docs/reports.md) | Generation pipeline, builder UI, review workflow, DOCX format |
+| [API Reference](docs/api.md) | All 8 API routes with request/response schemas |
+| [Security](docs/security.md) | Prompt injection defence, rate limiting, input validation |
 
 ## Deployment
 
-Deploy to Vercel:
+Deploy to Vercel. Set environment variables in the Vercel dashboard.
 
-```bash
-vercel
-```
-
-Set environment variables in the Vercel dashboard. The export endpoint uses `maxDuration = 300` (5 minutes) for report generation — this requires a Pro plan or higher.
+The report generation endpoints use `maxDuration = 300` (5 minutes) — this requires a Pro plan or higher.
 
 ## License
 
