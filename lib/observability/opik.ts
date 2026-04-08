@@ -65,15 +65,26 @@ export async function logTrace(
   const opikUrl = process.env.OPIK_API_URL || 'http://localhost:5173';
   if (opikKey) {
     try {
-      await fetch(`${opikUrl}/api/v1/traces`, {
+      const now = new Date().toISOString();
+      const endTime = usage?.duration_ms
+        ? new Date(Date.now()).toISOString()
+        : undefined;
+      const startTime = usage?.duration_ms
+        ? new Date(Date.now() - usage.duration_ms).toISOString()
+        : now;
+
+      await fetch(`${opikUrl}/api/v1/private/traces`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${opikKey}`,
+          authorization: opikKey,
+          'Comet-Workspace': process.env.OPIK_WORKSPACE || 'default',
         },
         body: JSON.stringify({
-          project_name: 'whitehall',
+          project_name: 'Whitehall',
           name: `${metadata.step}/${metadata.theme_id || 'all'}`,
+          start_time: startTime,
+          end_time: endTime,
           input: { prompt: trace.input_preview },
           output: { response: trace.output_preview },
           metadata: {
@@ -81,12 +92,12 @@ export async function logTrace(
             report_id: metadata.report_id,
             model: metadata.model,
           },
-          metrics: {
-            ...scores,
-            input_tokens: usage?.input_tokens,
-            output_tokens: usage?.output_tokens,
-            duration_ms: usage?.duration_ms,
-          },
+          tags: [metadata.step, metadata.model],
+          usage: usage ? {
+            total_tokens: (usage.input_tokens ?? 0) + (usage.output_tokens ?? 0),
+            prompt_tokens: usage.input_tokens,
+            completion_tokens: usage.output_tokens,
+          } : undefined,
         }),
       });
     } catch {
