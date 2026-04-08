@@ -14,7 +14,7 @@ export interface TraceMetadata {
   client_id: string;
   report_id?: string;
   theme_id?: string;
-  step: 'theme_analysis' | 'synthesis' | 'factuality_eval' | 'specificity_eval' | 'web_search' | 'forward_scan';
+  step: 'theme_analysis' | 'synthesis' | 'factuality_eval' | 'specificity_eval' | 'web_search' | 'forward_scan' | 'chat' | 'report_chat';
   model: string;
   items_count?: number;
 }

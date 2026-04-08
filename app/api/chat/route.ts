@@ -5,6 +5,7 @@ import { chatTools } from '@/lib/chat/tools';
 import { validateChatMessage, validateConversationLength } from '@/lib/security/validateInput';
 import { checkRateLimit } from '@/lib/security/rateLimit';
 import { logAudit } from '@/lib/audit';
+import { logTrace } from '@/lib/observability/opik';
 
 export const dynamic = 'force-dynamic';
 
@@ -107,12 +108,15 @@ export async function POST(request: Request) {
    * and embedded as HTML comment markers in the text stream.
    */
   const encoder = new TextEncoder();
+  const startTime = performance.now();
+  let fullAssistantText = '';
 
   const readable = new ReadableStream({
     async start(controller) {
       try {
         for await (const event of result.fullStream) {
           if (event.type === 'text-delta') {
+            fullAssistantText += event.text;
             controller.enqueue(encoder.encode(event.text));
           } else if (event.type === 'tool-result') {
             // Embed graph commands for graph_action tool calls
@@ -150,6 +154,28 @@ export async function POST(request: Request) {
           err instanceof Error ? err.message : 'An unexpected error occurred.';
         controller.enqueue(encoder.encode(`\n\n[Error: ${errorMessage}]`));
         controller.close();
+      }
+
+      // Trace after stream completes
+      try {
+        const usage = await result.totalUsage;
+        logTrace(
+          {
+            client_id: clientId || entityId || 'unknown',
+            step: 'chat',
+            model: 'claude-sonnet-4-20250514',
+          },
+          message,
+          fullAssistantText,
+          undefined,
+          {
+            input_tokens: usage.inputTokens ?? 0,
+            output_tokens: usage.outputTokens ?? 0,
+            duration_ms: Math.round(performance.now() - startTime),
+          },
+        );
+      } catch {
+        // Tracing never breaks the pipeline
       }
     },
   });

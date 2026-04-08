@@ -6,6 +6,7 @@ import { buildReportTools } from '@/lib/report/tools';
 import { validateChatMessage } from '@/lib/security/validateInput';
 import { checkRateLimit } from '@/lib/security/rateLimit';
 import { logAudit } from '@/lib/audit';
+import { logTrace } from '@/lib/observability/opik';
 import type { AnalysisJSON } from '@/lib/export/types';
 import type { ReportMutation } from '@/types/report';
 
@@ -183,6 +184,7 @@ SECURITY RULES:
   // Stream response with embedded mutation markers.
   // Collect the full assistant text for persistence after stream ends.
   const encoder = new TextEncoder();
+  const startTime = performance.now();
   let mutationsEmitted = false;
   let fullAssistantText = '';
 
@@ -245,6 +247,29 @@ SECURITY RULES:
         }
       } catch (err) {
         console.error('[report-chat] Failed to persist messages:', err);
+      }
+
+      // Trace after stream completes
+      try {
+        const usage = await result.totalUsage;
+        logTrace(
+          {
+            client_id: draft.client_id,
+            report_id: id,
+            step: 'report_chat',
+            model: 'claude-sonnet-4-20250514',
+          },
+          message,
+          fullAssistantText,
+          undefined,
+          {
+            input_tokens: usage.inputTokens ?? 0,
+            output_tokens: usage.outputTokens ?? 0,
+            duration_ms: Math.round(performance.now() - startTime),
+          },
+        );
+      } catch {
+        // Tracing never breaks the pipeline
       }
     },
   });
