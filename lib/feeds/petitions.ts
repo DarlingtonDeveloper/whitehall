@@ -87,12 +87,11 @@ interface PetitionData {
   };
 }
 
-export async function collectPetitions(): Promise<{ inserted: number; skipped: number }> {
+export async function collectPetitions(since?: Date): Promise<{ inserted: number; skipped: number }> {
   let totalInserted = 0;
   let totalSkipped = 0;
 
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - 365);
+  const cutoffDate = since ?? new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
 
   console.log(`\n=== Parliament Petitions Collector ===`);
   console.log(`States: ${PETITION_STATES.join(', ')}`);

@@ -1,8 +1,16 @@
 import { NextResponse } from 'next/server';
 import { collectGovUK } from '@/lib/feeds/govuk';
-import { collectAllGovUKSearch } from '@/lib/feeds/govuk-search';
+import { collectGovUKByOrg, collectGovUKSearch } from '@/lib/feeds/govuk-search';
 import { collectHansard } from '@/lib/feeds/hansard';
-import { collectParliament } from '@/lib/feeds/parliament';
+import {
+  collectBills,
+  collectWrittenQuestions,
+  collectDivisions,
+  collectLordsDivisions,
+  collectWrittenStatements,
+  collectEdms,
+  collectOralQuestions,
+} from '@/lib/feeds/parliament';
 import { collectLegislation } from '@/lib/feeds/legislation';
 import { collectRss } from '@/lib/feeds/rss';
 import { collectDirectSources } from '@/lib/feeds/direct-sources';
@@ -12,6 +20,9 @@ import { collectResearchBriefings } from '@/lib/feeds/research-briefings';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
+
+// 4.5 hours — gives 30 min overlap with the 4-hour cron schedule
+const LOOKBACK_MS = 4.5 * 60 * 60 * 1000;
 
 interface CollectorResult {
   inserted: number;
@@ -30,28 +41,46 @@ async function runCollector(
   }
 }
 
-// Groups run as separate crons so each stays well within 300s.
-// Vercel fires them all at the same time — they run in parallel.
-const GROUPS: Record<string, () => Promise<Record<string, CollectorResult>>> = {
-  govuk: async () => ({
-    govukAtom: await runCollector('GOV.UK Atom', collectGovUK),
-    govukSearch: await runCollector('GOV.UK Search', collectAllGovUKSearch),
-  }),
-  parliament: async () => ({
-    hansard: await runCollector('Hansard', collectHansard),
-    parliament: await runCollector('Parliament', collectParliament),
-    legislation: await runCollector('Legislation', collectLegislation),
-  }),
-  media: async () => ({
-    rss: await runCollector('RSS', collectRss),
-    directSources: await runCollector('Direct Sources', collectDirectSources),
-  }),
-  research: async () => ({
-    committees: await runCollector('Committees', collectCommittees),
-    petitions: await runCollector('Petitions', collectPetitions),
-    researchBriefings: await runCollector('Research Briefings', collectResearchBriefings),
-  }),
-};
+// Each group is a separate Vercel cron — all fire at the same time.
+// Heavy collectors (GOV.UK Search, Parliament) are split so each
+// stays well within the 300s Pro limit.
+function makeGroups(since: Date): Record<string, () => Promise<Record<string, CollectorResult>>> {
+  return {
+    govuk: async () => ({
+      govukAtom: await runCollector('GOV.UK Atom', collectGovUK),
+      govukByOrg: await runCollector('GOV.UK By Org', () => collectGovUKByOrg(since)),
+    }),
+    govuk_search: async () => ({
+      govukSearch: await runCollector('GOV.UK Search', () => collectGovUKSearch(since)),
+    }),
+    hansard: async () => ({
+      hansard: await runCollector('Hansard', () => collectHansard(since)),
+    }),
+    parliament_bills: async () => ({
+      bills: await runCollector('Bills', () => collectBills(since)),
+      writtenQuestions: await runCollector('Written Questions', () => collectWrittenQuestions(since)),
+      writtenStatements: await runCollector('Written Statements', () => collectWrittenStatements(since)),
+    }),
+    parliament_activity: async () => ({
+      divisions: await runCollector('Divisions', () => collectDivisions(since)),
+      lordsDivisions: await runCollector('Lords Divisions', () => collectLordsDivisions(since)),
+      edms: await runCollector('EDMs', () => collectEdms(since)),
+      oralQuestions: await runCollector('Oral Questions', () => collectOralQuestions(since)),
+    }),
+    legislation: async () => ({
+      legislation: await runCollector('Legislation', () => collectLegislation(since)),
+    }),
+    media: async () => ({
+      rss: await runCollector('RSS', () => collectRss(since)),
+      directSources: await runCollector('Direct Sources', collectDirectSources),
+    }),
+    research: async () => ({
+      committees: await runCollector('Committees', collectCommittees),
+      petitions: await runCollector('Petitions', () => collectPetitions(since)),
+      researchBriefings: await runCollector('Research Briefings', () => collectResearchBriefings(since)),
+    }),
+  };
+}
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
@@ -62,20 +91,24 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const group = searchParams.get('group');
 
-  if (!group || !GROUPS[group]) {
+  const since = new Date(Date.now() - LOOKBACK_MS);
+  const groups = makeGroups(since);
+
+  if (!group || !groups[group]) {
     return NextResponse.json(
-      { error: `Invalid group. Use one of: ${Object.keys(GROUPS).join(', ')}` },
+      { error: `Invalid group. Use one of: ${Object.keys(groups).join(', ')}` },
       { status: 400 },
     );
   }
 
   const start = Date.now();
-  const results = await GROUPS[group]();
+  const results = await groups[group]();
   const elapsed = ((Date.now() - start) / 1000).toFixed(1);
 
   return NextResponse.json({
     ok: true,
     group,
+    since: since.toISOString(),
     timestamp: new Date().toISOString(),
     elapsed_seconds: parseFloat(elapsed),
     results,

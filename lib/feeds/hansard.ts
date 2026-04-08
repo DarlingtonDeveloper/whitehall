@@ -241,12 +241,12 @@ function getSourceName(houseId?: number, isWritten = false): string {
 
 // ── Main collector ───────────────────────────────────────────────────────
 
-export async function collectHansard(): Promise<{ inserted: number; skipped: number }> {
+export async function collectHansard(since?: Date): Promise<{ inserted: number; skipped: number }> {
   let totalInserted = 0;
   let totalSkipped = 0;
   const seenFingerprints = new Set<string>();
 
-  const startDate = daysAgo(365);
+  const startDate = since ? since.toISOString().split('T')[0] : daysAgo(365);
   const endDate = daysAgo(0);
 
   console.log(`\n=== Hansard Feed Collector ===`);

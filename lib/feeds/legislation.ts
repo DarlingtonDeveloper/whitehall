@@ -258,13 +258,11 @@ function hasEntriesOlderThan(entries: ParsedEntry[], cutoffDate: Date): boolean 
  *  for a 12-month window. */
 const MAX_PAGES = 200;
 
-export async function collectLegislation(): Promise<{ inserted: number; skipped: number }> {
+export async function collectLegislation(since?: Date): Promise<{ inserted: number; skipped: number }> {
   let totalInserted = 0;
   let totalSkipped = 0;
 
-  // 12-month cutoff
-  const cutoffDate = new Date();
-  cutoffDate.setMonth(cutoffDate.getMonth() - 12);
+  const cutoffDate = since ?? new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
 
   console.log(`\n=== Legislation.gov.uk Feed Collector ===`);
   console.log(`Configured feeds: ${LEGISLATION_FEEDS.length}`);

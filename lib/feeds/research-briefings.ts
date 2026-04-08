@@ -151,12 +151,11 @@ function parseRssXml(xml: string): ParsedItem[] {
 
 const BATCH_SIZE = 25;
 
-export async function collectResearchBriefings(): Promise<{ inserted: number; skipped: number }> {
+export async function collectResearchBriefings(since?: Date): Promise<{ inserted: number; skipped: number }> {
   let totalInserted = 0;
   let totalSkipped = 0;
 
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - 365);
+  const cutoffDate = since ?? new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
 
   console.log(`\n=== Research Briefings Collector ===`);
   console.log(`RSS feeds: ${BRIEFINGS_FEEDS.length}`);

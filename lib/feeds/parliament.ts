@@ -296,10 +296,10 @@ interface WrittenStatementsResponse {
 
 // -- 1. Bills ----------------------------------------------------------------
 
-export async function collectBills(): Promise<{ inserted: number; skipped: number }> {
+export async function collectBills(since?: Date): Promise<{ inserted: number; skipped: number }> {
   console.log('\n--- Bills ---');
 
-  const sinceDate = monthsAgo(12);
+  const sinceDate = since ? since.toISOString().split('T')[0] : monthsAgo(12);
   const seenFingerprints = new Set<string>();
   const allRows: Array<Record<string, unknown>> = [];
   let skip = 0;
@@ -381,10 +381,10 @@ export async function collectBills(): Promise<{ inserted: number; skipped: numbe
 
 // -- 2. Written Questions ----------------------------------------------------
 
-export async function collectWrittenQuestions(): Promise<{ inserted: number; skipped: number }> {
+export async function collectWrittenQuestions(since?: Date): Promise<{ inserted: number; skipped: number }> {
   console.log('\n--- Written Questions ---');
 
-  const sinceDate = monthsAgo(12);
+  const sinceDate = since ? since.toISOString().split('T')[0] : monthsAgo(12);
   const seenFingerprints = new Set<string>();
   const allRows: Array<Record<string, unknown>> = [];
   let skip = 0;
@@ -466,10 +466,10 @@ export async function collectWrittenQuestions(): Promise<{ inserted: number; ski
 
 // -- 3. Commons Divisions ----------------------------------------------------
 
-export async function collectDivisions(): Promise<{ inserted: number; skipped: number }> {
+export async function collectDivisions(since?: Date): Promise<{ inserted: number; skipped: number }> {
   console.log('\n--- Commons Divisions ---');
 
-  const sinceDate = monthsAgo(12);
+  const sinceDate = since ? since.toISOString().split('T')[0] : monthsAgo(12);
   const seenFingerprints = new Set<string>();
   const allRows: Array<Record<string, unknown>> = [];
 
@@ -523,10 +523,10 @@ export async function collectDivisions(): Promise<{ inserted: number; skipped: n
 
 // -- 4. Lords Divisions ------------------------------------------------------
 
-export async function collectLordsDivisions(): Promise<{ inserted: number; skipped: number }> {
+export async function collectLordsDivisions(since?: Date): Promise<{ inserted: number; skipped: number }> {
   console.log('\n--- Lords Divisions ---');
 
-  const sinceDate = monthsAgo(12);
+  const sinceDate = since ? since.toISOString().split('T')[0] : monthsAgo(12);
   const seenFingerprints = new Set<string>();
   const allRows: Array<Record<string, unknown>> = [];
 
@@ -581,10 +581,10 @@ export async function collectLordsDivisions(): Promise<{ inserted: number; skipp
 
 // -- 5. Written Statements ---------------------------------------------------
 
-export async function collectWrittenStatements(): Promise<{ inserted: number; skipped: number }> {
+export async function collectWrittenStatements(since?: Date): Promise<{ inserted: number; skipped: number }> {
   console.log('\n--- Written Statements ---');
 
-  const sinceDate = monthsAgo(12);
+  const sinceDate = since ? since.toISOString().split('T')[0] : monthsAgo(12);
   const seenFingerprints = new Set<string>();
   const allRows: Array<Record<string, unknown>> = [];
   let skip = 0;
@@ -680,10 +680,10 @@ interface EdmsResponse {
   PagingInfo?: { Total?: number };
 }
 
-export async function collectEdms(): Promise<{ inserted: number; skipped: number }> {
+export async function collectEdms(since?: Date): Promise<{ inserted: number; skipped: number }> {
   console.log('\n--- Early Day Motions ---');
 
-  const sinceDate = monthsAgo(12);
+  const sinceDate = since ? since.toISOString().split('T')[0] : monthsAgo(12);
   const seenFingerprints = new Set<string>();
   const allRows: Array<Record<string, unknown>> = [];
   let skip = 0;
@@ -778,10 +778,10 @@ interface OralQuestionsResponse {
   totalResults?: number;
 }
 
-export async function collectOralQuestions(): Promise<{ inserted: number; skipped: number }> {
+export async function collectOralQuestions(since?: Date): Promise<{ inserted: number; skipped: number }> {
   console.log('\n--- Oral Questions ---');
 
-  const sinceDate = monthsAgo(12);
+  const sinceDate = since ? since.toISOString().split('T')[0] : monthsAgo(12);
   const seenFingerprints = new Set<string>();
   const allRows: Array<Record<string, unknown>> = [];
   let skip = 0;
@@ -860,9 +860,10 @@ export async function collectOralQuestions(): Promise<{ inserted: number; skippe
 
 // == Combined collector ======================================================
 
-export async function collectParliament(): Promise<{ inserted: number; skipped: number }> {
+export async function collectParliament(since?: Date): Promise<{ inserted: number; skipped: number }> {
+  const sinceLabel = since ? since.toISOString().split('T')[0] : monthsAgo(12);
   console.log('\n=== Parliament Feed Collector ===');
-  console.log(`Date range: last 12 months (since ${monthsAgo(12)})`);
+  console.log(`Date range: since ${sinceLabel}`);
 
   let totalInserted = 0;
   let totalSkipped = 0;
@@ -871,13 +872,13 @@ export async function collectParliament(): Promise<{ inserted: number; skipped: 
     name: string;
     fn: () => Promise<{ inserted: number; skipped: number }>;
   }> = [
-    { name: 'Bills', fn: collectBills },
-    { name: 'Written Questions', fn: collectWrittenQuestions },
-    { name: 'Commons Divisions', fn: collectDivisions },
-    { name: 'Lords Divisions', fn: collectLordsDivisions },
-    { name: 'Written Statements', fn: collectWrittenStatements },
-    { name: 'Early Day Motions', fn: collectEdms },
-    { name: 'Oral Questions', fn: collectOralQuestions },
+    { name: 'Bills', fn: () => collectBills(since) },
+    { name: 'Written Questions', fn: () => collectWrittenQuestions(since) },
+    { name: 'Commons Divisions', fn: () => collectDivisions(since) },
+    { name: 'Lords Divisions', fn: () => collectLordsDivisions(since) },
+    { name: 'Written Statements', fn: () => collectWrittenStatements(since) },
+    { name: 'Early Day Motions', fn: () => collectEdms(since) },
+    { name: 'Oral Questions', fn: () => collectOralQuestions(since) },
   ];
 
   for (const collector of collectors) {

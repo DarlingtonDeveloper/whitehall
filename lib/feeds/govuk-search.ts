@@ -306,12 +306,11 @@ async function upsertRows(rows: Array<Record<string, unknown>>): Promise<{ inser
  * Pull ALL publications from tracked organisations. No keyword filtering —
  * the scoring system decides relevance.
  */
-export async function collectGovUKByOrg(): Promise<{ inserted: number; skipped: number }> {
+export async function collectGovUKByOrg(since?: Date): Promise<{ inserted: number; skipped: number }> {
   let totalInserted = 0;
   let totalSkipped = 0;
 
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - 365);
+  const cutoffDate = since ?? new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
   const cutoffIso = cutoffDate.toISOString();
 
   console.log(`\n=== GOV.UK Search — Pass 1: By Organisation ===`);
@@ -378,12 +377,11 @@ export async function collectGovUKByOrg(): Promise<{ inserted: number; skipped: 
  * Pull by document type across ALL organisations. Catches items from
  * organisations not in the tracked list.
  */
-export async function collectGovUKSearch(): Promise<{ inserted: number; skipped: number }> {
+export async function collectGovUKSearch(since?: Date): Promise<{ inserted: number; skipped: number }> {
   let totalInserted = 0;
   let totalSkipped = 0;
 
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - 365);
+  const cutoffDate = since ?? new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
   const cutoffIso = cutoffDate.toISOString();
 
   console.log(`\n=== GOV.UK Search — Pass 2: By Document Type ===`);
@@ -449,13 +447,13 @@ export async function collectGovUKSearch(): Promise<{ inserted: number; skipped:
 /**
  * Run both passes: org-based (broad) then document-type (supplementary).
  */
-export async function collectAllGovUKSearch(): Promise<{ inserted: number; skipped: number }> {
+export async function collectAllGovUKSearch(since?: Date): Promise<{ inserted: number; skipped: number }> {
   console.log(`\n${'='.repeat(60)}`);
   console.log('  GOV.UK Search API — Combined Collector');
   console.log(`${'='.repeat(60)}`);
 
-  const orgResult = await collectGovUKByOrg();
-  const docResult = await collectGovUKSearch();
+  const orgResult = await collectGovUKByOrg(since);
+  const docResult = await collectGovUKSearch(since);
 
   const total = {
     inserted: orgResult.inserted + docResult.inserted,

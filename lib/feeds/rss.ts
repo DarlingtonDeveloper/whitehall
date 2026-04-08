@@ -281,12 +281,11 @@ function parseRssXml(xml: string): ParsedRssItem[] {
 
 const BATCH_SIZE = 25;
 
-export async function collectRss(): Promise<{ inserted: number; skipped: number }> {
+export async function collectRss(since?: Date): Promise<{ inserted: number; skipped: number }> {
   let totalInserted = 0;
   let totalSkipped = 0;
 
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - 365);
+  const cutoffDate = since ?? new Date(Date.now() - 365 * 24 * 60 * 60 * 1000);
 
   console.log(`\n=== RSS / Trade Press Collector ===`);
   console.log(`Feeds configured: ${RSS_FEEDS.length}`);
