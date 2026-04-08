@@ -2,7 +2,9 @@
 
 12 collectors pull from UK government and industry sources. All normalise to the `FeedItem` shape, tag with entity IDs via keyword matching, generate a SHA-256 fingerprint for dedup, and upsert to the `feed_items` table in batches of 25.
 
-Run all collectors: `npx tsx scripts/collect-all.ts`
+Run all collectors (full 12-month lookback): `npx tsx scripts/collect-all.ts`
+
+Automated collection runs every 4 hours via Vercel cron (`/api/cron/collect`) with a 4.5-hour lookback — see [API Reference](api.md#get-apicroncollect).
 
 ## Common Patterns
 
@@ -14,7 +16,7 @@ Run all collectors: `npx tsx scripts/collect-all.ts`
 - **Rate limiting:** 300-500ms between requests to respect server load
 - **Timeout:** 15s per HTTP request
 - **Error handling:** Try/catch per item, log warnings, continue collection
-- **Lookback:** Most collectors use 365-day rolling window
+- **Lookback:** All collectors accept an optional `since?: Date` parameter. Defaults to 365 days (12 months) for scripts. The Vercel cron passes a 4.5-hour lookback.
 
 ---
 

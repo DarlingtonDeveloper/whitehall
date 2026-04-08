@@ -1,6 +1,6 @@
 # API Reference
 
-All routes are in `app/api/`. No authentication for POC — see [Security](security.md).
+All routes are in `app/api/`. No authentication for POC except the cron route (Bearer token) — see [Security](security.md).
 
 ---
 
@@ -55,11 +55,16 @@ Generate a report draft with streaming SSE progress events.
 
 **Response:** `text/event-stream` with progress events:
 ```
-data: {"step":"scan","detail":"Running web search and forward scan...","timestamp":1712345678}
+data: {"step":"gather","detail":"Querying feed items...","timestamp":1712345678}
 data: {"step":"gather_complete","detail":"247 items found","timestamp":1712345690}
+data: {"step":"score","detail":"Scoring items by relevance...","timestamp":1712345691}
 ...
 data: {"step":"complete","detail":"<draft-uuid>","timestamp":1712345780}
 ```
+
+Progress steps: `gather` → `score` → `dedup` → `group` → `enrich` → `evaluate` → `save` → `complete`.
+
+No collection runs during report generation — data must already be in Supabase via `/api/cron/collect` or `/api/scan`.
 
 **Request (all clients — cron mode):**
 ```json
@@ -185,9 +190,52 @@ Full report generation and DOCX export in one request (no draft persistence).
 
 ---
 
+## `GET /api/cron/collect`
+
+Scheduled collection of structured API feeds. Runs as 8 parallel Vercel crons every 4 hours.
+
+| | |
+|---|---|
+| **File** | `app/api/cron/collect/route.ts` |
+| **Auth** | `Authorization: Bearer $CRON_SECRET` |
+| **maxDuration** | 300s |
+| **Schedule** | `0 */4 * * *` (configured in `vercel.json`) |
+
+**Query params:** `?group=<name>` (required)
+
+| Group | Collectors | Typical time |
+|-------|-----------|-------------|
+| `govuk` | GOV.UK Atom, GOV.UK By Org | ~60s |
+| `govuk_search` | GOV.UK Search (by doc type) | ~20s |
+| `hansard` | Hansard spoken + written | ~110s |
+| `parliament_bills` | Bills, Written Questions, Written Statements | ~6s |
+| `parliament_activity` | Divisions, Lords Divisions, EDMs, Oral Questions | ~35s |
+| `legislation` | legislation.gov.uk | ~7s |
+| `media` | RSS, Direct Sources | ~40s |
+| `research` | Committees, Petitions, Research Briefings | ~5s |
+
+All groups use a 4.5-hour lookback (30 min overlap with the 4-hour schedule). The full 12-month lookback is only used by `scripts/collect-all.ts`.
+
+**Response:**
+```json
+{
+  "ok": true,
+  "group": "govuk",
+  "since": "2026-04-08T05:00:00.000Z",
+  "timestamp": "2026-04-08T09:45:00.000Z",
+  "elapsed_seconds": 62.1,
+  "results": {
+    "govukAtom": { "inserted": 2, "skipped": 1278 },
+    "govukByOrg": { "inserted": 0, "skipped": 21 }
+  }
+}
+```
+
+---
+
 ## `POST /api/scan`
 
-Run web search and forward scan collectors for a client.
+Run web search and forward scan collectors for a client (Claude-powered, manual trigger).
 
 | | |
 |---|---|

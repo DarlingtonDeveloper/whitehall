@@ -14,7 +14,7 @@ Whitehall has three data layers:
 │                                                                      │
 │  ┌──────────────┐  ┌──────────────┐  ┌───────────────────────────┐  │
 │  │  App Router   │  │  API Routes  │  │     Static Data Layer     │  │
-│  │  (SSG + SSR)  │  │  8 endpoints │  │  data/_extracted/*.json   │  │
+│  │  (SSG + SSR)  │  │  9 endpoints │  │  data/_extracted/*.json   │  │
 │  │               │  │              │  │  data/clients/*.ts        │  │
 │  └──────┬───────┘  └──────┬──────┘  └──────────┬────────────────┘  │
 │         │                 │                     │                    │
@@ -32,7 +32,7 @@ Whitehall has three data layers:
 
 ## Data Flow
 
-### Feed Collection (offline)
+### Feed Collection (continuous)
 
 ```
 GOV.UK Atom (35 depts) ──────┐
@@ -63,21 +63,47 @@ User message ──▶ buildSystemPrompt(client, entity, viewState)
                                     dispatchGraphCommand() ──▶ Cytoscape
 ```
 
+### Feed Collection (automated)
+
+Collection is decoupled from report generation. Data flows into Supabase continuously:
+
+```
+EVERY 4 HOURS (Vercel cron — 8 parallel groups):
+  /api/cron/collect?group=govuk           GOV.UK Atom + Search (by org)
+  /api/cron/collect?group=govuk_search    GOV.UK Search (by doc type)
+  /api/cron/collect?group=hansard         Hansard spoken + written
+  /api/cron/collect?group=parliament_bills Bills, written Qs, written statements
+  /api/cron/collect?group=parliament_activity Divisions, Lords divisions, EDMs, oral Qs
+  /api/cron/collect?group=legislation     legislation.gov.uk
+  /api/cron/collect?group=media           RSS + direct sources
+  /api/cron/collect?group=research        Committees, petitions, briefings
+
+  Each group uses a 4.5h lookback (30 min overlap). Auth: Bearer CRON_SECRET.
+
+ON-DEMAND (manual):
+  POST /api/scan { clientId }             Web search + forward scan (Claude-powered)
+
+WEEKLY (scripts, long-running):
+  npx tsx scripts/collect-all.ts          All collectors, 12-month lookback
+  npx tsx scripts/enrich-content.ts       Fetch full pages for thin items
+```
+
 ### Report Generation (streaming SSE)
+
+Report generation only reads from Supabase — no collection, no external fetches.
 
 ```
 POST /api/reports/generate { clientId }
   │
-  1. scan ────────── web search + forward scan
-  2. enrich_content ─ fetch full page for thin items
-  3. gather ──────── Supabase (entity overlap + keyword)
-  4. score ────────── 6-component algorithm + learned signals
-  5. dedup ────────── semantic clustering (Jaccard + entities + temporal)
-  6. verify ──────── HEAD requests on URLs
-  7. group ────────── deterministic theme classifier
-  8. enrich ──────── Claude per theme + synthesis
-  9. evaluate ────── template + factuality + specificity (LLM-as-judge)
- 10. save ─────────── insert report_drafts
+  1. gather ──────── Supabase (entity overlap + keyword)
+  2. score ────────── 6-component algorithm + learned signals
+  3. dedup ────────── semantic clustering (Jaccard + entities + temporal)
+  4. group ────────── deterministic theme classifier
+  5. enrich ──────── Claude per theme + synthesis
+  6. evaluate ────── template + factuality + specificity (LLM-as-judge)
+  7. save ─────────── insert report_drafts
+
+  ~60-100 seconds on Vercel Pro (300s limit)
 ```
 
 ## Rendering Strategy

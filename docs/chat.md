@@ -127,3 +127,7 @@ The feed panel publishes its current state (date range, sort mode, search text, 
 ### Conversation Persistence
 
 Intelligence chat history is passed as `history` in the request body (client-side array). Report chat history is persisted to `report_chat_messages` table in Supabase and loaded on each request.
+
+### Observability
+
+Both chat routes log traces to Opik (when `OPIK_API_KEY` is configured) and the `pipeline_traces` Supabase table after each stream completes. Traces include model, input/output tokens, and duration. Step types: `chat` (intelligence chat), `report_chat` (report editing).

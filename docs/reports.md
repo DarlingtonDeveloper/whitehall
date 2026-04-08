@@ -4,20 +4,21 @@
 
 Implemented in `lib/report/generate.ts`. The streaming API route (`/api/reports/generate`) exposes each step as an SSE progress event.
 
+Collection is fully decoupled from report generation — the pipeline only reads from Supabase, never fetches from external sources. Collection runs via `/api/cron/collect` (every 4 hours), manual `/api/scan`, and `scripts/collect-all.ts`.
+
 ```
-1. SCAN ──────── runWebSearchCollector + runForwardScanCollector
-2. ENRICH ────── enrichThinItems (fetch full page for body < 500 chars)
-3. GATHER ────── gatherItems (Supabase: entity overlap + keyword match, max 500)
-4. SCORE ─────── computeFeedRelevance (6-component algorithm + learned signals)
+1. GATHER ────── gatherItems (Supabase: entity overlap + keyword match, max 500)
+2. SCORE ─────── computeFeedRelevance (6-component algorithm + learned signals)
                   Filter: score >= 0.25, take top 60
-5. DEDUP ─────── deduplicateSemantic (Jaccard + entity overlap + temporal proximity)
-6. VERIFY ────── verifySourceUrls (HEAD requests, exclude broken links)
-7. SELECT ────── Top 40 items post-dedup/verification
-8. GROUP ─────── groupByTheme (deterministic: entity overlap → keyword match → 'other')
-9. ENRICH ────── enrichItems (Claude per theme + synthesis pass)
-10. EVALUATE ─── evaluateReport (template + factuality + specificity)
-11. SAVE ──────── Insert report_drafts with sections + original_sections
+3. DEDUP ─────── deduplicateSemantic (Jaccard + entity overlap + temporal proximity)
+4. SELECT ────── Top 40 items post-dedup
+5. GROUP ─────── groupByTheme (deterministic: entity overlap → keyword match → 'other')
+6. ENRICH ────── enrichItems (Claude per theme + synthesis pass)
+7. EVALUATE ──── evaluateReport (template + factuality + specificity)
+8. SAVE ──────── Insert report_drafts with sections + original_sections
 ```
+
+Expected timing on Vercel Pro (300s limit): ~60-100 seconds total.
 
 ### Step Details
 

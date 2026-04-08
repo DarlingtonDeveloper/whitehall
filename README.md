@@ -58,9 +58,9 @@ npx tsx scripts/seed-feeds.ts
 | `SUPABASE_SERVICE_ROLE_KEY` | No | Server-side Supabase key (bypasses RLS). Falls back to publishable key |
 | `ANTHROPIC_API_KEY` | Yes | Claude API key for chat, report enrichment, web search, forward scan |
 | `OPIK_API_KEY` | No | Opik observability (forwards traces alongside Supabase logging) |
-| `OPIK_API_URL` | No | Opik endpoint (defaults to `http://localhost:5173`) |
+| `OPIK_API_URL` | No | Opik endpoint (defaults to `http://localhost:5173`, cloud: `https://www.comet.com/opik`) |
 | `NEXT_PUBLIC_APP_URL` | No | App base URL for OG images (defaults to `https://whitehall.vercel.app`) |
-| `CRON_SECRET` | No | Bearer token for cron route protection (when implemented) |
+| `CRON_SECRET` | Yes (prod) | Bearer token for `/api/cron/collect` authentication |
 
 See [`.env.example`](.env.example) for a template.
 
@@ -111,8 +111,9 @@ whitehall/
 ├── app/
 │   ├── api/
 │   │   ├── chat/route.ts              # Streaming AI chat with tool use
+│   │   ├── cron/collect/route.ts      # Scheduled feed collection (8 groups, every 4h)
 │   │   ├── export/route.ts            # Full DOCX report generation
-│   │   ├── scan/route.ts              # Web search + forward scan
+│   │   ├── scan/route.ts              # Web search + forward scan (manual)
 │   │   └── reports/
 │   │       ├── generate/route.ts      # Streaming report generation with SSE progress
 │   │       └── [id]/
@@ -163,6 +164,7 @@ whitehall/
 ├── scripts/                           # 20 collection, enrichment, and debugging scripts
 ├── supabase/                          # Database schema (schema.sql)
 ├── docs/                              # Detailed documentation
+├── vercel.json                        # Cron jobs (8 collection groups, every 4h)
 └── middleware.ts                       # Edge middleware (client routing hint)
 ```
 
@@ -176,14 +178,24 @@ whitehall/
 | [Scoring](docs/scoring.md) | Feed relevance algorithm (6 components, learned signals) |
 | [Chat](docs/chat.md) | Intelligence and report chat: tools, prompts, graph commands |
 | [Reports](docs/reports.md) | Generation pipeline, builder UI, review workflow, DOCX format |
-| [API Reference](docs/api.md) | All 8 API routes with request/response schemas |
+| [API Reference](docs/api.md) | All 9 API routes with request/response schemas |
 | [Security](docs/security.md) | Prompt injection defence, rate limiting, input validation |
 
 ## Deployment
 
-Deploy to Vercel. Set environment variables in the Vercel dashboard.
+Deploy to Vercel (Pro plan required for 300s function timeout and cron jobs).
 
-The report generation endpoints use `maxDuration = 300` (5 minutes) — this requires a Pro plan or higher.
+Set environment variables in the Vercel dashboard — at minimum `ANTHROPIC_API_KEY`, `CRON_SECRET`, and the Supabase keys.
+
+### Cron Jobs
+
+Configured in `vercel.json`. Eight parallel cron jobs run every 4 hours to collect from all structured API sources (GOV.UK, Hansard, Parliament, legislation, RSS, committees, petitions, research briefings). Each uses a 4.5-hour lookback window.
+
+Report generation (`/api/reports/generate`) is decoupled from collection — it only reads from Supabase and completes in ~60-100 seconds.
+
+### Observability
+
+All Claude calls (report generation, chat, report editing) are traced to Opik and the `pipeline_traces` Supabase table. Set `OPIK_API_KEY` and `OPIK_API_URL` for Opik cloud forwarding.
 
 ## License
 
