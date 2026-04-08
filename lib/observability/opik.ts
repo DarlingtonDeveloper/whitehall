@@ -73,7 +73,7 @@ export async function logTrace(
         ? new Date(Date.now() - usage.duration_ms).toISOString()
         : now;
 
-      await fetch(`${opikUrl}/api/v1/private/traces`, {
+      const opikRes = await fetch(`${opikUrl}/api/v1/private/traces`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -100,8 +100,12 @@ export async function logTrace(
           } : undefined,
         }),
       });
-    } catch {
-      // Opik forwarding failure is non-critical
+      if (!opikRes.ok) {
+        const errBody = await opikRes.text().catch(() => '');
+        console.error(`[opik] ${opikRes.status}: ${errBody}`);
+      }
+    } catch (err) {
+      console.error('[opik] Failed to forward trace:', err);
     }
   }
 }

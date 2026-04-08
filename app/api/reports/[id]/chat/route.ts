@@ -213,63 +213,57 @@ SECURITY RULES:
           }
         }
 
+        // Persist messages and trace BEFORE closing — Vercel may kill the function after close
+        try {
+          await supabase.from('report_chat_messages').insert({
+            report_draft_id: id,
+            role: 'user',
+            content: message,
+            user_role: userRole,
+            active_section: activeSection,
+            active_item_ref: activeItemRef,
+          });
+
+          if (fullAssistantText.trim() || allMutations.length > 0) {
+            await supabase.from('report_chat_messages').insert({
+              report_draft_id: id,
+              role: 'assistant',
+              content: fullAssistantText,
+              mutations: allMutations,
+              tool_calls: allToolCalls.length > 0 ? allToolCalls : null,
+            });
+          }
+        } catch (err) {
+          console.error('[report-chat] Failed to persist messages:', err);
+        }
+
+        try {
+          const usage = await result.totalUsage;
+          await logTrace(
+            {
+              client_id: draft.client_id,
+              report_id: id,
+              step: 'report_chat',
+              model: 'claude-sonnet-4-20250514',
+            },
+            message,
+            fullAssistantText,
+            undefined,
+            {
+              input_tokens: usage.inputTokens ?? 0,
+              output_tokens: usage.outputTokens ?? 0,
+              duration_ms: Math.round(performance.now() - startTime),
+            },
+          );
+        } catch (traceErr) {
+          console.error('[report-chat] trace failed:', traceErr);
+        }
+
         controller.close();
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'An unexpected error occurred.';
         controller.enqueue(encoder.encode(`\n\n[Error: ${msg}]`));
         controller.close();
-      }
-
-      // ── Persist both messages AFTER the stream finishes ──
-      // This is the most valuable data in the system: structured
-      // mutations with old_value/new_value/reasoning, tied to the
-      // user message that prompted them and the section context.
-      try {
-        // 1. User message — with the section/item context they were viewing
-        await supabase.from('report_chat_messages').insert({
-          report_draft_id: id,
-          role: 'user',
-          content: message,
-          user_role: userRole,
-          active_section: activeSection,
-          active_item_ref: activeItemRef,
-        });
-
-        // 2. Assistant message — with structured mutations and raw tool calls
-        if (fullAssistantText.trim() || allMutations.length > 0) {
-          await supabase.from('report_chat_messages').insert({
-            report_draft_id: id,
-            role: 'assistant',
-            content: fullAssistantText,
-            mutations: allMutations,
-            tool_calls: allToolCalls.length > 0 ? allToolCalls : null,
-          });
-        }
-      } catch (err) {
-        console.error('[report-chat] Failed to persist messages:', err);
-      }
-
-      // Trace after stream completes
-      try {
-        const usage = await result.totalUsage;
-        logTrace(
-          {
-            client_id: draft.client_id,
-            report_id: id,
-            step: 'report_chat',
-            model: 'claude-sonnet-4-20250514',
-          },
-          message,
-          fullAssistantText,
-          undefined,
-          {
-            input_tokens: usage.inputTokens ?? 0,
-            output_tokens: usage.outputTokens ?? 0,
-            duration_ms: Math.round(performance.now() - startTime),
-          },
-        );
-      } catch {
-        // Tracing never breaks the pipeline
       }
     },
   });

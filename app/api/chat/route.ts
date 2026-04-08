@@ -147,6 +147,27 @@ export async function POST(request: Request) {
             console.error('[chat/route] stream error event:', event.error);
           }
         }
+        // Trace before closing — Vercel may kill the function after close
+        try {
+          const usage = await result.totalUsage;
+          await logTrace(
+            {
+              client_id: clientId || entityId || 'unknown',
+              step: 'chat',
+              model: 'claude-sonnet-4-20250514',
+            },
+            message,
+            fullAssistantText,
+            undefined,
+            {
+              input_tokens: usage.inputTokens ?? 0,
+              output_tokens: usage.outputTokens ?? 0,
+              duration_ms: Math.round(performance.now() - startTime),
+            },
+          );
+        } catch (traceErr) {
+          console.error('[chat/route] trace failed:', traceErr);
+        }
         controller.close();
       } catch (err) {
         console.error('[chat/route] stream iteration error:', err);
@@ -154,28 +175,6 @@ export async function POST(request: Request) {
           err instanceof Error ? err.message : 'An unexpected error occurred.';
         controller.enqueue(encoder.encode(`\n\n[Error: ${errorMessage}]`));
         controller.close();
-      }
-
-      // Trace after stream completes
-      try {
-        const usage = await result.totalUsage;
-        logTrace(
-          {
-            client_id: clientId || entityId || 'unknown',
-            step: 'chat',
-            model: 'claude-sonnet-4-20250514',
-          },
-          message,
-          fullAssistantText,
-          undefined,
-          {
-            input_tokens: usage.inputTokens ?? 0,
-            output_tokens: usage.outputTokens ?? 0,
-            duration_ms: Math.round(performance.now() - startTime),
-          },
-        );
-      } catch {
-        // Tracing never breaks the pipeline
       }
     },
   });
