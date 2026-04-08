@@ -1,7 +1,19 @@
 {
   "crons": [
     {
-      "path": "/api/cron/collect",
+      "path": "/api/cron/collect?group=govuk",
+      "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/cron/collect?group=parliament",
+      "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/cron/collect?group=media",
+      "schedule": "0 */4 * * *"
+    },
+    {
+      "path": "/api/cron/collect?group=research",
       "schedule": "0 */4 * * *"
     }
   ]
