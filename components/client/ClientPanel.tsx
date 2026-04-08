@@ -104,8 +104,22 @@ export default function ClientPanel({ client }: { client: ClientConfig }) {
         body: JSON.stringify({ clientId: client.id }),
       });
 
+      // Handle non-streaming error responses (rate limit, bad request, etc.)
+      if (!res.ok) {
+        let errorMsg = `Server error (${res.status})`;
+        try {
+          const errBody = await res.json();
+          errorMsg = errBody.error || errorMsg;
+        } catch { /* use default */ }
+        setGenState((prev) => ({ ...prev, generating: false, error: errorMsg }));
+        return;
+      }
+
       const reader = res.body?.getReader();
-      if (!reader) return;
+      if (!reader) {
+        setGenState((prev) => ({ ...prev, generating: false, error: 'No response stream' }));
+        return;
+      }
 
       const decoder = new TextDecoder();
       let buffer = '';
@@ -154,13 +168,31 @@ export default function ClientPanel({ client }: { client: ClientConfig }) {
           } catch { /* skip malformed */ }
         }
       }
+    } catch (err) {
+      setGenState((prev) => ({
+        ...prev,
+        generating: false,
+        error: err instanceof Error ? err.message : 'Network error',
+      }));
     } finally {
       setGenState((prev) => ({ ...prev, generating: false }));
     }
   }, [client.id]);
 
+  // Keep modal visible briefly after generating finishes (success redirects, error persists)
+  const showProgressModal = genState.generating || genState.error !== null;
+
   return (
     <div className="flex h-full flex-col">
+      {/* Progress modal — portalled to body so it overlays everything */}
+      {showProgressModal && createPortal(
+        <ReportGenerationModal
+          state={genState}
+          onClose={() => setGenState(prev => ({ ...prev, generating: false, error: null }))}
+        />,
+        document.body,
+      )}
+
       {/* Scrollable body */}
       <div className="flex-1 overflow-y-auto overscroll-contain px-3 py-3 space-y-3">
         {/* Header: name + sector + X button */}
@@ -192,11 +224,6 @@ export default function ClientPanel({ client }: { client: ClientConfig }) {
           {/* Report status line */}
           <ReportStatusLine clientId={client.id} />
         </div>
-
-        {/* Pipeline progress — shows directly in scroll area when generating */}
-        {genState.generating && (
-          <ReportGenerationProgress state={genState} />
-        )}
 
         {/* Health dashboard */}
         <ClientHealthDashboard client={client} />
@@ -962,89 +989,164 @@ function ReportListButton({
 }
 
 /* ------------------------------------------------------------------ */
-/*  Pipeline progress — renders directly in client panel scroll area    */
+/*  Pipeline progress modal — full overlay portal, impossible to miss   */
 /* ------------------------------------------------------------------ */
 
-function ReportGenerationProgress({ state }: { state: GenerationState }) {
+function ReportGenerationModal({
+  state,
+  onClose,
+}: {
+  state: GenerationState;
+  onClose: () => void;
+}) {
+  const completedCount = PIPELINE_STEPS.filter(s => state.completedSteps.has(s.doneKey)).length;
+  const progressPct = Math.round((completedCount / PIPELINE_STEPS.length) * 100);
+
+  // Elapsed time
+  const [startTime] = useState(() => Date.now());
+  const [elapsed, setElapsed] = useState(0);
+  useEffect(() => {
+    if (!state.generating) return;
+    const interval = setInterval(() => setElapsed(Date.now() - startTime), 1000);
+    return () => clearInterval(interval);
+  }, [state.generating, startTime]);
+  const mins = Math.floor(elapsed / 60000);
+  const secs = Math.floor((elapsed % 60000) / 1000);
+  const elapsedStr = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+
   return (
-    <div className="rounded-lg border border-wh-border bg-wh-bg/50 p-4">
-      <div className="flex items-center gap-2 mb-4">
-        <div className="h-2 w-2 rounded-full bg-wh-accent-teal animate-pulse" />
-        <span className="text-xs font-semibold text-wh-text-primary">Generating report</span>
-      </div>
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
-      <div className="space-y-0">
-        {PIPELINE_STEPS.map((step, i) => {
-          const isCompleted = state.completedSteps.has(step.doneKey);
-          const isActive =
-            !isCompleted &&
-            state.activeStep !== null &&
-            (state.activeStep === step.key || state.activeStep === step.doneKey);
-          const detail = state.stepDetails[step.doneKey] || state.stepDetails[step.key];
-          const isLast = i === PIPELINE_STEPS.length - 1;
-
-          return (
-            <div key={step.key} className="flex gap-3">
-              {/* Timeline line + dot */}
-              <div className="flex flex-col items-center">
-                <div
-                  className={`h-4 w-4 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
-                    isCompleted
-                      ? 'bg-wh-accent-teal/20'
-                      : isActive
-                      ? 'bg-wh-accent-teal/10 ring-2 ring-wh-accent-teal/30'
-                      : 'bg-wh-border/40'
-                  }`}
-                >
-                  {isCompleted ? (
-                    <svg className="h-2.5 w-2.5 text-wh-accent-teal" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
-                    </svg>
-                  ) : isActive ? (
-                    <div className="h-1.5 w-1.5 rounded-full bg-wh-accent-teal animate-pulse" />
-                  ) : (
-                    <div className="h-1.5 w-1.5 rounded-full bg-wh-text-secondary/20" />
-                  )}
-                </div>
-                {!isLast && (
-                  <div
-                    className={`w-px flex-1 min-h-[16px] transition-colors duration-300 ${
-                      isCompleted ? 'bg-wh-accent-teal/30' : 'bg-wh-border/40'
-                    }`}
-                  />
-                )}
-              </div>
-
-              {/* Label + detail */}
-              <div className={`pb-3 ${isLast ? 'pb-0' : ''}`}>
-                <span
-                  className={`text-[11px] font-medium transition-colors duration-300 ${
-                    isCompleted
-                      ? 'text-wh-text-secondary/60'
-                      : isActive
-                      ? 'text-wh-text-primary'
-                      : 'text-wh-text-secondary/30'
-                  }`}
-                >
-                  {step.label}
-                </span>
-                {detail && (isCompleted || isActive) && (
-                  <p className="text-[9px] text-wh-text-secondary/50 mt-0.5">
-                    {detail}
-                  </p>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
-
-      {state.error && (
-        <div className="mt-3 rounded-md bg-red-500/10 px-3 py-2">
-          <p className="text-[10px] font-medium text-red-400">Generation failed</p>
-          <p className="text-[9px] text-red-400/70 mt-0.5">{state.error}</p>
+      {/* Modal */}
+      <div className="relative w-full max-w-md mx-4 rounded-xl border border-wh-border bg-wh-panel shadow-2xl overflow-hidden">
+        {/* Progress bar */}
+        <div className="h-1 bg-wh-border/30">
+          <div
+            className="h-full bg-wh-accent-teal transition-all duration-700 ease-out"
+            style={{ width: `${progressPct}%` }}
+          />
         </div>
-      )}
+
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-4 pb-2">
+          <div className="flex items-center gap-2.5">
+            {state.generating && !state.error ? (
+              <div className="h-2.5 w-2.5 rounded-full bg-wh-accent-teal animate-pulse" />
+            ) : state.error ? (
+              <div className="h-2.5 w-2.5 rounded-full bg-red-400" />
+            ) : (
+              <div className="h-2.5 w-2.5 rounded-full bg-wh-accent-teal" />
+            )}
+            <span className="text-sm font-semibold text-wh-text-primary">
+              {state.error ? 'Generation Failed' : 'Generating Report'}
+            </span>
+          </div>
+          <div className="flex items-center gap-3">
+            {state.generating && (
+              <span className="text-[10px] text-wh-text-secondary/50 tabular-nums">
+                {elapsedStr}
+              </span>
+            )}
+            {!state.generating && (
+              <button
+                type="button"
+                onClick={onClose}
+                className="text-wh-text-secondary/50 hover:text-wh-text-primary transition-colors"
+                aria-label="Close"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Step progress */}
+        <div className="text-[10px] text-wh-text-secondary/40 px-5 pb-3">
+          Step {Math.min(completedCount + 1, PIPELINE_STEPS.length)} of {PIPELINE_STEPS.length}
+          {progressPct > 0 && ` — ${progressPct}%`}
+        </div>
+
+        {/* Timeline */}
+        <div className="px-5 pb-5 max-h-[50vh] overflow-y-auto">
+          <div className="space-y-0">
+            {PIPELINE_STEPS.map((step, i) => {
+              const isCompleted = state.completedSteps.has(step.doneKey);
+              const isActive =
+                !isCompleted &&
+                state.activeStep !== null &&
+                (state.activeStep === step.key || state.activeStep === step.doneKey);
+              const detail = state.stepDetails[step.doneKey] || state.stepDetails[step.key];
+              const isLast = i === PIPELINE_STEPS.length - 1;
+
+              return (
+                <div key={step.key} className="flex gap-3">
+                  {/* Timeline line + dot */}
+                  <div className="flex flex-col items-center">
+                    <div
+                      className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 transition-all duration-300 ${
+                        isCompleted
+                          ? 'bg-wh-accent-teal/20'
+                          : isActive
+                          ? 'bg-wh-accent-teal/10 ring-2 ring-wh-accent-teal/40'
+                          : 'bg-wh-border/30'
+                      }`}
+                    >
+                      {isCompleted ? (
+                        <svg className="h-3 w-3 text-wh-accent-teal" fill="none" viewBox="0 0 24 24" strokeWidth={3} stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+                        </svg>
+                      ) : isActive ? (
+                        <div className="h-2 w-2 rounded-full bg-wh-accent-teal animate-pulse" />
+                      ) : (
+                        <div className="h-1.5 w-1.5 rounded-full bg-wh-text-secondary/15" />
+                      )}
+                    </div>
+                    {!isLast && (
+                      <div
+                        className={`w-px flex-1 min-h-[12px] transition-colors duration-300 ${
+                          isCompleted ? 'bg-wh-accent-teal/30' : 'bg-wh-border/30'
+                        }`}
+                      />
+                    )}
+                  </div>
+
+                  {/* Label + detail */}
+                  <div className={`pb-2.5 ${isLast ? 'pb-0' : ''}`}>
+                    <span
+                      className={`text-xs font-medium transition-colors duration-300 ${
+                        isCompleted
+                          ? 'text-wh-text-secondary/60'
+                          : isActive
+                          ? 'text-wh-text-primary'
+                          : 'text-wh-text-secondary/25'
+                      }`}
+                    >
+                      {step.label}
+                    </span>
+                    {detail && (isCompleted || isActive) && (
+                      <p className="text-[10px] text-wh-text-secondary/50 mt-0.5">
+                        {detail}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Error state */}
+        {state.error && (
+          <div className="mx-5 mb-5 rounded-lg bg-red-500/10 border border-red-500/20 px-4 py-3">
+            <p className="text-xs font-medium text-red-400">Generation failed</p>
+            <p className="text-[10px] text-red-400/70 mt-1 leading-relaxed">{state.error}</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
