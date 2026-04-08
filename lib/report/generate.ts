@@ -1,13 +1,12 @@
 // ---------------------------------------------------------------------------
-// Draft report generation — orchestrates the full pipeline:
-//   1. Gather feed items from Supabase
-//   2. Score with algorithmic relevance (feed/scoring)
-//   3. Group by monitoring theme
-//   4. Enrich with Claude (theme analysis + synthesis)
-//   5. Evaluate (template validation, factuality, specificity)
-//   6. Persist draft to Supabase
+// Draft report generation — reads from Supabase (already collected) and
+// produces a scored, deduplicated, AI-enriched report draft.
 //
-// Returns the newly created report draft ID.
+// Collection is fully decoupled: /api/cron/collect runs structured collectors
+// on a schedule, /api/scan handles manual web search + forward scan, and
+// scripts/collect-all.ts covers the long-running weekly prep.
+//
+// This function never fetches from external sources.
 // ---------------------------------------------------------------------------
 
 import { getClientBySlug } from '@/data/clients';
@@ -16,11 +15,7 @@ import { enrichItems } from '@/lib/export/enrich';
 import { evaluateReport } from '@/lib/export/evaluate';
 import { supabase } from '@/lib/db';
 import { computeFeedRelevance } from '@/lib/feed/scoring';
-import { enrichThinItems } from '@/lib/feeds/enrich-content';
-import { verifySourceUrls, filterVerifiedItems } from '@/lib/feeds/verify-sources';
 import { deduplicateSemantic } from '@/lib/feeds/dedup-semantic';
-import { runWebSearchCollector } from '@/lib/feeds/web-search';
-import { runForwardScanCollector } from '@/lib/feeds/forward-scan';
 import type { LearnedSignals } from '@/lib/feed/scoring';
 
 const RELEVANCE_THRESHOLD = 0.25;
@@ -40,7 +35,6 @@ async function getLearnedSignals(clientId: string): Promise<LearnedSignals | und
 export async function generateDraftReport(
   clientId: string,
   dateRange?: { from: Date; to: Date },
-  options?: { runScan?: boolean },
 ): Promise<string> {
   const client = getClientBySlug(clientId);
   if (!client) throw new Error(`Unknown client: "${clientId}"`);
@@ -48,26 +42,7 @@ export async function generateDraftReport(
   const to = dateRange?.to ?? new Date();
   const from = dateRange?.from ?? new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
 
-  // 0a. Run client scan if requested (web search + forward scan)
-  if (options?.runScan !== false) {
-    try {
-      await Promise.all([
-        runWebSearchCollector(client),
-        runForwardScanCollector(client),
-      ]);
-    } catch (err) {
-      console.warn('[report] Scan failed (continuing):', err);
-    }
-  }
-
-  // 0b. Enrich thin items — fetch full page content for items with short body
-  try {
-    await enrichThinItems();
-  } catch (err) {
-    console.warn('[report] Content enrichment failed (continuing):', err);
-  }
-
-  // 1. Gather items from Supabase
+  // 1. Gather items from Supabase (already collected)
   const items = await gatherItems(client, from, to);
 
   // 2. Score all items with algorithmic relevance
@@ -79,46 +54,21 @@ export async function generateDraftReport(
     }))
     .filter(item => item._relevance >= RELEVANCE_THRESHOLD)
     .sort((a, b) => b._relevance - a._relevance)
-    .slice(0, 60); // Take more initially — dedup and verification will reduce
+    .slice(0, 60);
 
-  // 2b. Semantic deduplication — cluster same-development items from
-  // multiple sources, keep the best source per cluster
+  // 3. Semantic deduplication
   const deduped = deduplicateSemantic(scored);
 
-  // 2c. Source verification — HEAD check all URLs, exclude broken links
-  let verified = deduped;
-  const brokenItems: typeof deduped = [];
-  try {
-    const verifications = await verifySourceUrls(
-      deduped.map(i => ({ id: i.id, url: i.url ?? null })),
-    );
-    const { valid, broken } = filterVerifiedItems(deduped, verifications);
-    verified = valid;
-    brokenItems.push(...broken);
-    if (broken.length > 0) {
-      console.warn(`[report] ${broken.length} items excluded (broken URLs)`);
-    }
-  } catch (err) {
-    console.warn('[report] Source verification failed (continuing):', err);
-  }
+  // 4. Take top items
+  const selected = deduped.slice(0, MAX_ITEMS);
 
-  // Take top items after dedup + verification
-  const selected = verified.slice(0, MAX_ITEMS);
-
-  // 3. Group by monitoring theme
+  // 5. Group by monitoring theme
   const grouped = groupByTheme(selected, client);
 
-  // 4. Enrich with Claude (theme analysis + synthesis)
+  // 6. Enrich with Claude (theme analysis + synthesis)
   const analysis = await enrichItems(grouped, client, { from, to });
 
-  // 4b. Record broken URLs in metadata
-  if (brokenItems.length > 0) {
-    analysis.metadata.sources_unavailable = brokenItems.map(
-      (b) => `${b.title} (${b.url} — broken link)`,
-    );
-  }
-
-  // 4c. Citation verification — flag any source_items fingerprints not in collected items
+  // 6b. Citation verification — flag any source_items fingerprints not in collected items
   // Matches monitoring agent's _verify_citations
   const validFingerprints = new Set(selected.map(i => i.fingerprint).filter(Boolean));
   for (const section of Object.values(analysis.sections)) {
@@ -140,7 +90,7 @@ export async function generateDraftReport(
     }
   }
 
-  // 5. Evaluate
+  // 7. Evaluate
   const evalResult = await evaluateReport(analysis, selected, client);
 
   // Cap confidence for flagged items
@@ -152,7 +102,7 @@ export async function generateDraftReport(
     }
   }
 
-  // 6. Save as draft
+  // 8. Save as draft
   const { data, error } = await supabase
     .from('report_drafts')
     .insert({

@@ -869,12 +869,9 @@ interface ReportListItem {
 
 /** Pipeline steps in order — used to render the full progress timeline */
 const PIPELINE_STEPS = [
-  { key: 'scan', label: 'Scanning sources', doneKey: 'scan_complete' },
-  { key: 'enrich_content', label: 'Enriching content', doneKey: 'enrich_content_complete' },
   { key: 'gather', label: 'Gathering items', doneKey: 'gather_complete' },
   { key: 'score', label: 'Scoring relevance', doneKey: 'score_complete' },
   { key: 'dedup', label: 'Deduplicating', doneKey: 'dedup_complete' },
-  { key: 'verify', label: 'Verifying sources', doneKey: 'verify_complete' },
   { key: 'group', label: 'Grouping themes', doneKey: 'group_complete' },
   { key: 'enrich', label: 'AI analysis', doneKey: 'enrich_complete' },
   { key: 'evaluate', label: 'Quality checks', doneKey: 'evaluate_complete' },

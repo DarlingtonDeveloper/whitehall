@@ -3,11 +3,7 @@ import { getClientBySlug, ALL_CLIENTS } from '@/data/clients';
 import { gatherItems, groupByTheme } from '@/lib/export/gather';
 import { enrichItems } from '@/lib/export/enrich';
 import { evaluateReport } from '@/lib/export/evaluate';
-import { enrichThinItems } from '@/lib/feeds/enrich-content';
-import { verifySourceUrls, filterVerifiedItems } from '@/lib/feeds/verify-sources';
 import { deduplicateSemantic } from '@/lib/feeds/dedup-semantic';
-import { runWebSearchCollector } from '@/lib/feeds/web-search';
-import { runForwardScanCollector } from '@/lib/feeds/forward-scan';
 import { computeFeedRelevance } from '@/lib/feed/scoring';
 import { supabase } from '@/lib/db';
 import { checkRateLimit } from '@/lib/security/rateLimit';
@@ -97,34 +93,12 @@ export async function POST(request: Request) {
       }
 
       try {
-        // Step 1: Scan
-        sendProgress('scan', 'Running web search and forward scan...');
-        try {
-          const [webResult, forwardResult] = await Promise.all([
-            runWebSearchCollector(client),
-            runForwardScanCollector(client),
-          ]);
-          sendProgress('scan_complete', `Found ${webResult.items_found + forwardResult.items_found} new items`);
-        } catch (err) {
-          sendProgress('scan_complete', 'Scan failed (continuing)');
-          console.warn('[report] Scan failed:', err);
-        }
-
-        // Step 2: Enrich thin items
-        sendProgress('enrich_content', 'Fetching full page content for thin items...');
-        try {
-          const enrichResult = await enrichThinItems();
-          sendProgress('enrich_content_complete', `${enrichResult.enriched} items enriched`);
-        } catch {
-          sendProgress('enrich_content_complete', 'Content enrichment skipped');
-        }
-
-        // Step 3: Gather
-        sendProgress('gather', 'Querying feed items for client stakeholders...');
+        // Step 1: Gather
+        sendProgress('gather', 'Querying feed items...');
         const items = await gatherItems(client, from, to);
         sendProgress('gather_complete', `${items.length} items found`);
 
-        // Step 4: Score
+        // Step 2: Score
         sendProgress('score', 'Scoring items by relevance...');
         const learnedSignals = await getLearnedSignals(clientId);
         const scored = items
@@ -137,47 +111,25 @@ export async function POST(request: Request) {
           .slice(0, 60);
         sendProgress('score_complete', `${scored.length} items above threshold`);
 
-        // Step 5: Dedup
+        // Step 3: Dedup
         sendProgress('dedup', 'Removing duplicate coverage...');
         const deduped = deduplicateSemantic(scored);
         sendProgress('dedup_complete', `${deduped.length} unique items`);
 
-        // Step 6: Verify
-        sendProgress('verify', 'Checking source URLs...');
-        let verified = deduped;
-        const brokenItems: typeof deduped = [];
-        try {
-          const verifications = await verifySourceUrls(
-            deduped.map(i => ({ id: i.id, url: i.url ?? null })),
-          );
-          const { valid, broken } = filterVerifiedItems(deduped, verifications);
-          verified = valid;
-          brokenItems.push(...broken);
-          sendProgress('verify_complete', `${verified.length} verified, ${broken.length} excluded`);
-        } catch {
-          sendProgress('verify_complete', 'Verification skipped');
-        }
+        const selected = deduped.slice(0, MAX_ITEMS);
 
-        const selected = verified.slice(0, MAX_ITEMS);
-
-        // Step 7: Group
+        // Step 4: Group
         sendProgress('group', 'Grouping by monitoring theme...');
         const grouped = groupByTheme(selected, client);
         const themeCount = Object.keys(grouped).length;
         sendProgress('group_complete', `${themeCount} themes`);
 
-        // Step 8: Enrich with Claude
+        // Step 5: Enrich with Claude
         sendProgress('enrich', `Analysing ${themeCount} themes with AI...`);
         const analysis = await enrichItems(grouped, client, { from, to });
-
-        if (brokenItems.length > 0) {
-          analysis.metadata.sources_unavailable = brokenItems.map(
-            (b) => `${b.title} (${b.url} — broken link)`,
-          );
-        }
         sendProgress('enrich_complete', 'All themes analysed');
 
-        // Step 9: Evaluate
+        // Step 6: Evaluate
         sendProgress('evaluate', 'Running quality checks...');
         const evalResult = await evaluateReport(analysis, selected, client);
 
@@ -190,7 +142,7 @@ export async function POST(request: Request) {
         }
         sendProgress('evaluate_complete', evalResult.overall_pass ? 'Checks passed' : 'Issues flagged');
 
-        // Step 10: Save
+        // Step 7: Save
         sendProgress('save', 'Saving report draft...');
         const { data, error } = await supabase
           .from('report_drafts')
