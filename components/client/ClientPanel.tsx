@@ -15,10 +15,10 @@ import {
 import { supabase } from '@/lib/db';
 import { computePulseScore, getPulseLevel } from '@/lib/graph/pulse';
 import type { FeedItem } from '@/types/feed';
-import ExportButton from '@/components/export/ExportButton';
 import ClientHealthDashboard from './ClientHealthDashboard';
-import type { ReportStatus } from '@/types/report';
+import type { ReportStatus, ReportDraft } from '@/types/report';
 import type { AnalysisJSON } from '@/lib/export/types';
+import ReportBuilder from '@/components/report/ReportBuilder';
 
 /* ------------------------------------------------------------------ */
 /*  Constants                                                          */
@@ -79,7 +79,7 @@ export default function ClientPanel({ client }: { client: ClientConfig }) {
     return stats;
   }, [client.stakeholders, feedItems]);
 
-  // Report generation state — lifted here so progress renders in the scroll area
+  // Report generation state — lifted here so progress renders in modal
   const [genState, setGenState] = useState<GenerationState>({
     generating: false,
     completedSteps: new Set(),
@@ -87,6 +87,9 @@ export default function ClientPanel({ client }: { client: ClientConfig }) {
     stepDetails: {},
     error: null,
   });
+
+  // Report modal state — holds the draft when viewing/editing
+  const [reportDraft, setReportDraft] = useState<ReportDraft | null>(null);
 
   const handleGenerate = useCallback(async () => {
     setGenState({
@@ -163,7 +166,13 @@ export default function ClientPanel({ client }: { client: ClientConfig }) {
             });
 
             if (event.step === 'complete' && event.detail) {
-              window.location.href = `/client/${client.id}/report/${event.detail}`;
+              // Fetch the draft and show in modal instead of navigating
+              fetch(`/api/reports/${event.detail}`)
+                .then(r => r.json())
+                .then(data => {
+                  if (data) setReportDraft(data as ReportDraft);
+                })
+                .catch(() => {});
             }
           } catch { /* skip malformed */ }
         }
@@ -179,17 +188,33 @@ export default function ClientPanel({ client }: { client: ClientConfig }) {
     }
   }, [client.id]);
 
-  // Keep modal visible briefly after generating finishes (success redirects, error persists)
-  const showProgressModal = genState.generating || genState.error !== null;
+  // Open an existing report in the modal
+  const handleOpenReport = useCallback(async (reportId: string) => {
+    const res = await fetch(`/api/reports/${reportId}`);
+    if (res.ok) {
+      const data = await res.json();
+      setReportDraft(data as ReportDraft);
+    }
+  }, []);
+
+  // Close the report/progress modal
+  const handleCloseModal = useCallback(() => {
+    setReportDraft(null);
+    setGenState(prev => ({ ...prev, generating: false, error: null }));
+  }, []);
+
+  // Show modal when generating, error, or viewing a report
+  const showModal = genState.generating || genState.error !== null || reportDraft !== null;
 
   return (
     <div className="flex h-full flex-col">
-      {/* Progress modal — portalled to body so it overlays everything */}
-      {showProgressModal && createPortal(
-        <ReportGenerationModal
-          state={genState}
-          onClose={() => setGenState(prev => ({ ...prev, generating: false, error: null }))}
-        />,
+      {/* Report modal — portalled to body, shows progress or report builder */}
+      {showModal && createPortal(
+        reportDraft ? (
+          <ReportModal draft={reportDraft} clientName={client.name} onClose={handleCloseModal} />
+        ) : (
+          <ReportGenerationModal state={genState} onClose={handleCloseModal} />
+        ),
         document.body,
       )}
 
@@ -222,7 +247,7 @@ export default function ClientPanel({ client }: { client: ClientConfig }) {
           </div>
 
           {/* Report status line */}
-          <ReportStatusLine clientId={client.id} />
+          <ReportStatusLine clientId={client.id} onOpenReport={handleOpenReport} />
         </div>
 
         {/* Health dashboard */}
@@ -339,8 +364,30 @@ export default function ClientPanel({ client }: { client: ClientConfig }) {
             </svg>
             Morning briefing
           </button>
-          <ExportButton clientId={client.id} />
-          <ReportListButton clientId={client.id} onGenerate={handleGenerate} generating={genState.generating} />
+          <button
+            type="button"
+            onClick={handleGenerate}
+            disabled={genState.generating}
+            className="flex items-center gap-2 rounded-lg bg-wh-accent-teal/15 px-3 py-1.5 text-xs font-medium text-wh-accent-teal transition-all hover:bg-wh-accent-teal/25 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {genState.generating ? (
+              <>
+                <svg className="h-3 w-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                Generating...
+              </>
+            ) : (
+              <>
+                <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                </svg>
+                Generate report
+              </>
+            )}
+          </button>
+          <ReportListButton clientId={client.id} onGenerate={handleGenerate} onOpenReport={handleOpenReport} generating={genState.generating} />
         </div>
       </div>
     </div>
@@ -414,7 +461,7 @@ function formatRelativeTime(iso: string): string {
   return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 }
 
-function ReportStatusLine({ clientId }: { clientId: string }) {
+function ReportStatusLine({ clientId, onOpenReport }: { clientId: string; onOpenReport: (id: string) => void }) {
   const [report, setReport] = useState<{
     id: string;
     status: ReportStatus;
@@ -455,9 +502,10 @@ function ReportStatusLine({ clientId }: { clientId: string }) {
 
   return (
     <div className="text-xs text-wh-text-secondary/60 mt-1">
-      <a
-        href={`/client/${clientId}/report/${report.id}`}
-        className="hover:text-wh-accent-teal transition-colors"
+      <button
+        type="button"
+        onClick={() => onOpenReport(report.id)}
+        className="hover:text-wh-accent-teal transition-colors text-left"
       >
         Latest report: {REPORT_STATUS_LABELS[report.status]}
         {' · '}
@@ -467,7 +515,7 @@ function ReportStatusLine({ clientId }: { clientId: string }) {
         )}
         {' · '}
         {formatRelativeTime(report.created_at)}
-      </a>
+      </button>
     </div>
   );
 }
@@ -844,10 +892,12 @@ interface GenerationState {
 function ReportListButton({
   clientId,
   onGenerate,
+  onOpenReport,
   generating,
 }: {
   clientId: string;
   onGenerate: () => void;
+  onOpenReport: (reportId: string) => void;
   generating: boolean;
 }) {
   const [open, setOpen] = useState(false);
@@ -950,10 +1000,11 @@ function ReportListButton({
           <div className="p-3 text-[10px] text-wh-text-secondary/50">No reports yet.</div>
         )}
         {reports.map((r) => (
-          <a
+          <button
             key={r.id}
-            href={`/client/${clientId}/report/${r.id}`}
-            className="flex items-center gap-2 border-b border-wh-border/30 px-3 py-2 transition-colors hover:bg-wh-border/20 last:border-0"
+            type="button"
+            onClick={() => { setOpen(false); onOpenReport(r.id); }}
+            className="w-full flex items-center gap-2 border-b border-wh-border/30 px-3 py-2 transition-colors hover:bg-wh-border/20 last:border-0 text-left"
           >
             <div className="flex-1 min-w-0">
               <p className="text-[10px] text-wh-text-primary">
@@ -966,7 +1017,7 @@ function ReportListButton({
             <span className={`shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-medium ${STATUS_STYLES[r.status]}`}>
               {STATUS_LABELS[r.status]}
             </span>
-          </a>
+          </button>
         ))}
       </div>
     </div>,
@@ -984,6 +1035,43 @@ function ReportListButton({
         Reports
       </button>
       {dropdown}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Report modal — full screen overlay with ReportBuilder               */
+/* ------------------------------------------------------------------ */
+
+function ReportModal({
+  draft,
+  clientName,
+  onClose,
+}: {
+  draft: ReportDraft;
+  clientName: string;
+  onClose: () => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-[9999] flex flex-col bg-wh-bg">
+      {/* Top bar with close */}
+      <div className="flex items-center justify-between shrink-0 border-b border-wh-border px-2 py-1.5 bg-wh-panel">
+        <button
+          type="button"
+          onClick={onClose}
+          className="flex items-center gap-1.5 rounded-md px-2 py-1 text-xs text-wh-text-secondary hover:text-wh-text-primary hover:bg-wh-border/30 transition-colors"
+        >
+          <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+          </svg>
+          Back to client
+        </button>
+      </div>
+
+      {/* ReportBuilder fills remaining space */}
+      <div className="flex-1 overflow-hidden">
+        <ReportBuilder draft={draft} clientName={clientName} />
+      </div>
     </div>
   );
 }

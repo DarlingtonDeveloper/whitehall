@@ -138,6 +138,19 @@ CREATE TABLE IF NOT EXISTS report_chat_messages (
 
 CREATE INDEX IF NOT EXISTS idx_report_chat_draft ON report_chat_messages (report_draft_id, created_at);
 
+-- Report edit revisions — snapshot of sections before each edit
+CREATE TABLE IF NOT EXISTS report_revisions (
+  id                  UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  report_draft_id     UUID NOT NULL REFERENCES report_drafts(id) ON DELETE CASCADE,
+  sections_snapshot   JSONB NOT NULL,
+  edit_source         TEXT NOT NULL,
+  mutation_summary    JSONB,
+  chat_message_id     UUID REFERENCES report_chat_messages(id) ON DELETE SET NULL,
+  created_at          TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_report_revisions_draft ON report_revisions (report_draft_id, created_at DESC);
+
 -- Client learned signals (feedback loop)
 CREATE TABLE IF NOT EXISTS client_learned_signals (
   client_id           TEXT PRIMARY KEY,

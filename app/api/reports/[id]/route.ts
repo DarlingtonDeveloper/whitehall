@@ -65,7 +65,22 @@ export async function PATCH(
     updated_at: new Date().toISOString(),
   };
 
+  // Save revision before overwriting sections
   if (body.sections !== undefined) {
+    const { data: current } = await supabase
+      .from('report_drafts')
+      .select('sections')
+      .eq('id', id)
+      .single();
+
+    if (current?.sections) {
+      await supabase.from('report_revisions').insert({
+        report_draft_id: id,
+        sections_snapshot: current.sections,
+        edit_source: 'manual_patch',
+      });
+    }
+
     updates.sections = body.sections;
   }
 

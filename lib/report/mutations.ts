@@ -166,12 +166,34 @@ export function applyAddItem(
 }
 
 /**
- * Persist updated content to Supabase.
+ * Persist updated content to Supabase, saving a revision snapshot first.
  */
 export async function saveReportContent(
   reportId: string,
   content: AnalysisJSON,
+  opts?: {
+    editSource?: 'chat_mutation' | 'manual_patch';
+    mutation?: ReportMutation;
+    chatMessageId?: string;
+  },
 ): Promise<void> {
+  // Fetch current sections to snapshot before overwriting
+  const { data: current } = await supabase
+    .from('report_drafts')
+    .select('sections')
+    .eq('id', reportId)
+    .single();
+
+  if (current?.sections) {
+    await supabase.from('report_revisions').insert({
+      report_draft_id: reportId,
+      sections_snapshot: current.sections,
+      edit_source: opts?.editSource ?? 'chat_mutation',
+      mutation_summary: opts?.mutation ? [opts.mutation] : null,
+      chat_message_id: opts?.chatMessageId ?? null,
+    });
+  }
+
   const { error } = await supabase
     .from('report_drafts')
     .update({

@@ -36,7 +36,10 @@ export function buildReportTools(reportId: string, initialContent: AnalysisJSON)
         try {
           const result = applyEditField(content, item_ref, field, new_value);
           content = result.content;
-          await saveReportContent(reportId, content);
+          await saveReportContent(reportId, content, {
+            editSource: 'chat_mutation',
+            mutation: result.mutation,
+          });
           return {
             success: true,
             mutation: result.mutation,
@@ -83,7 +86,10 @@ export function buildReportTools(reportId: string, initialContent: AnalysisJSON)
           };
           const result = applyAddItem(content, theme_id, newItem);
           content = result.content;
-          await saveReportContent(reportId, content);
+          await saveReportContent(reportId, content, {
+            editSource: 'chat_mutation',
+            mutation: result.mutation,
+          });
           return {
             success: true,
             mutation: result.mutation,
@@ -104,7 +110,10 @@ export function buildReportTools(reportId: string, initialContent: AnalysisJSON)
         try {
           const result = applyRemoveItem(content, item_ref);
           content = result.content;
-          await saveReportContent(reportId, content);
+          await saveReportContent(reportId, content, {
+            editSource: 'chat_mutation',
+            mutation: result.mutation,
+          });
           return {
             success: true,
             mutation: result.mutation,
@@ -126,7 +135,10 @@ export function buildReportTools(reportId: string, initialContent: AnalysisJSON)
         try {
           const result = applyMoveItem(content, item_ref, target_theme_id);
           content = result.content;
-          await saveReportContent(reportId, content);
+          await saveReportContent(reportId, content, {
+            editSource: 'chat_mutation',
+            mutation: result.mutation,
+          });
           return {
             success: true,
             mutation: result.mutation,
