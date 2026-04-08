@@ -79,10 +79,90 @@ export default function ClientPanel({ client }: { client: ClientConfig }) {
     return stats;
   }, [client.stakeholders, feedItems]);
 
+  // Report generation state — lifted here so progress renders in the scroll area
+  const [genState, setGenState] = useState<GenerationState>({
+    generating: false,
+    completedSteps: new Set(),
+    activeStep: null,
+    stepDetails: {},
+    error: null,
+  });
+
+  const handleGenerate = useCallback(async () => {
+    setGenState({
+      generating: true,
+      completedSteps: new Set(),
+      activeStep: null,
+      stepDetails: {},
+      error: null,
+    });
+
+    try {
+      const res = await fetch('/api/reports/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clientId: client.id }),
+      });
+
+      const reader = res.body?.getReader();
+      if (!reader) return;
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n');
+        buffer = lines.pop() ?? '';
+
+        for (const line of lines) {
+          if (!line.startsWith('data: ')) continue;
+          try {
+            const event = JSON.parse(line.slice(6));
+
+            setGenState((prev) => {
+              const completed = new Set(prev.completedSteps);
+              const details = { ...prev.stepDetails };
+
+              if (event.step.endsWith('_complete') || event.step === 'complete') {
+                completed.add(event.step);
+              }
+              if (event.detail) {
+                details[event.step] = event.detail;
+              }
+
+              let active: string | null = event.step;
+              if (event.step === 'complete' || event.step === 'error') {
+                active = null;
+              }
+
+              return {
+                ...prev,
+                completedSteps: completed,
+                activeStep: active,
+                stepDetails: details,
+                error: event.step === 'error' ? event.detail : prev.error,
+              };
+            });
+
+            if (event.step === 'complete' && event.detail) {
+              window.location.href = `/client/${client.id}/report/${event.detail}`;
+            }
+          } catch { /* skip malformed */ }
+        }
+      }
+    } finally {
+      setGenState((prev) => ({ ...prev, generating: false }));
+    }
+  }, [client.id]);
+
   return (
     <div className="flex h-full flex-col">
       {/* Scrollable body */}
-      <div className="flex-1 overflow-y-auto overscroll-contain px-3 py-3 space-y-3" data-report-progress-target>
+      <div className="flex-1 overflow-y-auto overscroll-contain px-3 py-3 space-y-3">
         {/* Header: name + sector + X button */}
         <div className="px-1">
           <div className="flex items-center justify-between">
@@ -112,6 +192,11 @@ export default function ClientPanel({ client }: { client: ClientConfig }) {
           {/* Report status line */}
           <ReportStatusLine clientId={client.id} />
         </div>
+
+        {/* Pipeline progress — shows directly in scroll area when generating */}
+        {genState.generating && (
+          <ReportGenerationProgress state={genState} />
+        )}
 
         {/* Health dashboard */}
         <ClientHealthDashboard client={client} />
@@ -228,7 +313,7 @@ export default function ClientPanel({ client }: { client: ClientConfig }) {
             Morning briefing
           </button>
           <ExportButton clientId={client.id} />
-          <ReportListButton clientId={client.id} />
+          <ReportListButton clientId={client.id} onGenerate={handleGenerate} generating={genState.generating} />
         </div>
       </div>
     </div>
@@ -729,17 +814,18 @@ interface GenerationState {
   error: string | null;
 }
 
-function ReportListButton({ clientId }: { clientId: string }) {
+function ReportListButton({
+  clientId,
+  onGenerate,
+  generating,
+}: {
+  clientId: string;
+  onGenerate: () => void;
+  generating: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [reports, setReports] = useState<ReportListItem[]>([]);
   const [loading, setLoading] = useState(false);
-  const [genState, setGenState] = useState<GenerationState>({
-    generating: false,
-    completedSteps: new Set(),
-    activeStep: null,
-    stepDetails: {},
-    error: null,
-  });
 
   // Portal dropdown positioning
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -782,7 +868,9 @@ function ReportListButton({ clientId }: { clientId: string }) {
 
   useEffect(() => {
     if (!open) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: sync loading state with async fetch
     setLoading(true);
+    let cancelled = false;
     supabase
       .from('report_drafts')
       .select('id, status, date_range_from, date_range_to, created_at')
@@ -790,85 +878,17 @@ function ReportListButton({ clientId }: { clientId: string }) {
       .order('created_at', { ascending: false })
       .limit(10)
       .then(({ data }) => {
-        setReports((data as ReportListItem[]) ?? []);
-        setLoading(false);
+        if (!cancelled) {
+          setReports((data as ReportListItem[]) ?? []);
+          setLoading(false);
+        }
       });
+    return () => { cancelled = true; };
   }, [open, clientId]);
 
-  const handleGenerate = async () => {
-    setGenState({
-      generating: true,
-      completedSteps: new Set(),
-      activeStep: null,
-      stepDetails: {},
-      error: null,
-    });
-    setOpen(false); // Close dropdown — progress shows in panel
-
-    try {
-      const res = await fetch('/api/reports/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ clientId }),
-      });
-
-      const reader = res.body?.getReader();
-      if (!reader) return;
-
-      const decoder = new TextDecoder();
-      let buffer = '';
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() ?? '';
-
-        for (const line of lines) {
-          if (!line.startsWith('data: ')) continue;
-          try {
-            const event = JSON.parse(line.slice(6));
-
-            setGenState((prev) => {
-              const completed = new Set(prev.completedSteps);
-              const details = { ...prev.stepDetails };
-
-              // Mark step as completed if it's a _complete event
-              if (event.step.endsWith('_complete') || event.step === 'complete') {
-                completed.add(event.step);
-              }
-
-              // Store detail for the step
-              if (event.detail) {
-                details[event.step] = event.detail;
-              }
-
-              // Find active step (first non-completed pipeline step)
-              let active: string | null = event.step;
-              if (event.step === 'complete' || event.step === 'error') {
-                active = null;
-              }
-
-              return {
-                ...prev,
-                completedSteps: completed,
-                activeStep: active,
-                stepDetails: details,
-                error: event.step === 'error' ? event.detail : prev.error,
-              };
-            });
-
-            if (event.step === 'complete' && event.detail) {
-              window.location.href = `/client/${clientId}/report/${event.detail}`;
-            }
-          } catch { /* skip malformed */ }
-        }
-      }
-    } finally {
-      setGenState((prev) => ({ ...prev, generating: false }));
-    }
+  const handleClickGenerate = () => {
+    setOpen(false);
+    onGenerate();
   };
 
   const dropdown = open && dropdownPos && createPortal(
@@ -887,11 +907,11 @@ function ReportListButton({ clientId }: { clientId: string }) {
         </span>
         <button
           type="button"
-          onClick={handleGenerate}
-          disabled={genState.generating}
+          onClick={handleClickGenerate}
+          disabled={generating}
           className="rounded bg-wh-accent-teal/15 px-2 py-0.5 text-[10px] font-medium text-wh-accent-teal transition-colors hover:bg-wh-accent-teal/25 disabled:opacity-50"
         >
-          {genState.generating ? 'Generating...' : '+ New Report'}
+          {generating ? 'Generating...' : '+ New Report'}
         </button>
       </div>
 
@@ -927,38 +947,27 @@ function ReportListButton({ clientId }: { clientId: string }) {
   );
 
   return (
-    <>
-      <div className="relative">
-        <button
-          ref={buttonRef}
-          type="button"
-          onClick={() => setOpen(!open)}
-          className="w-full rounded-md border border-wh-border px-3 py-1.5 text-xs font-medium text-wh-text-secondary transition-colors hover:bg-wh-border/50 hover:text-wh-text-primary"
-        >
-          Reports
-        </button>
-        {dropdown}
-      </div>
-
-      {/* Full pipeline progress — renders via portal into the panel scroll area */}
-      {genState.generating && (
-        <ReportGenerationProgress state={genState} />
-      )}
-    </>
+    <div className="relative">
+      <button
+        ref={buttonRef}
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full rounded-md border border-wh-border px-3 py-1.5 text-xs font-medium text-wh-text-secondary transition-colors hover:bg-wh-border/50 hover:text-wh-text-primary"
+      >
+        Reports
+      </button>
+      {dropdown}
+    </div>
   );
 }
 
 /* ------------------------------------------------------------------ */
-/*  Pipeline progress panel — shows full step-by-step timeline          */
+/*  Pipeline progress — renders directly in client panel scroll area    */
 /* ------------------------------------------------------------------ */
 
 function ReportGenerationProgress({ state }: { state: GenerationState }) {
-  const [portalTarget] = useState<HTMLElement | null>(
-    () => document.querySelector('[data-report-progress-target]'),
-  );
-
-  const content = (
-    <div className="mx-3 my-3 rounded-lg border border-wh-border bg-wh-bg/50 p-4">
+  return (
+    <div className="rounded-lg border border-wh-border bg-wh-bg/50 p-4">
       <div className="flex items-center gap-2 mb-4">
         <div className="h-2 w-2 rounded-full bg-wh-accent-teal animate-pulse" />
         <span className="text-xs font-semibold text-wh-text-primary">Generating report</span>
@@ -1038,10 +1047,4 @@ function ReportGenerationProgress({ state }: { state: GenerationState }) {
       )}
     </div>
   );
-
-  // Render into the panel scroll area if available, otherwise inline
-  if (portalTarget) {
-    return createPortal(content, portalTarget);
-  }
-  return content;
 }
