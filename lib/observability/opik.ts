@@ -72,7 +72,7 @@ export async function logTrace(
           Authorization: `Bearer ${opikKey}`,
         },
         body: JSON.stringify({
-          project_name: 'whitehall-reports',
+          project_name: 'whitehall',
           name: `${metadata.step}/${metadata.theme_id || 'all'}`,
           input: { prompt: trace.input_preview },
           output: { response: trace.output_preview },
