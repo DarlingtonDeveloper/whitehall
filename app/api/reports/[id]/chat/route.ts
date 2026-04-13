@@ -158,7 +158,7 @@ SECURITY RULES:
   const allToolCalls: unknown[] = [];
 
   const result = streamText({
-    model: anthropic('claude-sonnet-4-20250514'),
+    model: anthropic('claude-opus-4-6-20250610'),
     system: systemPrompt,
     messages,
     tools,
@@ -246,7 +246,7 @@ SECURITY RULES:
                 client_id: draft.client_id,
                 report_id: id,
                 step: 'report_chat',
-                model: 'claude-sonnet-4-20250514',
+                model: 'claude-opus-4-6-20250610',
               },
               message,
               fullAssistantText,
