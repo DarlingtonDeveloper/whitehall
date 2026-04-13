@@ -92,7 +92,7 @@ export async function POST(request: Request) {
   messages.push({ role: 'user', content: message });
 
   const result = streamText({
-    model: anthropic('claude-opus-4-6-20250610'),
+    model: anthropic('claude-opus-4-6-20250115'),
     system: systemPrompt,
     messages,
     tools: chatTools,
@@ -156,7 +156,7 @@ export async function POST(request: Request) {
               {
                 client_id: clientId || entityId || 'unknown',
                 step: 'chat',
-                model: 'claude-opus-4-6-20250610',
+                model: 'claude-opus-4-6-20250115',
               },
               message,
               fullAssistantText,
