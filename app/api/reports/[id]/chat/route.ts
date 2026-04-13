@@ -163,6 +163,7 @@ SECURITY RULES:
     messages,
     tools,
     stopWhen: stepCountIs(5),
+    maxRetries: 5,
     onStepFinish: ({ toolCalls, toolResults }) => {
       if (!toolCalls || !toolResults) return;
       for (const call of toolCalls) {
@@ -237,32 +238,37 @@ SECURITY RULES:
           console.error('[report-chat] Failed to persist messages:', err);
         }
 
-        try {
-          const usage = await result.totalUsage;
-          await logTrace(
-            {
-              client_id: draft.client_id,
-              report_id: id,
-              step: 'report_chat',
-              model: 'claude-sonnet-4-20250514',
-            },
-            message,
-            fullAssistantText,
-            undefined,
-            {
-              input_tokens: usage.inputTokens ?? 0,
-              output_tokens: usage.outputTokens ?? 0,
-              duration_ms: Math.round(performance.now() - startTime),
-            },
-          );
-        } catch (traceErr) {
-          console.error('[report-chat] trace failed:', traceErr);
+        if (fullAssistantText) {
+          try {
+            const usage = await result.totalUsage;
+            await logTrace(
+              {
+                client_id: draft.client_id,
+                report_id: id,
+                step: 'report_chat',
+                model: 'claude-sonnet-4-20250514',
+              },
+              message,
+              fullAssistantText,
+              undefined,
+              {
+                input_tokens: usage.inputTokens ?? 0,
+                output_tokens: usage.outputTokens ?? 0,
+                duration_ms: Math.round(performance.now() - startTime),
+              },
+            );
+          } catch (traceErr) {
+            console.error('[report-chat] trace failed:', traceErr);
+          }
         }
 
         controller.close();
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'An unexpected error occurred.';
-        controller.enqueue(encoder.encode(`\n\n[Error: ${msg}]`));
+        const userMessage = msg.includes('Overloaded')
+          ? 'The AI service is currently overloaded. Please try again in a moment.'
+          : msg;
+        controller.enqueue(encoder.encode(`\n\n[Error: ${userMessage}]`));
         controller.close();
       }
     },
