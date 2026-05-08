@@ -643,7 +643,8 @@ export async function syncPoliticians(): Promise<{ updated: number; errors: numb
   const { data: politicians, error } = await supabase
     .from('politicians')
     .select('id, parliament_member_id')
-    .not('parliament_member_id', 'is', null);
+    .not('parliament_member_id', 'is', null)
+    .limit(5000);
 
   if (error || !politicians) {
     console.error('  [ERR] Failed to load politicians:', error?.message);
@@ -715,7 +716,8 @@ export async function collectRegisterInterests(): Promise<{ inserted: number; sk
     .from('politicians')
     .select('id, parliament_member_id')
     .not('parliament_member_id', 'is', null)
-    .eq('status', 'active');
+    .eq('status', 'active')
+    .limit(5000);
 
   if (error || !politicians) {
     console.error('  [ERR] Failed to load politicians:', error?.message);
@@ -763,6 +765,110 @@ export async function collectRegisterInterests(): Promise<{ inserted: number; sk
 
   console.log(`  Collected ${allRows.length} register entries`);
   return await upsertEvidence(allRows);
+}
+
+/**
+ * Import ALL current Members of Parliament (Commons + Lords) into the politicians table.
+ * Uses the Members API search endpoint with IsCurrentMember=true and paginates through all results.
+ * Skips members that already exist (matched by parliament_member_id).
+ */
+export async function importAllCurrentMembers(
+  options: { house?: 'commons' | 'lords' | 'both' } = {},
+): Promise<{ imported: number; skipped: number; errors: number }> {
+  const houses = options.house === 'commons' ? [1]
+    : options.house === 'lords' ? [2]
+    : [1, 2];
+
+  let totalImported = 0;
+  let totalSkipped = 0;
+  let totalErrors = 0;
+
+  // Load existing parliament_member_ids to skip duplicates
+  const { data: existingPols } = await supabase
+    .from('politicians')
+    .select('parliament_member_id')
+    .not('parliament_member_id', 'is', null);
+
+  const existingIds = new Set(
+    (existingPols || []).map((p) => p.parliament_member_id as number),
+  );
+  console.log(`  ${existingIds.size} politicians already in database`);
+
+  for (const house of houses) {
+    const houseName = house === 1 ? 'Commons' : 'Lords';
+    console.log(`\n--- Importing ${houseName} members ---`);
+
+    let skip = 0;
+    const take = 20;
+    let hasMore = true;
+
+    while (hasMore) {
+      const params = new URLSearchParams({
+        House: String(house),
+        IsCurrentMember: 'true',
+        skip: String(skip),
+        take: String(take),
+      });
+
+      const url = `${MEMBERS_API}/Search?${params}`;
+      const data = await fetchJson<MembersSearchResponse>(url, `${houseName} skip=${skip}`);
+
+      if (!data?.items || data.items.length === 0) {
+        hasMore = false;
+        break;
+      }
+
+      for (const item of data.items) {
+        const member = item.value;
+        if (!member?.id) continue;
+
+        // Skip if already imported
+        if (existingIds.has(member.id)) {
+          totalSkipped++;
+          continue;
+        }
+
+        const memberHouse = member.latestHouseMembership?.house ?? house;
+        const houseStr = memberHouse === 1 ? 'commons' : 'lords';
+        const constituency = memberHouse === 1
+          ? (member.latestHouseMembership?.membershipFrom ?? null)
+          : null;
+
+        const polId = slugify(member.nameDisplayAs);
+
+        const ok = await upsertPolitician({
+          id: polId,
+          parliament_member_id: member.id,
+          display_name: member.nameDisplayAs,
+          full_name: member.nameFullTitle || member.nameDisplayAs,
+          party: member.latestParty?.name ?? null,
+          house: houseStr,
+          constituency,
+          portrait_url: member.thumbnailUrl || null,
+          gender: (member.gender || '').toLowerCase() || null,
+          status: 'active',
+        });
+
+        if (ok) {
+          totalImported++;
+          existingIds.add(member.id);
+        } else {
+          totalErrors++;
+        }
+      }
+
+      skip += take;
+      if (skip % 100 === 0) {
+        console.log(`  ${houseName}: ${skip} processed, ${totalImported} imported so far`);
+      }
+      await delay(200);
+    }
+
+    console.log(`  ${houseName} done: ${totalImported} imported total`);
+  }
+
+  console.log(`\n=== Import Complete: ${totalImported} imported, ${totalSkipped} skipped, ${totalErrors} errors ===`);
+  return { imported: totalImported, skipped: totalSkipped, errors: totalErrors };
 }
 
 /**

@@ -161,7 +161,8 @@ async function loadPoliticianMap(): Promise<Map<number, string>> {
   const { data, error } = await supabase
     .from('politicians')
     .select('id, parliament_member_id')
-    .not('parliament_member_id', 'is', null);
+    .not('parliament_member_id', 'is', null)
+    .limit(5000);
 
   if (error || !data) {
     console.error('  [ERR] Failed to load politician map:', error?.message);

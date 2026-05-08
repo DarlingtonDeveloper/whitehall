@@ -6,6 +6,7 @@
  *   npx tsx scripts/migrate-politicians.ts backfill    — Backfill division votes (5 years)
  *   npx tsx scripts/migrate-politicians.ts status      — Report on current data state
  *   npx tsx scripts/migrate-politicians.ts cohort      — Run energy cohort discovery query
+ *   npx tsx scripts/migrate-politicians.ts import-all  — Import all current MPs and Lords
  *
  * Requires .env.local with Supabase credentials.
  */
@@ -265,8 +266,18 @@ switch (command) {
   case 'cohort':
     runCohort().catch(console.error);
     break;
+  case 'import-all':
+    (async () => {
+      const { importAllCurrentMembers } = await import('../lib/feeds/parliament-members');
+      const result = await importAllCurrentMembers({ house: 'both' });
+      console.log('\n--- Import Summary ---');
+      console.log(`  Imported: ${result.imported}`);
+      console.log(`  Skipped:  ${result.skipped}`);
+      console.log(`  Errors:   ${result.errors}`);
+    })().catch(console.error);
+    break;
   default:
     console.log('Usage: npx tsx scripts/migrate-politicians.ts <command>');
-    console.log('Commands: migrate, backfill, status, cohort');
+    console.log('Commands: migrate, backfill, status, cohort, import-all');
     process.exit(1);
 }

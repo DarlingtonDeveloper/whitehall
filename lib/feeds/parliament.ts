@@ -47,7 +47,8 @@ async function loadPoliticianMap(): Promise<Map<number, string>> {
   const { data, error } = await supabase
     .from('politicians')
     .select('id, parliament_member_id')
-    .not('parliament_member_id', 'is', null);
+    .not('parliament_member_id', 'is', null)
+    .limit(5000);
 
   if (error || !data) return new Map();
 
@@ -209,7 +210,7 @@ function delay(ms: number): Promise<void> {
 async function fetchJson<T>(url: string, label: string): Promise<T | null> {
   try {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 15_000);
+    const timer = setTimeout(() => controller.abort(), 60_000);
 
     const resp = await fetch(url, {
       signal: controller.signal,
@@ -446,7 +447,7 @@ export async function collectWrittenQuestions(since?: Date): Promise<{ inserted:
 
   while (hasMore) {
     const params = new URLSearchParams({
-      answeredWhenFrom: sinceDate,
+      tabledWhenFrom: sinceDate,
       take: String(take),
       skip: String(skip),
     });
@@ -562,7 +563,11 @@ export async function collectWrittenQuestions(since?: Date): Promise<{ inserted:
     }
 
     skip += take;
-    if (skip >= 500) hasMore = false;
+    if (skip >= 10000) hasMore = false;
+
+    if (skip % 500 === 0) {
+      console.log(`  WQ progress: ${skip} fetched, ${evidenceRows.length} evidence rows so far`);
+    }
 
     await delay(300);
   }
