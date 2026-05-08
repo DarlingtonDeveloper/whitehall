@@ -455,3 +455,118 @@ CREATE POLICY anon_read_bpm        ON bill_policy_mappings    FOR SELECT TO anon
 CREATE POLICY anon_read_org_map    ON org_indicator_map       FOR SELECT TO anon USING (true);
 CREATE POLICY anon_read_appg_map   ON appg_indicator_map      FOR SELECT TO anon USING (true);
 CREATE POLICY anon_read_comm_map   ON committee_indicator_map FOR SELECT TO anon USING (true);
+
+-- ============================================================================
+-- Math layer — correlations, epochs, alignment, materialized view
+-- ============================================================================
+
+-- Propagation source tracking on audit trail (null = direct, indicator_id = propagated)
+ALTER TABLE politician_indicator_evidence
+  ADD COLUMN IF NOT EXISTS propagation_source TEXT;
+
+-- Correlations between indicators (spec §4.1)
+CREATE TABLE IF NOT EXISTS indicator_correlations (
+  indicator_a   TEXT NOT NULL REFERENCES indicator_definitions(id),
+  indicator_b   TEXT NOT NULL REFERENCES indicator_definitions(id),
+  correlation   NUMERIC NOT NULL CHECK (correlation BETWEEN -1 AND 1),
+  source        TEXT NOT NULL CHECK (source IN ('hand_coded','derived_from_voting','derived_from_classifications')),
+  notes         TEXT,
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (indicator_a, indicator_b),
+  CHECK (indicator_a < indicator_b)
+);
+
+CREATE INDEX IF NOT EXISTS idx_corr_a ON indicator_correlations(indicator_a);
+CREATE INDEX IF NOT EXISTS idx_corr_b ON indicator_correlations(indicator_b);
+
+-- Critical events that affect evidence weighting (spec §5.1)
+CREATE TABLE IF NOT EXISTS epoch_transitions (
+  id                      BIGSERIAL PRIMARY KEY,
+  politician_id           TEXT REFERENCES politicians(id),
+  event_type              TEXT NOT NULL CHECK (event_type IN (
+    'general_election',
+    'leadership_change',
+    'cabinet_reshuffle',
+    'role_change',
+    'defection',
+    'resignation',
+    'scandal',
+    'whip_withdrawn',
+    'whip_restored'
+  )),
+  event_date              DATE NOT NULL,
+  effective_date          DATE NOT NULL,
+  pre_event_window_days   INTEGER NOT NULL DEFAULT 60,
+  pre_event_dampening     NUMERIC NOT NULL DEFAULT 0.5,
+  post_event_dampening    NUMERIC NOT NULL DEFAULT 1.0,
+  source                  TEXT NOT NULL,
+  notes                   TEXT,
+  created_at              TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_epoch_politician ON epoch_transitions(politician_id, event_date);
+CREATE INDEX IF NOT EXISTS idx_epoch_global ON epoch_transitions(event_type, event_date)
+  WHERE politician_id IS NULL;
+
+-- Cross-politician voting alignment (spec §4.4)
+CREATE TABLE IF NOT EXISTS politician_voting_alignment (
+  politician_a      TEXT NOT NULL REFERENCES politicians(id) ON DELETE CASCADE,
+  politician_b      TEXT NOT NULL REFERENCES politicians(id) ON DELETE CASCADE,
+  alignment         NUMERIC NOT NULL CHECK (alignment BETWEEN -1 AND 1),
+  shared_divisions  INTEGER NOT NULL,
+  computed_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (politician_a, politician_b),
+  CHECK (politician_a < politician_b)
+);
+
+CREATE INDEX IF NOT EXISTS idx_alignment_score ON politician_voting_alignment(alignment DESC);
+
+-- Materialized view: decayed indicator state (spec §3.1)
+-- Recomputes alpha/beta from evidence log with exponential decay per indicator half-life.
+-- Refresh nightly via the refresh_indicators_decayed() RPC function.
+CREATE MATERIALIZED VIEW IF NOT EXISTS politician_indicators_decayed AS
+SELECT
+  pi.politician_id,
+  pi.indicator_id,
+  id_def.radar,
+  1.0 + COALESCE(SUM(
+    pie.anchor * pie.effective_weight *
+    EXP(
+      -EXTRACT(EPOCH FROM (NOW() - pie.applied_at))
+      / (id_def.half_life_years * 365.25 * 24 * 3600)
+    )
+  ), 0) AS alpha_decayed,
+  1.0 + COALESCE(SUM(
+    (1.0 - pie.anchor) * pie.effective_weight *
+    EXP(
+      -EXTRACT(EPOCH FROM (NOW() - pie.applied_at))
+      / (id_def.half_life_years * 365.25 * 24 * 3600)
+    )
+  ), 0) AS beta_decayed,
+  COUNT(pie.id)::INTEGER AS evidence_count,
+  NOW() AS computed_at
+FROM politician_indicators pi
+JOIN indicator_definitions id_def ON id_def.id = pi.indicator_id
+LEFT JOIN politician_indicator_evidence pie
+  ON pie.politician_id = pi.politician_id
+  AND pie.indicator_id = pi.indicator_id
+GROUP BY pi.politician_id, pi.indicator_id, id_def.radar, id_def.half_life_years;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_pid_decayed_pk
+  ON politician_indicators_decayed (politician_id, indicator_id);
+
+-- RPC function to refresh the materialized view (called from app code)
+CREATE OR REPLACE FUNCTION refresh_indicators_decayed()
+RETURNS void
+LANGUAGE SQL
+SECURITY DEFINER
+AS $$ REFRESH MATERIALIZED VIEW CONCURRENTLY politician_indicators_decayed; $$;
+
+-- RLS for new tables
+ALTER TABLE indicator_correlations       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE epoch_transitions            ENABLE ROW LEVEL SECURITY;
+ALTER TABLE politician_voting_alignment  ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY anon_read_correlations ON indicator_correlations     FOR SELECT TO anon USING (true);
+CREATE POLICY anon_read_epochs       ON epoch_transitions          FOR SELECT TO anon USING (true);
+CREATE POLICY anon_read_alignment    ON politician_voting_alignment FOR SELECT TO anon USING (true);

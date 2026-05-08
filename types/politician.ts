@@ -212,6 +212,118 @@ export interface PoliticianIndicatorEvidence {
   applied_at: string;
   classifier_version: string;
   classifier_reasoning: string | null;
+  propagation_source: string | null;
+}
+
+// -- Classification (classifier output) --------------------------------------
+
+export interface Classification {
+  indicator_id: string;
+  anchor: number;
+  raw_weight: number;
+  effective_weight: number;
+  classifier_version: string;
+  classifier_reasoning: string | null;
+}
+
+// -- Derived quantities ------------------------------------------------------
+
+export interface Posterior {
+  mean: number;
+  variance: number;
+  effective_sample_size: number;
+  confidence: number;
+  ci_95: [number, number];
+}
+
+export interface DecayedState {
+  alpha: number;
+  beta: number;
+  evidence_count: number;
+}
+
+// -- Indicator correlations --------------------------------------------------
+
+export type CorrelationSource =
+  | 'hand_coded'
+  | 'derived_from_voting'
+  | 'derived_from_classifications';
+
+export interface IndicatorCorrelation {
+  indicator_a: string;
+  indicator_b: string;
+  correlation: number;
+  source: CorrelationSource;
+  notes: string | null;
+  updated_at: string;
+}
+
+// -- Epoch transitions -------------------------------------------------------
+
+export type EpochEventType =
+  | 'general_election'
+  | 'leadership_change'
+  | 'cabinet_reshuffle'
+  | 'role_change'
+  | 'defection'
+  | 'resignation'
+  | 'scandal'
+  | 'whip_withdrawn'
+  | 'whip_restored';
+
+export interface EpochTransition {
+  id: number;
+  politician_id: string | null;
+  event_type: EpochEventType;
+  event_date: string;
+  effective_date: string;
+  pre_event_window_days: number;
+  pre_event_dampening: number;
+  post_event_dampening: number;
+  source: string;
+  notes: string | null;
+  created_at: string;
+}
+
+// -- Cross-politician voting alignment ---------------------------------------
+
+export interface PoliticianVotingAlignment {
+  politician_a: string;
+  politician_b: string;
+  alignment: number;
+  shared_divisions: number;
+  computed_at: string;
+}
+
+// -- Audit chain -------------------------------------------------------------
+
+export interface AuditedEvidenceRow {
+  evidence_id: number;
+  evidence_type: EvidenceType;
+  source_url: string | null;
+  occurred_at: string;
+  anchor: number;
+  raw_weight: number;
+  effective_weight: number;
+  contribution_to_alpha: number;
+  contribution_to_beta: number;
+  classifier_version: string;
+  classifier_reasoning: string | null;
+  decay_factor: number;
+  epoch_dampening: number;
+  propagation_source: string | null;
+}
+
+export interface AuditedPosterior {
+  politician_id: string;
+  indicator_id: string;
+  as_of: string;
+  posterior: Posterior;
+  alpha: number;
+  beta: number;
+  contributing_evidence: AuditedEvidenceRow[];
+  propagated_from: AuditedEvidenceRow[];
+  applied_epochs: Array<{ event_type: EpochEventType; event_date: string; dampening: number }>;
 }
 
 // -- Match review queue ------------------------------------------------------
