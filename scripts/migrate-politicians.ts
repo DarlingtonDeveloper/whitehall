@@ -158,20 +158,38 @@ async function runCohort() {
   // we'll approximate the cohort query using multiple API calls.
   // For the full SQL query, run it directly against the database.
 
-  // Get all evidence with energy-related entity_ids
+  // Get energy evidence by type to avoid the 5K limit drowning speeches in votes
   const energyEntities = ['desnz', 'desnz-sec', 'ofgem', 'nsta', 'crown-estate', 'neso'];
+  const twoYearsAgo = new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000).toISOString();
 
-  const { data: evidence } = await supabase
-    .from('politician_evidence')
-    .select('politician_id, evidence_type, occurred_at')
-    .overlaps('entity_ids', energyEntities)
-    .gte('occurred_at', new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000).toISOString())
-    .limit(5000);
+  const evidenceTypes = [
+    'division_vote', 'chamber_speech', 'committee_speech',
+    'written_question_asked', 'written_question_answered',
+    'edm_signature', 'edm_proposed',
+  ];
 
-  if (!evidence || evidence.length === 0) {
+  const evidence: Array<{ politician_id: string; evidence_type: string; occurred_at: string }> = [];
+
+  for (const evType of evidenceTypes) {
+    const { data } = await supabase
+      .from('politician_evidence')
+      .select('politician_id, evidence_type, occurred_at')
+      .eq('evidence_type', evType)
+      .overlaps('entity_ids', energyEntities)
+      .gte('occurred_at', twoYearsAgo)
+      .limit(5000);
+
+    if (data) {
+      evidence.push(...data);
+      if (data.length > 0) console.log(`  ${evType}: ${data.length} rows`);
+    }
+  }
+
+  if (evidence.length === 0) {
     console.log('No energy evidence found. Run backfill first.');
     return;
   }
+  console.log(`  Total energy evidence: ${evidence.length}\n`);
 
   // Aggregate by politician
   const polStats = new Map<string, {

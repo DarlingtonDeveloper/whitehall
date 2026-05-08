@@ -25,6 +25,7 @@ dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env.local') });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
+const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   throw new Error(
@@ -32,7 +33,54 @@ if (!supabaseUrl || !supabaseKey) {
   );
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseReadonly = createClient(supabaseUrl, supabaseKey);
+// Use service role for all writes (RLS blocks anon inserts)
+const supabase = serviceRoleKey ? createClient(supabaseUrl, serviceRoleKey) : supabaseReadonly;
+
+// -- Politician evidence helpers ----------------------------------------------
+
+let politicianByMemberId: Map<number, string> | null = null;
+
+async function loadPoliticianMap(): Promise<Map<number, string>> {
+  if (politicianByMemberId) return politicianByMemberId;
+
+  const { data, error } = await supabase
+    .from('politicians')
+    .select('id, parliament_member_id')
+    .not('parliament_member_id', 'is', null);
+
+  if (error || !data) return new Map();
+
+  politicianByMemberId = new Map(
+    data.map((p) => [p.parliament_member_id as number, p.id as string]),
+  );
+  return politicianByMemberId;
+}
+
+function makeEvidenceFp(...parts: string[]): string {
+  return crypto
+    .createHash('sha256')
+    .update(parts.join('||'))
+    .digest('hex');
+}
+
+async function writeEvidenceRows(rows: Array<Record<string, unknown>>): Promise<number> {
+  if (rows.length === 0) return 0;
+
+  let inserted = 0;
+  const batchSize = 50;
+
+  for (let i = 0; i < rows.length; i += batchSize) {
+    const batch = rows.slice(i, i + batchSize);
+    const { error } = await supabase
+      .from('politician_evidence')
+      .upsert(batch, { onConflict: 'fingerprint', ignoreDuplicates: true });
+
+    if (!error) inserted += batch.length;
+  }
+
+  return inserted;
+}
 
 // -- API endpoints -----------------------------------------------------------
 
@@ -239,12 +287,15 @@ interface BillsResponse {
 interface WrittenQuestion {
   value?: {
     id?: number;
+    askingMemberId?: number;
+    answeringMemberId?: number;
     questionText?: string;
     answeringBodyName?: string;
     dateTabled?: string;
     dateAnswered?: string;
     answerText?: string;
     uin?: string;
+    heading?: string;
   };
 }
 
@@ -387,6 +438,8 @@ export async function collectWrittenQuestions(since?: Date): Promise<{ inserted:
   const sinceDate = since ? since.toISOString().split('T')[0] : monthsAgo(12);
   const seenFingerprints = new Set<string>();
   const allRows: Array<Record<string, unknown>> = [];
+  const evidenceRows: Array<Record<string, unknown>> = [];
+  const polMap = await loadPoliticianMap();
   let skip = 0;
   const take = 50;
   let hasMore = true;
@@ -450,6 +503,62 @@ export async function collectWrittenQuestions(since?: Date): Promise<{ inserted:
         fingerprint,
         is_forward_scan: false,
       });
+
+      // -- Politician evidence rows --
+      const questionText = q.questionText ? stripHtml(q.questionText) : '';
+      const answerText = q.answerText ? stripHtml(q.answerText) : '';
+      const wqId = q.uin || String(q.id || '');
+      const tabledAt = q.dateTabled ? new Date(q.dateTabled).toISOString() : new Date().toISOString();
+
+      // Asker evidence
+      if (q.askingMemberId && polMap.has(q.askingMemberId)) {
+        const askerId = polMap.get(q.askingMemberId)!;
+        evidenceRows.push({
+          politician_id: askerId,
+          evidence_type: 'written_question_asked',
+          source: 'parliament-api',
+          source_id: `wq-asked-${wqId}`,
+          source_url: questionUrl,
+          occurred_at: tabledAt,
+          raw_content: questionText.slice(0, 5000),
+          parsed: {
+            wq_id: wqId,
+            question_text: questionText.slice(0, 2000),
+            answering_body: q.answeringBodyName || '',
+            answered_at: q.dateAnswered?.split('T')[0] || null,
+            answer_text: null,
+            group_id: null,
+          },
+          topic_tags: [],
+          entity_ids: entityIds,
+          fingerprint: makeEvidenceFp(askerId, 'written_question_asked', wqId),
+        });
+      }
+
+      // Answerer evidence
+      if (q.answeringMemberId && polMap.has(q.answeringMemberId) && q.dateAnswered) {
+        const answererId = polMap.get(q.answeringMemberId)!;
+        evidenceRows.push({
+          politician_id: answererId,
+          evidence_type: 'written_question_answered',
+          source: 'parliament-api',
+          source_id: `wq-answered-${wqId}`,
+          source_url: questionUrl,
+          occurred_at: new Date(q.dateAnswered).toISOString(),
+          raw_content: answerText.slice(0, 5000),
+          parsed: {
+            wq_id: wqId,
+            question_text: questionText.slice(0, 2000),
+            answering_body: q.answeringBodyName || '',
+            answered_at: q.dateAnswered.split('T')[0],
+            answer_text: answerText.slice(0, 2000),
+            group_id: null,
+          },
+          topic_tags: [],
+          entity_ids: entityIds,
+          fingerprint: makeEvidenceFp(answererId, 'written_question_answered', wqId),
+        });
+      }
     }
 
     skip += take;
@@ -461,6 +570,13 @@ export async function collectWrittenQuestions(since?: Date): Promise<{ inserted:
   console.log(`  Fetched ${allRows.length} written questions`);
   const result = await upsertBatch(allRows);
   console.log(`  Inserted: ${result.inserted}, Skipped: ${result.skipped}`);
+
+  // Write politician evidence
+  if (evidenceRows.length > 0) {
+    const evInserted = await writeEvidenceRows(evidenceRows);
+    console.log(`  Politician evidence: ${evInserted} WQ rows (${evidenceRows.length} attempted)`);
+  }
+
   return result;
 }
 

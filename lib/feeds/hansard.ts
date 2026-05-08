@@ -19,6 +19,7 @@ dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env.local') });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   throw new Error(
@@ -26,7 +27,9 @@ if (!supabaseUrl || !supabaseKey) {
   );
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseReadonly = createClient(supabaseUrl, supabaseKey);
+// Use service role for all writes (RLS blocks anon inserts)
+const supabase = serviceKey ? createClient(supabaseUrl, serviceKey) : supabaseReadonly;
 
 // ── Hansard API endpoints ────────────────────────────────────────────────
 
@@ -66,18 +69,24 @@ const SEARCH_TERMS = [
 
 interface HansardContribution {
   ItemId?: string;
+  MemberId?: number;
   MemberName?: string;
   HouseId?: number;
   House?: string;
   DebateSection?: string;
+  DebateSectionId?: string;
   DebateSectionExtId?: string;
   SittingDate?: string;
   AttributedTo?: string;
   ContributionText?: string;
+  ContributionTextFull?: string;
+  ContributionExtId?: string;
   SectionTitle?: string;
   Section?: string;
+  HansardSection?: string;
   Url?: string;
   ExternalId?: string;
+  OrderInDebateSection?: number;
 }
 
 interface HansardResponse {
@@ -239,6 +248,51 @@ function getSourceName(houseId?: number, isWritten = false): string {
   }
 }
 
+// ── Politician evidence ─────────────────────────────────────────────────
+
+let politicianByMemberId: Map<number, string> | null = null;
+
+async function loadPoliticianMap(): Promise<Map<number, string>> {
+  if (politicianByMemberId) return politicianByMemberId;
+
+  const { data, error } = await supabase
+    .from('politicians')
+    .select('id, parliament_member_id')
+    .not('parliament_member_id', 'is', null);
+
+  if (error || !data) return new Map();
+
+  politicianByMemberId = new Map(
+    data.map((p) => [p.parliament_member_id as number, p.id as string]),
+  );
+  return politicianByMemberId;
+}
+
+function makeEvidenceFingerprint(...parts: string[]): string {
+  return crypto
+    .createHash('sha256')
+    .update(parts.join('||'))
+    .digest('hex');
+}
+
+async function writeEvidenceRows(rows: Array<Record<string, unknown>>): Promise<number> {
+  if (rows.length === 0) return 0;
+
+  let inserted = 0;
+  const batchSize = 50;
+
+  for (let i = 0; i < rows.length; i += batchSize) {
+    const batch = rows.slice(i, i + batchSize);
+    const { error } = await supabase
+      .from('politician_evidence')
+      .upsert(batch, { onConflict: 'fingerprint', ignoreDuplicates: true });
+
+    if (!error) inserted += batch.length;
+  }
+
+  return inserted;
+}
+
 // ── Main collector ───────────────────────────────────────────────────────
 
 export async function collectHansard(since?: Date): Promise<{ inserted: number; skipped: number }> {
@@ -355,9 +409,70 @@ export async function collectHansard(since?: Date): Promise<{ inserted: number; 
     }
   }
 
+  // ── Write politician evidence rows ────────────────────────────────────
+  const polMap = await loadPoliticianMap();
+  let evidenceInserted = 0;
+
+  if (polMap.size > 0) {
+    const evidenceRows: Array<Record<string, unknown>> = [];
+    const seenEvidenceFp = new Set<string>();
+
+    for (const ep of endpoints) {
+      for (const term of SEARCH_TERMS) {
+        const contributions = await fetchContributions(ep.url, term, startDate, endDate, 50);
+
+        for (const c of contributions) {
+          if (!c.MemberId) continue;
+          const politicianId = polMap.get(c.MemberId);
+          if (!politicianId) continue;
+
+          const contributionId = c.ContributionExtId || c.ItemId || '';
+          const fp = makeEvidenceFingerprint(politicianId, 'chamber_speech', contributionId);
+          if (seenEvidenceFp.has(fp)) continue;
+          seenEvidenceFp.add(fp);
+
+          const title = c.SectionTitle || c.DebateSection || '';
+          const text = c.ContributionText ? stripHtml(c.ContributionText) : '';
+          const url = buildHansardUrl(c);
+          const entityIds = enrichEntityIds(title, text);
+
+          const isCommittee = (c.HansardSection || c.Section || '').toLowerCase().includes('committee');
+          const evidenceType = isCommittee ? 'committee_speech' : 'chamber_speech';
+
+          evidenceRows.push({
+            politician_id: politicianId,
+            evidence_type: evidenceType,
+            source: 'hansard',
+            source_id: contributionId,
+            source_url: url,
+            occurred_at: c.SittingDate ? new Date(c.SittingDate).toISOString() : new Date().toISOString(),
+            raw_content: text.slice(0, 5000),
+            parsed: {
+              debate_id: c.DebateSectionExtId || c.DebateSectionId || '',
+              debate_title: title,
+              contribution_id: contributionId,
+              word_count: text.split(/\s+/).length,
+              intervention: (c.OrderInDebateSection ?? 0) > 1,
+              position: 'middle',
+            },
+            topic_tags: [],
+            entity_ids: entityIds,
+            fingerprint: fp,
+          });
+        }
+
+        await delay(300);
+      }
+    }
+
+    evidenceInserted = await writeEvidenceRows(evidenceRows);
+    console.log(`  Politician evidence: ${evidenceInserted} speech rows written`);
+  }
+
   console.log(`\n=== Hansard Collection Complete ===`);
-  console.log(`Total inserted: ${totalInserted}`);
-  console.log(`Total skipped:  ${totalSkipped}\n`);
+  console.log(`Total feed inserted: ${totalInserted}`);
+  console.log(`Total feed skipped:  ${totalSkipped}`);
+  console.log(`Total evidence:      ${evidenceInserted}\n`);
 
   return { inserted: totalInserted, skipped: totalSkipped };
 }
