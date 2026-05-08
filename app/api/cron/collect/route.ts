@@ -21,8 +21,8 @@ import { collectResearchBriefings } from '@/lib/feeds/research-briefings';
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
 
-// 4.5 hours — gives 30 min overlap with the 4-hour cron schedule
-const LOOKBACK_MS = 4.5 * 60 * 60 * 1000;
+// 12.5 hours — gives 30 min overlap with the 12-hour cron schedule
+const LOOKBACK_MS = 12.5 * 60 * 60 * 1000;
 
 interface CollectorResult {
   inserted: number;
