@@ -4,6 +4,8 @@ AI-powered political intelligence platform built for [WA Communications](https:/
 
 **What it replaces:** 3-4 hours of manual monitoring per client per week — scanning GOV.UK, Hansard, legislation feeds, select committee pages, trade press, and petitions — automated into a scored, themed, report-ready feed with AI-generated weekly monitoring reports.
 
+**Politician intelligence:** Tracks MP and minister positions on policy indicators via a Bayesian inference layer. Evidence (division votes, speeches, written questions, register of interests, committee appearances) is classified — deterministically where possible, via LLM where not — and fed into per-politician Beta distributions with exponential time decay. The result is a live position estimate across policy, ideology, faction, and behaviour radars.
+
 ![Next.js](https://img.shields.io/badge/Next.js_16-black?logo=next.js) ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white) ![Supabase](https://img.shields.io/badge/Supabase-3FCF8E?logo=supabase&logoColor=white) ![Claude](https://img.shields.io/badge/Claude_Sonnet-D97706?logo=anthropic&logoColor=white) ![Tailwind](https://img.shields.io/badge/Tailwind_CSS_4-06B6D4?logo=tailwindcss&logoColor=white) ![Vercel](https://img.shields.io/badge/Vercel-000?logo=vercel)
 
 ## Stack
@@ -14,7 +16,7 @@ AI-powered political intelligence platform built for [WA Communications](https:/
 | Language | TypeScript 5, React 19 |
 | Styling | Tailwind CSS 4, CSS custom properties |
 | Database | Supabase (PostgreSQL) |
-| AI | Vercel AI SDK + `@ai-sdk/anthropic`, Claude Sonnet 4 |
+| AI | Vercel AI SDK + `@ai-sdk/anthropic`, Claude Sonnet 4 / Opus 4.6 |
 | Graph | Cytoscape.js (compound nodes, force-directed layout) |
 | Reports | `docx` (OOXML generation) |
 | Analytics | Vercel Analytics + Speed Insights |
@@ -91,6 +93,19 @@ See [`.env.example`](.env.example) for a template.
 | `collect-petitions.ts` | `npx tsx scripts/collect-petitions.ts` | Parliament petitions API |
 | `collect-research-briefings.ts` | `npx tsx scripts/collect-research-briefings.ts` | Commons & Lords Library briefings |
 
+### Politician scripts
+
+| Script | Command | Description |
+|--------|---------|-------------|
+| `migrate-politicians.ts` | `npx tsx scripts/migrate-politicians.ts migrate` | Migrate entities to politician records |
+| | `npx tsx scripts/migrate-politicians.ts backfill` | Backfill 5 years of division votes + EDM signatures |
+| | `npx tsx scripts/migrate-politicians.ts status` | Report on politician data layer state |
+| | `npx tsx scripts/migrate-politicians.ts cohort` | Energy cohort discovery query |
+| `run-classifier.ts` | `npx tsx scripts/run-classifier.ts process [--limit N]` | Classify unprocessed evidence (default: 100) |
+| | `npx tsx scripts/run-classifier.ts status` | Show classifier pipeline status |
+| | `npx tsx scripts/run-classifier.ts failures` | List unresolved classifier failures |
+| | `npx tsx scripts/run-classifier.ts migrate` | Run classifier tables migration |
+
 ### Utility scripts
 
 | Script | Command | Description |
@@ -142,10 +157,18 @@ whitehall/
 │   └── sidebar/                       # PulseSidebar, FilterPanel, GraphLegend
 │
 ├── lib/
+│   ├── ai/                            # retry.ts (backoff, concurrency limiter)
 │   ├── chat/                          # systemPrompt.ts, tools.ts
+│   ├── classifier/                    # Politician evidence → indicator classifications
+│   │   ├── constants.ts               # Weights, routing rules, thresholds
+│   │   ├── deterministic.ts           # Division vote, register, APPG, committee classifiers
+│   │   ├── llm.ts                     # Claude Sonnet 4 structured output classifier
+│   │   ├── pipeline.ts                # Main entry: routing, persistence, failure handling
+│   │   ├── types.ts                   # Classification, ClassifierResult, mapping row types
+│   │   └── version.ts                 # Classifier versioning (prompt + model hash)
 │   ├── export/                        # gather, enrich, evaluate, docx-generator, prompts, types
 │   ├── feed/                          # scoring.ts (relevance algorithm)
-│   ├── feeds/                         # 12 collectors + enrichment + dedup + verification
+│   ├── feeds/                         # 12 collectors + politician collectors (members, divisions, EDMs)
 │   ├── report/                        # generate.ts, tools.ts, mutations.ts, diff.ts, feedback.ts
 │   ├── security/                      # sanitise.ts, validateInput.ts, rateLimit.ts
 │   ├── observability/                 # opik.ts (tracing)
@@ -160,8 +183,8 @@ whitehall/
 │   ├── powers.ts, relationships.ts    # Statutory powers and entity relationships
 │   └── budgets.ts, staff.ts, tags.ts  # Financial, personnel, and classification data
 │
-├── types/                             # TypeScript interfaces (entity, client, feed, report, chat)
-├── scripts/                           # 20 collection, enrichment, and debugging scripts
+├── types/                             # TypeScript interfaces (entity, politician, client, feed, report, chat)
+├── scripts/                           # Collection, enrichment, politician migration, classifier scripts
 ├── supabase/                          # Database schema (schema.sql)
 ├── docs/                              # Detailed documentation
 ├── vercel.json                        # Cron jobs (8 collection groups, every 4h)
@@ -189,13 +212,25 @@ Set environment variables in the Vercel dashboard — at minimum `ANTHROPIC_API_
 
 ### Cron Jobs
 
-Configured in `vercel.json`. Eight parallel cron jobs run every 4 hours to collect from all structured API sources (GOV.UK, Hansard, Parliament, legislation, RSS, committees, petitions, research briefings). Each uses a 4.5-hour lookback window.
+Configured in `vercel.json`. Eight parallel cron jobs run every 12 hours to collect from all structured API sources (GOV.UK, Hansard, Parliament, legislation, RSS, committees, petitions, research briefings). A ninth job syncs politician data nightly (Parliament Members API, division votes, EDM signatures).
 
 Report generation (`/api/reports/generate`) is decoupled from collection — it only reads from Supabase and completes in ~60-100 seconds.
 
 ### Observability
 
-All Claude calls (report generation, chat, report editing) are traced to Opik and the `pipeline_traces` Supabase table. Set `OPIK_API_KEY` and `OPIK_API_URL` for Opik cloud forwarding.
+All Claude calls (report generation, chat, report editing, classifier) are traced to Opik and the `pipeline_traces` Supabase table. Set `OPIK_API_KEY` and `OPIK_API_URL` for Opik cloud forwarding.
+
+### Politician Data Pipeline
+
+```
+Parliament APIs → politician_evidence table
+  → classifier (deterministic or LLM)
+  → politician_indicator_evidence (audit trail)
+  → Bayesian update → politician_indicators (Beta state)
+  → materialized view with exponential decay → politician_indicators_decayed
+```
+
+The classifier runs via `npx tsx scripts/run-classifier.ts process` or can be wired into the cron pipeline. The materialized view is refreshed via `refresh_indicators_decayed()` RPC.
 
 ## License
 
