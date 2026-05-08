@@ -270,6 +270,118 @@ export function enrichEntityIds(
   return Array.from(ids);
 }
 
+// ── Topic taxonomy ──────────────────────────────────────────────────────
+// Maps keyword patterns to human-readable policy topic tags.
+// These are broader than entity IDs — they describe what the content is *about*.
+
+export const TOPIC_TAG_MAP: [RegExp, string][] = [
+  // Energy & climate
+  [/\boffshore wind|onshore wind|wind farm|wind energy|turbine/i, 'wind-energy'],
+  [/\bsolar\b|photovoltaic|solar farm/i, 'solar'],
+  [/\bnuclear|Sizewell|Hinkley|fusion|small modular reactor|SMR\b/i, 'nuclear'],
+  [/\bhydrogen\b|hydrogen strategy/i, 'hydrogen'],
+  [/\bCCUS\b|carbon capture|CCS\b/i, 'carbon-capture'],
+  [/\bnet zero|decarboni[sz]ation|climate change|carbon budget|emission/i, 'climate-change'],
+  [/\benergy (security|crisis|bill|price)|fuel poverty|energy efficiency/i, 'energy-policy'],
+  [/\boil and gas|oil & gas|North Sea|petroleum|fossil fuel/i, 'oil-and-gas'],
+  [/\bgrid connection|grid queue|electricity grid|transmission|distribution network/i, 'grid-infrastructure'],
+  [/\bCfD\b|contracts? for difference|allocation round|REMA\b|electricity market/i, 'energy-markets'],
+  [/\bheat pump|boiler|insulation|EPC\b|energy performance/i, 'heat-buildings'],
+  [/\bbatter(y|ies)|energy storage|pumped hydro/i, 'energy-storage'],
+
+  // Health & social care
+  [/\bNHS\b|hospital|ambulance|A&E\b|waiting list|waiting time/i, 'nhs'],
+  [/\bmental health|suicide|psychiatric|eating disorder/i, 'mental-health'],
+  [/\bsocial care|care home|domiciliary care|adult social care/i, 'social-care'],
+  [/\bvaccin|immunis/i, 'vaccines'],
+  [/\bpharmaceutical|medicine|drug (safety|approv|pric)|MHRA\b/i, 'pharmaceuticals'],
+  [/\bGP\b|general pract|primary care|dentist|dental/i, 'primary-care'],
+  [/\bcancer\b|oncolog/i, 'cancer'],
+  [/\bdementia|alzheimer/i, 'dementia'],
+
+  // Housing & planning
+  [/\bhousing (target|crisis|supply|market)|housebuilding|affordable home/i, 'housing'],
+  [/\bplanning (reform|permission|system|application)|NSIP\b|development consent/i, 'planning'],
+  [/\bcladding|building safety|Grenfell|fire safety/i, 'building-safety'],
+  [/\bleasehold|freehold|ground rent|service charge/i, 'leasehold-reform'],
+  [/\bhomeless/i, 'homelessness'],
+
+  // Economy & finance
+  [/\bbudget\b|fiscal|public spending|spending review/i, 'fiscal-policy'],
+  [/\btax (reform|relief|cut|rise|policy)|income tax|corporation tax|capital gains/i, 'taxation'],
+  [/\binflation|cost of living|interest rate/i, 'cost-of-living'],
+  [/\bpension|state pension|retirement/i, 'pensions'],
+  [/\buniversal credit|benefits?|welfare/i, 'welfare'],
+
+  // Defence & security
+  [/\bdefence (spending|review|procurement)|armed forces|military/i, 'defence'],
+  [/\bUkraine|Russia|NATO\b/i, 'ukraine-russia'],
+  [/\bcyber (security|attack|threat)/i, 'cyber-security'],
+  [/\bterror/i, 'counter-terrorism'],
+
+  // Immigration & borders
+  [/\bimmigration|asylum|refugee|migrant|small boat|Rwanda\b/i, 'immigration'],
+  [/\bvisa\b|work permit|skilled worker/i, 'visas'],
+
+  // Justice & policing
+  [/\bprison|probation|reoffending|criminal justice/i, 'criminal-justice'],
+  [/\bpolic(e|ing)|knife crime|violent crime|county lines/i, 'policing'],
+  [/\blegal aid|access to justice|court (backlog|delay)/i, 'access-to-justice'],
+
+  // Transport
+  [/\brailway|rail\b|HS2\b|train\b/i, 'railways'],
+  [/\belectric vehicle|EV\b|charging (point|infrastructure)/i, 'electric-vehicles'],
+  [/\broad (safety|building|investment)|pothole|highway/i, 'roads'],
+  [/\baviation|airport|airspace/i, 'aviation'],
+
+  // Education
+  [/\bschool|pupil|teacher|Ofsted|academy|free school/i, 'schools'],
+  [/\buniversity|higher education|student (loan|finance|debt)/i, 'higher-education'],
+  [/\bapprentice/i, 'apprenticeships'],
+  [/\bchildcare|early years|nursery/i, 'childcare'],
+
+  // Environment
+  [/\bbiodiversity|nature recovery|species|wildlife/i, 'biodiversity'],
+  [/\bwater (pollution|quality|company)|sewage|river pollution/i, 'water-quality'],
+  [/\bflood (risk|defence|warning)/i, 'flooding'],
+  [/\bair quality|air pollution|clean air/i, 'air-quality'],
+  [/\bwaste|recycling|circular economy|plastic/i, 'waste-recycling'],
+  [/\bfarming|agriculture|food (security|production)|rural/i, 'agriculture'],
+
+  // Technology & digital
+  [/\bartificial intelligence|AI (regulation|safety|governance)|machine learning/i, 'ai-regulation'],
+  [/\bbroadband|digital infrastructure|fibre|5G\b/i, 'digital-infrastructure'],
+  [/\bdata protection|privacy|online safety|online harm/i, 'online-safety'],
+
+  // Trade & industry
+  [/\btrade (deal|agreement|policy)|tariff|WTO\b|free trade/i, 'trade-policy'],
+  [/\bindustrial strategy|manufacturing|steel|automotive/i, 'industrial-strategy'],
+  [/\bfreeport|investment zone|enterprise zone/i, 'freeports'],
+
+  // Devolution & constitution
+  [/\bScotland|Scottish\b/i, 'scotland'],
+  [/\bWales|Welsh\b/i, 'wales'],
+  [/\bNorthern Ireland|Stormont/i, 'northern-ireland'],
+  [/\bdevolution|combined authority|metro mayor/i, 'devolution'],
+];
+
+/**
+ * Extract topic tags from text content.
+ * Returns deduplicated array of topic tag strings.
+ */
+export function extractTopicTags(title: string, body: string): string[] {
+  const text = `${title} ${body}`;
+  const tags = new Set<string>();
+
+  for (const [pattern, tag] of TOPIC_TAG_MAP) {
+    if (pattern.test(text)) {
+      tags.add(tag);
+    }
+  }
+
+  return Array.from(tags);
+}
+
 /**
  * Deterministic RAG status from title + body keywords.
  */

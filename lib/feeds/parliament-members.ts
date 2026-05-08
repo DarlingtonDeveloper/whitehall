@@ -16,6 +16,7 @@ import * as path from 'path';
 
 import {
   enrichEntityIds as enrichEntityIdsCentral,
+  extractTopicTags,
 } from './entity-enrichment';
 
 import type {
@@ -755,7 +756,7 @@ export async function collectRegisterInterests(): Promise<{ inserted: number; sk
             registered_on: interest.createdWhen?.split('T')[0] || null,
             related_org: null,
           },
-          topic_tags: [],
+          topic_tags: extractTopicTags(cat.name, fullContent),
           entity_ids: entityIds,
           fingerprint: makeFingerprint(pol.id, 'register_of_interests', String(interest.id)),
         });

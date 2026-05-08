@@ -17,6 +17,7 @@ import * as path from 'path';
 
 import {
   enrichEntityIds as enrichEntityIdsCentral,
+  extractTopicTags,
 } from './entity-enrichment';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env.local') });
@@ -264,7 +265,7 @@ export async function collectEdmSignatures(
             edm_title: edm.Title || '',
             primary_signatory_id: primaryMemberId,
           },
-          topic_tags: [],
+          topic_tags: extractTopicTags(edm.Title || '', edm.MotionText || ''),
           entity_ids: entityIds,
           fingerprint: makeFingerprint(politicianId, evidenceType, `edm-${edm.Id}-${memberId}`),
         });

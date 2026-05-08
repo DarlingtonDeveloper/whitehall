@@ -21,6 +21,7 @@ import * as path from 'path';
 
 import {
   enrichEntityIds as enrichEntityIdsCentral,
+  extractTopicTags,
 } from './entity-enrichment';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env.local') });
@@ -279,7 +280,7 @@ async function processCommonsDivision(
         bill_ref: null,
         amendment_ref: null,
       },
-      topic_tags: [],
+      topic_tags: extractTopicTags(divisionTitle, ''),
       entity_ids: entityIds,
       fingerprint: makeFingerprint(politicianId, 'division_vote', `commons-${divisionId}-${memberId}`),
     });
@@ -346,7 +347,7 @@ function processLordsDivisionInline(
         bill_ref: null,
         amendment_ref: null,
       },
-      topic_tags: [],
+      topic_tags: extractTopicTags(divisionTitle, ''),
       entity_ids: entityIds,
       fingerprint: makeFingerprint(politicianId, 'division_vote', `lords-${divisionId}-${memberId}`),
     });

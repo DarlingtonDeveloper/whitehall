@@ -18,6 +18,7 @@ import * as path from 'path';
 
 import {
   enrichEntityIds as enrichEntityIdsCentral,
+  extractTopicTags,
 } from './entity-enrichment';
 import { cleanTitle } from './clean-title';
 
@@ -530,7 +531,7 @@ export async function collectWrittenQuestions(since?: Date): Promise<{ inserted:
             answer_text: null,
             group_id: null,
           },
-          topic_tags: [],
+          topic_tags: extractTopicTags(questionText, q.answeringBodyName || ''),
           entity_ids: entityIds,
           fingerprint: makeEvidenceFp(askerId, 'written_question_asked', wqId),
         });
@@ -555,7 +556,7 @@ export async function collectWrittenQuestions(since?: Date): Promise<{ inserted:
             answer_text: answerText.slice(0, 2000),
             group_id: null,
           },
-          topic_tags: [],
+          topic_tags: extractTopicTags(questionText, answerText),
           entity_ids: entityIds,
           fingerprint: makeEvidenceFp(answererId, 'written_question_answered', wqId),
         });

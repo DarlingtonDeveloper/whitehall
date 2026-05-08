@@ -12,6 +12,7 @@ import * as path from 'path';
 
 import {
   enrichEntityIds as enrichEntityIdsCentral,
+  extractTopicTags,
 } from './entity-enrichment';
 import { cleanTitle } from './clean-title';
 
@@ -456,7 +457,7 @@ export async function collectHansard(since?: Date): Promise<{ inserted: number; 
               intervention: (c.OrderInDebateSection ?? 0) > 1,
               position: 'middle',
             },
-            topic_tags: [],
+            topic_tags: extractTopicTags(title, text),
             entity_ids: entityIds,
             fingerprint: fp,
           });
