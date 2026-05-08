@@ -22,11 +22,11 @@ import {
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env.local') });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
 
 if (!supabaseUrl || !supabaseKey) {
   throw new Error(
-    'Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY in .env.local',
+    'Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local',
   );
 }
 
@@ -34,7 +34,8 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // -- API endpoints -----------------------------------------------------------
 
-const EDMS_API = 'https://oralquestionsandmotions-api.parliament.uk/EarlyDayMotions';
+const EDMS_LIST_API = 'https://oralquestionsandmotions-api.parliament.uk/EarlyDayMotions/list';
+const EDM_DETAIL_API = 'https://oralquestionsandmotions-api.parliament.uk/EarlyDayMotion'; // singular: /{id}
 
 // -- Helpers -----------------------------------------------------------------
 
@@ -122,27 +123,30 @@ interface EdmListResponse {
 }
 
 interface EdmListItem {
-  id: number;
-  title: string;
-  dateTabled: string;
-  primarySponsor: { memberId: number; name: string } | null;
-  numberOfSignatures: number;
-  motionText: string | null;
+  Id: number;
+  Title: string;
+  DateTabled: string;
+  MemberId: number;
+  PrimarySponsor: { MnisId: number; Name: string } | null;
+  SponsorsCount: number;
+  MotionText: string | null;
 }
 
 interface EdmDetailResponse {
   Response: {
-    id: number;
-    title: string;
-    dateTabled: string;
-    primarySponsor: { memberId: number; name: string } | null;
-    motionText: string | null;
-    sponsors: Array<{
-      memberId: number;
-      name: string;
-      isMainSponsor: boolean;
-      sponsoringOrder: number;
-      dateSigned: string | null;
+    Id: number;
+    Title: string;
+    DateTabled: string;
+    MemberId: number;
+    PrimarySponsor: { MnisId: number; Name: string } | null;
+    MotionText: string | null;
+    Sponsors: Array<{
+      Id: number;
+      MemberId: number;
+      Member: { MnisId: number; Name: string };
+      CreatedWhen: string | null;
+      IsMainSponsor?: boolean;
+      Order?: number;
     }>;
   };
 }
@@ -212,7 +216,7 @@ export async function collectEdmSignatures(
       'Parameters.OrderBy': 'DateTabledDesc',
     });
 
-    const listUrl = `${EDMS_API}/list?${params}`;
+    const listUrl = `${EDMS_LIST_API}?${params}`;
     const listData = await fetchJson<EdmListResponse>(listUrl, `EDM list skip=${skip}`);
 
     if (!listData?.Response || listData.Response.length === 0) {
@@ -221,44 +225,47 @@ export async function collectEdmSignatures(
     }
 
     for (const edm of listData.Response) {
-      // Fetch detail for signatories
+      // Fetch detail for sponsor list
       const detail = await fetchJson<EdmDetailResponse>(
-        `${EDMS_API}/${edm.id}`,
-        `EDM ${edm.id}`,
+        `${EDM_DETAIL_API}/${edm.Id}`,
+        `EDM ${edm.Id}`,
       );
       await delay(200);
 
-      if (!detail?.Response?.sponsors) continue;
+      if (!detail?.Response?.Sponsors) continue;
 
-      const edmUrl = `https://edm.parliament.uk/early-day-motion/${edm.id}`;
-      const entityIds = enrichEntityIdsCentral([], edm.title || '', edm.motionText || '');
+      const edmUrl = `https://edm.parliament.uk/early-day-motion/${edm.Id}`;
+      const entityIds = enrichEntityIdsCentral([], edm.Title || '', edm.MotionText || '');
 
       const rows: Array<Record<string, unknown>> = [];
+      const primaryMemberId = edm.PrimarySponsor?.MnisId ?? edm.MemberId;
 
-      for (const sponsor of detail.Response.sponsors) {
-        const politicianId = polMap.get(sponsor.memberId);
+      for (const sponsor of detail.Response.Sponsors) {
+        const memberId = sponsor.Member?.MnisId ?? sponsor.MemberId;
+        const politicianId = polMap.get(memberId);
         if (!politicianId) continue;
 
-        const evidenceType = sponsor.isMainSponsor ? 'edm_proposed' : 'edm_signature';
+        const isPrimary = memberId === primaryMemberId;
+        const evidenceType = isPrimary ? 'edm_proposed' : 'edm_signature';
 
         rows.push({
           politician_id: politicianId,
           evidence_type: evidenceType,
           source: 'parliament-api',
-          source_id: `edm-${edm.id}-member-${sponsor.memberId}`,
+          source_id: `edm-${edm.Id}-member-${memberId}`,
           source_url: edmUrl,
-          occurred_at: sponsor.dateSigned
-            ? new Date(sponsor.dateSigned).toISOString()
-            : new Date(edm.dateTabled).toISOString(),
-          raw_content: `${edm.title}${edm.motionText ? ': ' + edm.motionText.slice(0, 500) : ''}`,
+          occurred_at: sponsor.CreatedWhen
+            ? new Date(sponsor.CreatedWhen).toISOString()
+            : new Date(edm.DateTabled).toISOString(),
+          raw_content: `${edm.Title}${edm.MotionText ? ': ' + edm.MotionText.slice(0, 500) : ''}`,
           parsed: {
-            edm_id: String(edm.id),
-            edm_title: edm.title || '',
-            primary_signatory_id: edm.primarySponsor?.memberId ?? null,
+            edm_id: String(edm.Id),
+            edm_title: edm.Title || '',
+            primary_signatory_id: primaryMemberId,
           },
           topic_tags: [],
           entity_ids: entityIds,
-          fingerprint: makeFingerprint(politicianId, evidenceType, `edm-${edm.id}-${sponsor.memberId}`),
+          fingerprint: makeFingerprint(politicianId, evidenceType, `edm-${edm.Id}-${memberId}`),
         });
       }
 

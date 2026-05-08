@@ -26,11 +26,11 @@ import {
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env.local') });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
+const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
 
 if (!supabaseUrl || !supabaseKey) {
   throw new Error(
-    'Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY in .env.local',
+    'Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local',
   );
 }
 
@@ -38,8 +38,9 @@ const supabase = createClient(supabaseUrl, supabaseKey);
 
 // -- API endpoints -----------------------------------------------------------
 
-const COMMONS_DIVISIONS_API = 'https://commonsvotes-api.parliament.uk/data/divisions.json';
-const LORDS_DIVISIONS_API = 'https://lordsvotes-api.parliament.uk/data/Divisions';
+const COMMONS_DIVISIONS_SEARCH = 'https://commonsvotes-api.parliament.uk/data/divisions.json/search';
+const COMMONS_DIVISION_DETAIL = 'https://commonsvotes-api.parliament.uk/data/division'; // /{id}.json
+const LORDS_DIVISIONS_SEARCH = 'https://lordsvotes-api.parliament.uk/data/Divisions/search';
 
 // -- Helpers -----------------------------------------------------------------
 
@@ -121,6 +122,7 @@ async function upsertEvidence(rows: Array<Record<string, unknown>>): Promise<{ i
 
 // -- Types -------------------------------------------------------------------
 
+// Commons uses PascalCase
 interface CommonsDivisionDetail {
   DivisionId: number;
   Title: string;
@@ -141,24 +143,17 @@ interface CommonsDivisionListItem {
   NoCount: number;
 }
 
-interface LordsDivisionDetail {
-  DivisionId: number;
-  Title: string;
-  Date: string;
-  AuthorityCount: number;
-  NotAuthorityCount: number;
-  Contents: Array<{ MemberId: number; Name: string; Party: string }>;
-  NotContents: Array<{ MemberId: number; Name: string; Party: string }>;
-  ContentTellers: Array<{ MemberId: number; Name: string; Party: string }>;
-  NotContentTellers: Array<{ MemberId: number; Name: string; Party: string }>;
-}
-
-interface LordsDivisionListItem {
-  DivisionId: number;
-  Title: string;
-  Date: string;
-  AuthorityCount: number;
-  NotAuthorityCount: number;
+// Lords uses camelCase and includes vote lists inline in search results
+interface LordsDivisionSearchItem {
+  divisionId: number;
+  title: string;
+  date: string;
+  authoritativeContentCount: number;
+  authoritativeNotContentCount: number;
+  contents: Array<{ memberId: number; name: string; party: string }>;
+  notContents: Array<{ memberId: number; name: string; party: string }>;
+  contentTellers: Array<{ memberId: number; name: string; party: string }>;
+  notContentTellers: Array<{ memberId: number; name: string; party: string }>;
 }
 
 // -- Politician lookup cache -------------------------------------------------
@@ -194,20 +189,22 @@ async function loadPoliticianMap(): Promise<Map<number, string>> {
  * that's the whip direction.
  */
 function detectPartyWhips(
-  ayes: Array<{ Party: string }>,
-  noes: Array<{ Party: string }>,
+  ayes: Array<{ Party?: string; party?: string }>,
+  noes: Array<{ Party?: string; party?: string }>,
 ): Map<string, 'aye' | 'no'> {
   const partyCounts = new Map<string, { aye: number; no: number }>();
 
   for (const v of ayes) {
-    const c = partyCounts.get(v.Party) ?? { aye: 0, no: 0 };
+    const p = v.Party || v.party || '';
+    const c = partyCounts.get(p) ?? { aye: 0, no: 0 };
     c.aye++;
-    partyCounts.set(v.Party, c);
+    partyCounts.set(p, c);
   }
   for (const v of noes) {
-    const c = partyCounts.get(v.Party) ?? { aye: 0, no: 0 };
+    const p = v.Party || v.party || '';
+    const c = partyCounts.get(p) ?? { aye: 0, no: 0 };
     c.no++;
-    partyCounts.set(v.Party, c);
+    partyCounts.set(p, c);
   }
 
   const whips = new Map<string, 'aye' | 'no'>();
@@ -232,7 +229,7 @@ async function processCommonsDivision(
   polMap: Map<number, string>,
 ): Promise<Array<Record<string, unknown>>> {
   const detail = await fetchJson<CommonsDivisionDetail>(
-    `${COMMONS_DIVISIONS_API}/${divisionId}`,
+    `${COMMONS_DIVISION_DETAIL}/${divisionId}.json`,
     `Division ${divisionId}`,
   );
 
@@ -297,25 +294,23 @@ async function processCommonsDivision(
 
 // -- Lords divisions ---------------------------------------------------------
 
-async function processLordsDivision(
-  divisionId: number,
+/**
+ * Process a Lords division directly from search results (which include vote lists).
+ * No separate detail fetch needed — Lords API returns everything inline.
+ */
+function processLordsDivisionInline(
+  div: LordsDivisionSearchItem,
   polMap: Map<number, string>,
-): Promise<Array<Record<string, unknown>>> {
-  const detail = await fetchJson<LordsDivisionDetail>(
-    `${LORDS_DIVISIONS_API}/${divisionId}`,
-    `Lords Division ${divisionId}`,
-  );
-
-  if (!detail) return [];
-
-  const divisionTitle = detail.Title || '';
-  const divisionDate = detail.Date?.split('T')[0] || new Date().toISOString().split('T')[0];
+): Array<Record<string, unknown>> {
+  const divisionId = div.divisionId;
+  const divisionTitle = div.title || '';
+  const divisionDate = div.date?.split('T')[0] || new Date().toISOString().split('T')[0];
   const divisionUrl = `https://votes.parliament.uk/votes/lords/division/${divisionId}`;
 
   const entityIds = enrichEntityIdsCentral([], divisionTitle, '');
 
-  const allAyes = [...(detail.Contents || []), ...(detail.ContentTellers || [])];
-  const allNoes = [...(detail.NotContents || []), ...(detail.NotContentTellers || [])];
+  const allAyes = [...(div.contents || []), ...(div.contentTellers || [])];
+  const allNoes = [...(div.notContents || []), ...(div.notContentTellers || [])];
   const partyWhips = detectPartyWhips(allAyes, allNoes);
 
   const rows: Array<Record<string, unknown>> = [];
@@ -356,10 +351,10 @@ async function processLordsDivision(
     });
   }
 
-  for (const v of (detail.Contents || [])) addVote(v.MemberId, v.Party, 'aye');
-  for (const v of (detail.NotContents || [])) addVote(v.MemberId, v.Party, 'no');
-  for (const v of (detail.ContentTellers || [])) addVote(v.MemberId, v.Party, 'teller_aye');
-  for (const v of (detail.NotContentTellers || [])) addVote(v.MemberId, v.Party, 'teller_no');
+  for (const v of (div.contents || [])) addVote(v.memberId, v.party, 'aye');
+  for (const v of (div.notContents || [])) addVote(v.memberId, v.party, 'no');
+  for (const v of (div.contentTellers || [])) addVote(v.memberId, v.party, 'teller_aye');
+  for (const v of (div.notContentTellers || [])) addVote(v.memberId, v.party, 'teller_no');
 
   return rows;
 }
@@ -391,44 +386,45 @@ export async function collectCommonsDivisionVotes(
       ? monthsAgo(options.backfillYears * 12)
       : monthsAgo(12);
 
-  // First, get the list of divisions
-  const searchUrl = `${COMMONS_DIVISIONS_API}/search?queryParameters.startDate=${sinceDate}`;
-  const divisionList = await fetchJson<CommonsDivisionListItem[]>(searchUrl, 'Commons divisions list');
-
-  if (!divisionList || divisionList.length === 0) {
-    console.log('  No divisions found');
-    return { inserted: 0, skipped: 0 };
-  }
-
-  console.log(`  Found ${divisionList.length} divisions since ${sinceDate}`);
-
+  // Paginate through all divisions
   let totalInserted = 0;
   let totalSkipped = 0;
+  let divisionCount = 0;
+  let skip = 0;
+  const take = 25;
+  let hasMore = true;
 
-  // Process in batches of 10 divisions
-  for (let i = 0; i < divisionList.length; i += 10) {
-    const batch = divisionList.slice(i, i + 10);
+  while (hasMore) {
+    const searchUrl = `${COMMONS_DIVISIONS_SEARCH}?queryParameters.startDate=${sinceDate}&queryParameters.skip=${skip}&queryParameters.take=${take}`;
+    const page = await fetchJson<CommonsDivisionListItem[]>(searchUrl, `Commons divisions skip=${skip}`);
 
-    const allRows: Array<Record<string, unknown>> = [];
+    if (!page || page.length === 0) {
+      hasMore = false;
+      break;
+    }
 
-    for (const div of batch) {
+    console.log(`  Page at skip=${skip}: ${page.length} divisions`);
+
+    for (const div of page) {
       const rows = await processCommonsDivision(div.DivisionId, polMap);
-      allRows.push(...rows);
+      if (rows.length > 0) {
+        await upsertEvidence(rows);
+        totalInserted += rows.length;
+      }
+      divisionCount++;
       await delay(200);
+
+      if (divisionCount % 50 === 0) {
+        console.log(`  Progress: ${divisionCount} divisions, ~${totalInserted} votes`);
+      }
     }
 
-    if (allRows.length > 0) {
-      const result = await upsertEvidence(allRows);
-      totalInserted += result.inserted;
-      totalSkipped += result.skipped;
-    }
-
-    if ((i + 10) % 100 === 0) {
-      console.log(`  Progress: ${Math.min(i + 10, divisionList.length)}/${divisionList.length} divisions, ${totalInserted} votes inserted`);
-    }
+    skip += take;
+    if (page.length < take) hasMore = false;
+    await delay(300);
   }
 
-  console.log(`  Commons votes: ${totalInserted} inserted, ${totalSkipped} skipped`);
+  console.log(`  Commons: ${divisionCount} divisions, ${totalInserted} votes`);
   return { inserted: totalInserted, skipped: totalSkipped };
 }
 
@@ -452,42 +448,43 @@ export async function collectLordsDivisionVotes(
       ? monthsAgo(options.backfillYears * 12)
       : monthsAgo(12);
 
-  const searchUrl = `${LORDS_DIVISIONS_API}/search?StartDate=${sinceDate}`;
-  const divisionList = await fetchJson<LordsDivisionListItem[]>(searchUrl, 'Lords divisions list');
-
-  if (!divisionList || divisionList.length === 0) {
-    console.log('  No Lords divisions found');
-    return { inserted: 0, skipped: 0 };
-  }
-
-  console.log(`  Found ${divisionList.length} Lords divisions since ${sinceDate}`);
-
+  // Lords search returns vote lists inline — paginate through all
   let totalInserted = 0;
   let totalSkipped = 0;
+  let divisionCount = 0;
+  let skip = 0;
+  const take = 25;
+  let hasMore = true;
 
-  for (let i = 0; i < divisionList.length; i += 10) {
-    const batch = divisionList.slice(i, i + 10);
+  while (hasMore) {
+    const searchUrl = `${LORDS_DIVISIONS_SEARCH}?StartDate=${sinceDate}&Skip=${skip}&Take=${take}`;
+    const page = await fetchJson<LordsDivisionSearchItem[]>(searchUrl, `Lords divisions skip=${skip}`);
+
+    if (!page || page.length === 0) {
+      hasMore = false;
+      break;
+    }
+
+    console.log(`  Page at skip=${skip}: ${page.length} Lords divisions`);
 
     const allRows: Array<Record<string, unknown>> = [];
-
-    for (const div of batch) {
-      const rows = await processLordsDivision(div.DivisionId, polMap);
+    for (const div of page) {
+      const rows = processLordsDivisionInline(div, polMap);
       allRows.push(...rows);
-      await delay(200);
+      divisionCount++;
     }
 
     if (allRows.length > 0) {
-      const result = await upsertEvidence(allRows);
-      totalInserted += result.inserted;
-      totalSkipped += result.skipped;
+      await upsertEvidence(allRows);
+      totalInserted += allRows.length;
     }
 
-    if ((i + 10) % 100 === 0) {
-      console.log(`  Progress: ${Math.min(i + 10, divisionList.length)}/${divisionList.length} divisions, ${totalInserted} votes inserted`);
-    }
+    skip += take;
+    if (page.length < take) hasMore = false;
+    await delay(300);
   }
 
-  console.log(`  Lords votes: ${totalInserted} inserted, ${totalSkipped} skipped`);
+  console.log(`  Lords: ${divisionCount} divisions, ${totalInserted} votes`);
   return { inserted: totalInserted, skipped: totalSkipped };
 }
 
