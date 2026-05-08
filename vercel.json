@@ -7,6 +7,7 @@
     { "path": "/api/cron/collect?group=parliament_activity", "schedule": "0 */12 * * *" },
     { "path": "/api/cron/collect?group=legislation", "schedule": "0 */12 * * *" },
     { "path": "/api/cron/collect?group=media", "schedule": "0 */12 * * *" },
-    { "path": "/api/cron/collect?group=research", "schedule": "0 */12 * * *" }
+    { "path": "/api/cron/collect?group=research", "schedule": "0 */12 * * *" },
+    { "path": "/api/cron/collect?group=politician_sync", "schedule": "0 3 * * *" }
   ]
 }

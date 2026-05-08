@@ -186,3 +186,193 @@ CREATE TABLE IF NOT EXISTS pipeline_traces (
 
 CREATE INDEX IF NOT EXISTS idx_pipeline_traces_client ON pipeline_traces (client_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_pipeline_traces_step ON pipeline_traces (step);
+
+-- ============================================================================
+-- Row Level Security
+-- ============================================================================
+-- Enable RLS on every table. Only the service_role key bypasses these
+-- policies, so the anon/publishable key has zero access by default.
+-- Add granular user-facing policies here once authentication is in place.
+
+ALTER TABLE feed_items             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE client_feed_scores     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE client_scans           ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chat_conversations     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE chat_messages          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE enriched_items         ENABLE ROW LEVEL SECURITY;
+ALTER TABLE report_drafts          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE report_chat_messages   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE report_revisions       ENABLE ROW LEVEL SECURITY;
+ALTER TABLE client_learned_signals ENABLE ROW LEVEL SECURITY;
+ALTER TABLE pipeline_traces        ENABLE ROW LEVEL SECURITY;
+
+-- The service_role key bypasses RLS entirely, so no explicit policies are
+-- needed for server-side code.
+--
+-- Anon (publishable key) gets read-only access to feed tables so the UI
+-- can load the feed panel. Everything else is blocked for anon.
+CREATE POLICY anon_read_feed       ON feed_items         FOR SELECT TO anon USING (true);
+CREATE POLICY anon_read_scores     ON client_feed_scores FOR SELECT TO anon USING (true);
+
+-- ============================================================================
+-- Politician data layer
+-- ============================================================================
+
+-- Person-level record. Stable across role changes, reshuffles, elections.
+CREATE TABLE IF NOT EXISTS politicians (
+  id                    TEXT PRIMARY KEY,
+  parliament_member_id  INTEGER UNIQUE,
+  full_name             TEXT NOT NULL,
+  display_name          TEXT NOT NULL,
+  party                 TEXT,
+  party_history         JSONB DEFAULT '[]',
+  house                 TEXT NOT NULL CHECK (house IN ('commons','lords','both','former')),
+  constituency          TEXT,
+  constituency_history  JSONB DEFAULT '[]',
+  first_elected         DATE,
+  peerage_date          DATE,
+  portrait_url          TEXT,
+  bio                   TEXT,
+  gender                TEXT,
+  date_of_birth         DATE,
+  status                TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active','retired','deceased','defeated')),
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at            TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_politicians_member_id ON politicians(parliament_member_id);
+CREATE INDEX IF NOT EXISTS idx_politicians_party ON politicians(party);
+CREATE INDEX IF NOT EXISTS idx_politicians_status ON politicians(status);
+
+-- Many-to-many over time — links politicians to existing entity model.
+CREATE TABLE IF NOT EXISTS politician_roles (
+  id              BIGSERIAL PRIMARY KEY,
+  politician_id   TEXT NOT NULL REFERENCES politicians(id) ON DELETE CASCADE,
+  role_entity_id  TEXT NOT NULL,
+  role_type       TEXT NOT NULL,
+  start_date      DATE NOT NULL,
+  end_date        DATE,
+  source          TEXT NOT NULL,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_politician_roles_politician ON politician_roles(politician_id);
+CREATE INDEX IF NOT EXISTS idx_politician_roles_role ON politician_roles(role_entity_id);
+CREATE INDEX IF NOT EXISTS idx_politician_roles_active ON politician_roles(politician_id) WHERE end_date IS NULL;
+
+-- Unified evidence stream. Every Hansard contribution, division vote, WQ,
+-- committee appearance, register entry becomes a row here.
+CREATE TABLE IF NOT EXISTS politician_evidence (
+  id              BIGSERIAL PRIMARY KEY,
+  politician_id   TEXT NOT NULL REFERENCES politicians(id) ON DELETE CASCADE,
+  evidence_type   TEXT NOT NULL CHECK (evidence_type IN (
+    'division_vote',
+    'chamber_speech',
+    'committee_speech',
+    'committee_question',
+    'written_question_asked',
+    'written_question_answered',
+    'oral_question_asked',
+    'oral_question_answered',
+    'edm_signature',
+    'edm_proposed',
+    'amendment_tabled',
+    'op_ed',
+    'press_release',
+    'interview',
+    'register_of_interests',
+    'appg_membership',
+    'committee_membership',
+    'social_post'
+  )),
+  source          TEXT NOT NULL,
+  source_id       TEXT,
+  source_url      TEXT,
+  occurred_at     TIMESTAMPTZ NOT NULL,
+  ingested_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  raw_content     TEXT,
+  parsed          JSONB NOT NULL DEFAULT '{}',
+  topic_tags      TEXT[] DEFAULT '{}',
+  entity_ids      TEXT[] DEFAULT '{}',
+  fingerprint     TEXT NOT NULL,
+  UNIQUE(fingerprint)
+);
+
+CREATE INDEX IF NOT EXISTS idx_evidence_politician ON politician_evidence(politician_id);
+CREATE INDEX IF NOT EXISTS idx_evidence_type ON politician_evidence(evidence_type);
+CREATE INDEX IF NOT EXISTS idx_evidence_occurred ON politician_evidence(occurred_at DESC);
+CREATE INDEX IF NOT EXISTS idx_evidence_topics ON politician_evidence USING GIN(topic_tags);
+CREATE INDEX IF NOT EXISTS idx_evidence_entities ON politician_evidence USING GIN(entity_ids);
+CREATE INDEX IF NOT EXISTS idx_evidence_politician_type_date ON politician_evidence(politician_id, evidence_type, occurred_at DESC);
+
+-- Indicator catalogue — defines what we measure.
+CREATE TABLE IF NOT EXISTS indicator_definitions (
+  id              TEXT PRIMARY KEY,
+  radar           TEXT NOT NULL CHECK (radar IN ('policy','ideology','faction','behaviour','career','network')),
+  policy_area     TEXT,
+  label_low       TEXT NOT NULL,
+  label_high      TEXT NOT NULL,
+  description     TEXT NOT NULL,
+  half_life_years NUMERIC NOT NULL DEFAULT 3.0,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Beta state per politician × indicator. Stub — populated by math layer later.
+CREATE TABLE IF NOT EXISTS politician_indicators (
+  politician_id   TEXT NOT NULL REFERENCES politicians(id) ON DELETE CASCADE,
+  indicator_id    TEXT NOT NULL REFERENCES indicator_definitions(id) ON DELETE CASCADE,
+  alpha           NUMERIC NOT NULL DEFAULT 1.0,
+  beta            NUMERIC NOT NULL DEFAULT 1.0,
+  evidence_count  INTEGER NOT NULL DEFAULT 0,
+  last_updated    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (politician_id, indicator_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_pol_ind_politician ON politician_indicators(politician_id);
+
+-- Audit trail — which evidence rows updated which indicators.
+CREATE TABLE IF NOT EXISTS politician_indicator_evidence (
+  id                  BIGSERIAL PRIMARY KEY,
+  politician_id       TEXT NOT NULL,
+  indicator_id        TEXT NOT NULL,
+  evidence_id         BIGINT NOT NULL REFERENCES politician_evidence(id) ON DELETE CASCADE,
+  anchor              NUMERIC NOT NULL,
+  raw_weight          NUMERIC NOT NULL,
+  effective_weight    NUMERIC NOT NULL,
+  applied_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  classifier_version  TEXT NOT NULL,
+  classifier_reasoning TEXT,
+  FOREIGN KEY (politician_id, indicator_id) REFERENCES politician_indicators(politician_id, indicator_id) ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_pie_evidence ON politician_indicator_evidence(evidence_id);
+CREATE INDEX IF NOT EXISTS idx_pie_indicator ON politician_indicator_evidence(politician_id, indicator_id);
+
+-- Manual review queue for ambiguous entity → politician matches during migration.
+CREATE TABLE IF NOT EXISTS politician_match_review (
+  id              BIGSERIAL PRIMARY KEY,
+  entity_id       TEXT NOT NULL,
+  entity_name     TEXT NOT NULL,
+  current_holder  TEXT NOT NULL,
+  candidate_ids   JSONB NOT NULL DEFAULT '[]',
+  status          TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','resolved','skipped')),
+  resolved_politician_id TEXT REFERENCES politicians(id),
+  notes           TEXT,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- RLS for politician tables
+ALTER TABLE politicians                  ENABLE ROW LEVEL SECURITY;
+ALTER TABLE politician_roles             ENABLE ROW LEVEL SECURITY;
+ALTER TABLE politician_evidence          ENABLE ROW LEVEL SECURITY;
+ALTER TABLE indicator_definitions        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE politician_indicators        ENABLE ROW LEVEL SECURITY;
+ALTER TABLE politician_indicator_evidence ENABLE ROW LEVEL SECURITY;
+ALTER TABLE politician_match_review      ENABLE ROW LEVEL SECURITY;
+
+-- Anon read access for politician data (UI needs to display it)
+CREATE POLICY anon_read_politicians      ON politicians          FOR SELECT TO anon USING (true);
+CREATE POLICY anon_read_pol_roles        ON politician_roles     FOR SELECT TO anon USING (true);
+CREATE POLICY anon_read_pol_evidence     ON politician_evidence  FOR SELECT TO anon USING (true);
+CREATE POLICY anon_read_indicators       ON indicator_definitions FOR SELECT TO anon USING (true);
+CREATE POLICY anon_read_pol_indicators   ON politician_indicators FOR SELECT TO anon USING (true);

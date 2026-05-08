@@ -17,6 +17,9 @@ import { collectDirectSources } from '@/lib/feeds/direct-sources';
 import { collectCommittees } from '@/lib/feeds/committees';
 import { collectPetitions } from '@/lib/feeds/petitions';
 import { collectResearchBriefings } from '@/lib/feeds/research-briefings';
+import { collectParliamentMembers } from '@/lib/feeds/parliament-members';
+import { collectDivisionVotes } from '@/lib/feeds/parliament-divisions';
+import { collectEdmSignatures } from '@/lib/feeds/parliament-edms';
 
 export const dynamic = 'force-dynamic';
 export const maxDuration = 300;
@@ -78,6 +81,12 @@ function makeGroups(since: Date): Record<string, () => Promise<Record<string, Co
       committees: await runCollector('Committees', collectCommittees),
       petitions: await runCollector('Petitions', () => collectPetitions(since)),
       researchBriefings: await runCollector('Research Briefings', () => collectResearchBriefings(since)),
+    }),
+    // Politician data layer — nightly sync of member details + evidence
+    politician_sync: async () => ({
+      members: await runCollector('Parliament Members', collectParliamentMembers),
+      divisionVotes: await runCollector('Division Votes', () => collectDivisionVotes({ since })),
+      edmSignatures: await runCollector('EDM Signatures', () => collectEdmSignatures({ since })),
     }),
   };
 }
