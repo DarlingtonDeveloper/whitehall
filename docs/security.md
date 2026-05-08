@@ -6,7 +6,7 @@ POC security hardening. Authentication and RBAC are deferred until after the com
 
 ### Prompt Injection Defence
 
-**Feed content sanitisation** (`lib/security/sanitise.ts`): Strips 25+ injection patterns from feed content before it enters Claude's context. Applied in all tool outputs (`formatResults`, `formatDeadlineItem`, `handleFeedTopItems`). Patterns include:
+**Feed content sanitisation** (`lib/security/sanitise.ts`): Strips ~21 injection patterns (`INJECTION_PATTERNS`) from feed content before it enters Claude's context. Applied in all tool outputs (`formatResults`, `formatDeadlineItem`, `handleFeedTopItems`). Patterns include:
 
 - Direct instructions: "ignore previous instructions", "system prompt:", "you are now"
 - Data exfiltration: "output the full system", "reveal your instructions"
@@ -20,9 +20,8 @@ POC security hardening. Authentication and RBAC are deferred until after the com
 
 ### Input Validation (`lib/security/validateInput.ts`)
 
-- Message length: max 5,000 characters
-- Conversation length: max 100 messages
-- Applied to both `/api/chat` and `/api/reports/[id]/chat`
+- Message length: max 5,000 characters (both `/api/chat` and `/api/reports/[id]/chat`)
+- Conversation length: max 100 messages (`/api/chat` only — report chat history lives server-side in Supabase, so a length check would be redundant)
 
 ### Rate Limiting (`lib/security/rateLimit.ts`)
 
@@ -35,14 +34,15 @@ In-memory per-IP/per-client limits (resets on deploy):
 | Report generation (`/api/reports/generate`) | 5/hour per IP |
 | Scan (`/api/scan`) | 3/hour per client |
 | Export (`/api/reports/[id]/export`) | 10/hour per IP |
-| Full export (`/api/export`) | 5/hour per IP |
 
-Rate limit violations logged to audit table.
+Rate-limit violations are written via `logAudit('rate_limit_hit', …)` from `lib/audit.ts`. Note the target `audit_log` table is referenced in code but is **not declared in `supabase/schema.sql`** — verify it exists in your environment, otherwise audit writes will fail silently.
 
 ### Database Key Separation (`lib/db.ts`)
 
 - `supabase` — Publishable key (client-side, RLS-enforced)
 - `getServiceClient()` — Service role key (server-side, bypasses RLS). Falls back to publishable key if not configured.
+
+Every Supabase table has Row Level Security enabled. The anonymous role gets `SELECT` only on read-mostly tables (`feed_items`, `client_feed_scores`, plus most politician/classifier tables); inserts and updates require the service role. The politician collectors specifically need `SUPABASE_SERVICE_ROLE_KEY` — the publishable-key fallback will fail RLS for anonymous writes.
 
 ### Security Headers (`next.config.ts`)
 

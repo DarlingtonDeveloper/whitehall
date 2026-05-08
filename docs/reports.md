@@ -4,18 +4,21 @@
 
 Implemented in `lib/report/generate.ts`. The streaming API route (`/api/reports/generate`) exposes each step as an SSE progress event.
 
-Collection is fully decoupled from report generation — the pipeline only reads from Supabase, never fetches from external sources. Collection runs via `/api/cron/collect` (every 4 hours), manual `/api/scan`, and `scripts/collect-all.ts`.
+Collection is fully decoupled from report generation — the pipeline only reads from Supabase, never fetches from external sources. Collection runs via `/api/cron/collect` (every 12 hours), manual `/api/scan`, and `scripts/collect-all.ts`.
 
 ```
-1. GATHER ────── gatherItems (Supabase: entity overlap + keyword match, max 500)
-2. SCORE ─────── computeFeedRelevance (6-component algorithm + learned signals)
-                  Filter: score >= 0.25, take top 60
-3. DEDUP ─────── deduplicateSemantic (Jaccard + entity overlap + temporal proximity)
-4. SELECT ────── Top 40 items post-dedup
-5. GROUP ─────── groupByTheme (deterministic: entity overlap → keyword match → 'other')
-6. ENRICH ────── enrichItems (Claude per theme + synthesis pass)
-7. EVALUATE ──── evaluateReport (template + factuality + specificity)
-8. SAVE ──────── Insert report_drafts with sections + original_sections
+1. GATHER ─────── gatherItems (Supabase: entity overlap + keyword match, max 500)
+2. SCORE ──────── computeFeedRelevance (6-component algorithm + learned signals)
+                   Filter: score >= 0.25, take top 60
+3. DEDUP ──────── deduplicateSemantic (Jaccard + entity overlap + temporal proximity)
+4. SELECT ─────── Top 40 items post-dedup (MAX_ITEMS)
+5. GROUP ──────── groupByTheme (deterministic: entity overlap → keyword match → 'other')
+6. ENRICH ─────── enrichItems (claude-sonnet-4-20250514 per theme @ concurrency 2,
+                   then claude-opus-4-6 synthesis pass with extended thinking)
+6b. CITATION ──── Items whose source_items[0] fingerprint isn't in the gathered set
+                   have confidence reduced by 0.2 (floor 0.3)
+7. EVALUATE ───── evaluateReport (template + factuality + specificity LLM-as-judge)
+8. SAVE ───────── Insert report_drafts with sections + original_sections
 ```
 
 Expected timing on Vercel Pro (300s limit): ~60-100 seconds total.
@@ -26,7 +29,7 @@ Expected timing on Vercel Pro (300s limit): ~60-100 seconds total.
 
 **Group** (`lib/export/gather.ts`): Routes each item to one monitoring theme. Priority: entity overlap match → keyword match → 'other' bucket.
 
-**Enrich** (`lib/export/enrich.ts`): One Claude Sonnet call per theme with `buildThemePrompt()`. Produces `AnalysedItem` objects with headline, summary, client_relevance, recommended_action, rag, escalation, confidence. Then a synthesis pass produces executive_summary, forward_look, emerging_themes, actions_tracker, coverage_summary.
+**Enrich** (`lib/export/enrich.ts`): One `claude-sonnet-4-20250514` call per theme with `buildThemePrompt()`, run with bounded concurrency 2 via `mapWithConcurrency`. Produces `AnalysedItem` objects with headline, summary, client_relevance, recommended_action, rag, escalation, confidence. Then a synthesis pass on `claude-opus-4-6` (with extended thinking) produces executive_summary, forward_look, emerging_themes, actions_tracker, coverage_summary.
 
 **Evaluate** (`lib/export/evaluate.ts`): Three layers:
 1. Template validation (~30 deterministic checks): required fields, valid RAG/escalation values, section structure
@@ -78,6 +81,8 @@ AI assistant for editing. Streaming response with mutation markers:
 - Parses `<!--MUTATION:{json}-->` from response stream
 - Applies mutations to local state immediately
 - Context-aware quick actions based on active section/item
+
+Mutations from chat tools and `PATCH /api/reports/[id]` flow through `lib/report/mutations.ts` (`applyEditField`, `applyRemoveItem`, `applyMoveItem`, `applyAddItem`). `saveReportContent()` always snapshots the prior `sections` blob into `report_revisions` before updating `report_drafts`, recording `edit_source` (`manual_patch`, `chat_mutation`, or `rollback`), an optional `mutation_summary`, and the linking `chat_message_id`. The history is exposed via `GET /api/reports/[id]/revisions` and rolled back via `POST /api/reports/[id]/revisions`.
 
 ---
 
@@ -152,7 +157,7 @@ Items with `confidence < 0.7` get `[UNVERIFIED]` prefix in amber.
 
 ### Diff Computation (`lib/report/diff.ts`)
 
-`computeReportDiff()` compares `original_sections` with edited `sections` using `source_items[0]` fingerprints for stable matching:
+`computeReportDiff()` compares `original_sections` with edited `sections` matching items by `source_items[0]` fingerprint, falling back to `item.ref`:
 
 ```typescript
 interface ReportDiff {
@@ -163,12 +168,14 @@ interface ReportDiff {
 }
 ```
 
+`field_edits` only tracks four fields: `headline`, `summary`, `client_relevance`, and `recommended_action`.
+
 ### Signal Updates (`lib/report/feedback.ts`)
 
-`updateLearnedSignals()` converts editorial diffs into scoring adjustments:
+`updateLearnedSignals()` converts editorial diffs into scoring adjustments. Note the keying — these don't all bucket by `source_type`:
 
-- **Items removed** → source_boosts[source_type] -= 0.01
-- **Items added** → keyword_boosts[keywords_from_title] += 0.01
-- **RAG upgraded to RED** → rag_adjustments[source_type] = { red_threshold: 0.6, amber_threshold: 0.3 }
+- **Items removed** → `source_boosts[item.source_name] -= 0.01` (keyed by human-readable source name)
+- **Items added** → for every keyword in `client.allKeywords`, `keyword_boosts[keyword] += 0.01` (broader than just keywords parsed from the new item's title)
+- **RAG upgraded to RED** → `rag_adjustments[item.ref] = { red_threshold: 0.6, amber_threshold: 0.3 }`
 
-Upserted to `client_learned_signals` table. Applied in future [scoring](scoring.md) via `getLearnedSignals()`.
+Upserted to `client_learned_signals`. Applied in future [scoring](scoring.md) via `getLearnedSignals()`.

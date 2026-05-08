@@ -2,11 +2,12 @@
 
 ## System Overview
 
-Whitehall has three data layers:
+Whitehall has four data layers:
 
-1. **Static** — 764 UK government entities with powers, budgets, staff, and relationships. Loaded from `data/_extracted/*.json` at build time.
-2. **Dynamic** — Feed items in Supabase PostgreSQL. Collected from 12 sources, scored algorithmically, used for chat tools and report generation.
-3. **Config** — Client stakeholder maps, monitoring themes, and keywords. Defined in `data/clients/*.ts`.
+1. **Static** — 764 UK government entities (199 departments, 421 bodies, 143 officials, 1 group) with powers, budgets, staff, and relationships. Loaded from `data/_extracted/*.json` at build time.
+2. **Dynamic feeds** — Feed items in Supabase PostgreSQL. Collected from 12 source modules, scored algorithmically, used for chat tools and report generation.
+3. **Politician evidence** — Per-politician evidence rows (Hansard contributions, division votes, EDM signatures, register entries) classified into stance indicators with Beta-distribution scoring. Lives in `politicians`, `politician_evidence`, `politician_indicators`, etc.
+4. **Config** — Client stakeholder maps, monitoring themes, and keywords. Defined in `data/clients/*.ts`.
 
 ```
 ┌──────────────────────────────────────────────────────────────────────┐
@@ -14,8 +15,8 @@ Whitehall has three data layers:
 │                                                                      │
 │  ┌──────────────┐  ┌──────────────┐  ┌───────────────────────────┐  │
 │  │  App Router   │  │  API Routes  │  │     Static Data Layer     │  │
-│  │  (SSG + SSR)  │  │  9 endpoints │  │  data/_extracted/*.json   │  │
-│  │               │  │              │  │  data/clients/*.ts        │  │
+│  │  (SSG + SSR)  │  │  8 endpoints │  │  data/_extracted/*.json   │  │
+│  │               │  │  + revisions │  │  data/clients/*.ts        │  │
 │  └──────┬───────┘  └──────┬──────┘  └──────────┬────────────────┘  │
 │         │                 │                     │                    │
 │  ┌──────┴─────────────────┴─────────────────────┘                    │
@@ -35,14 +36,14 @@ Whitehall has three data layers:
 ### Feed Collection (continuous)
 
 ```
-GOV.UK Atom (35 depts) ──────┐
-GOV.UK Search API (26 orgs) ─┤
+GOV.UK Atom (34 depts) ──────┐
+GOV.UK Search API (25 orgs) ─┤
 Hansard (spoken + written) ───┤
 Parliament APIs (7 endpoints)─┤
 legislation.gov.uk (9 feeds) ─┤──▶ normalise ──▶ entity tag ──▶ fingerprint ──▶ upsert
-RSS / trade press (25 feeds) ─┤     to FeedItem    (keyword      (SHA-256)       feed_items
-Direct sources (19 pages) ────┤                     matching)
-Committees (13 committees) ───┤
+RSS / trade press (24 feeds) ─┤     to FeedItem    (keyword      (SHA-256)       feed_items
+Direct sources (18 pages) ────┤                     matching)
+Committees (12 committees) ───┤
 Petitions (API) ──────────────┤
 Research Briefings (RSS) ─────┘
 ```
@@ -68,7 +69,7 @@ User message ──▶ buildSystemPrompt(client, entity, viewState)
 Collection is decoupled from report generation. Data flows into Supabase continuously:
 
 ```
-EVERY 4 HOURS (Vercel cron — 8 parallel groups):
+EVERY 12 HOURS (Vercel cron — 8 parallel feed groups):
   /api/cron/collect?group=govuk           GOV.UK Atom + Search (by org)
   /api/cron/collect?group=govuk_search    GOV.UK Search (by doc type)
   /api/cron/collect?group=hansard         Hansard spoken + written
@@ -78,14 +79,19 @@ EVERY 4 HOURS (Vercel cron — 8 parallel groups):
   /api/cron/collect?group=media           RSS + direct sources
   /api/cron/collect?group=research        Committees, petitions, briefings
 
-  Each group uses a 4.5h lookback (30 min overlap). Auth: Bearer CRON_SECRET.
+  Each group uses a 12.5h lookback (30 min overlap). Auth: Bearer CRON_SECRET.
+
+NIGHTLY at 03:00 (Vercel cron — politician layer):
+  /api/cron/collect?group=politician_sync Members, division votes, EDM signatures
 
 ON-DEMAND (manual):
   POST /api/scan { clientId }             Web search + forward scan (Claude-powered)
 
-WEEKLY (scripts, long-running):
+LONG-RUNNING (scripts):
   npx tsx scripts/collect-all.ts          All collectors, 12-month lookback
   npx tsx scripts/enrich-content.ts       Fetch full pages for thin items
+  npx tsx scripts/run-classifier.ts       Classify pending politician evidence
+  npx tsx scripts/run-math-layer.ts       Update politician_indicators (Beta) + propagate
 ```
 
 ### Report Generation (streaming SSE)
@@ -119,11 +125,11 @@ POST /api/reports/generate { clientId }
 
 ## Tech Decisions
 
-- **Next.js App Router** — API routes, streaming, layouts, `generateStaticParams` for 764 entity pages
+- **Next.js 16.2.2 + React 19.2.4** — App Router, API routes, streaming, layouts, `generateStaticParams` for 764 entity pages
 - **Cytoscape.js** — Compound node support for department-to-body hierarchy, force-directed layout
-- **Supabase** — Managed Postgres, array operations (`overlaps`, `contains`) for entity filtering, free tier
-- **Claude Sonnet 4** — Tool use, 200K context, structured JSON output, LLM-as-judge evaluation
-- **Vercel AI SDK** — `streamText` with `fullStream` for multi-step tool use, `onStepFinish` for mutation tracking
+- **Supabase** — Managed Postgres, array operations (`overlaps`, `contains`) for entity filtering, RLS enabled on every table (anon `SELECT` only on public-facing tables; writes go through the service-role client)
+- **Claude models** — `claude-opus-4-6` for chat, report chat, synthesis, and LLM-as-judge evaluation; `claude-sonnet-4-20250514` for theme enrichment, web/forward scan, and the politician evidence classifier
+- **Vercel AI SDK (`ai` v6)** — `streamText` with `fullStream` for multi-step tool use, `onStepFinish` for mutation tracking; `lib/ai/retry.ts` wraps generation with bounded retries
 
 ## Key Design Decisions
 
@@ -142,8 +148,35 @@ POST /api/reports/generate { clientId }
 | `panelStore` | `lib/panelStore.ts` | Panel open/close, entity/client selection |
 | `feedFilterStore` | `lib/feedFilterStore.ts` | Health dashboard metric → feed filter |
 | `feedViewStore` | `lib/feedViewStore.ts` | Feed state → chat system prompt |
+| `chatStore` | `lib/chatStore.ts` | Conversation state for the intelligence panel |
 | `chatActions` | `lib/chatActions.ts` | "Why relevant?" / "Morning briefing" → chat |
 | `graphCommands` | `lib/graphCommands.ts` | Chat graph_action → Cytoscape |
 | `clientOverrides` | `lib/clientOverrides.ts` | User keyword/theme customisations (localStorage) |
 
-All use `useSyncExternalStore` for React integration.
+Stores use `useSyncExternalStore` for React integration; `chatActions` and `graphCommands` are simple pub/sub modules.
+
+## Politician Evidence Pipeline
+
+A separate pipeline runs nightly to track UK politicians' policy stances.
+
+```
+parliament-members.ts ──▶ politicians, politician_roles
+parliament-divisions.ts ─▶ politician_evidence (division_vote)
+parliament-edms.ts ──────▶ politician_evidence (edm_signature, edm_proposed)
+hansard contributions ───▶ politician_evidence (hansard_*)
+register of interests ───▶ politician_evidence (register_*)
+
+      ▼
+lib/classifier/  (deterministic for division/register/APPG/committee,
+                  LLM-classified via claude-sonnet-4-20250514 otherwise)
+  → politician_indicator_evidence (anchor + effective_weight + reasoning)
+  → classifier_failures (dead-letter)
+
+      ▼
+lib/math/pipeline.ts
+  → politician_indicators  (Beta(α,β) updates per classification)
+  → propagate via indicator_correlations (single-hop)
+  → refresh materialized view politician_indicators_decayed
+```
+
+Run on demand via `scripts/run-classifier.ts` and `scripts/run-math-layer.ts`. See [Data Model](data-model.md#politician-tables) for table definitions.

@@ -1,22 +1,23 @@
 # Feed Collectors
 
-12 collectors pull from UK government and industry sources. All normalise to the `FeedItem` shape, tag with entity IDs via keyword matching, generate a SHA-256 fingerprint for dedup, and upsert to the `feed_items` table in batches of 25.
+12 collector modules pull from UK government and industry sources into `feed_items`. A separate set of three modules (`parliament-members.ts`, `parliament-divisions.ts`, `parliament-edms.ts`) feeds the [politician evidence pipeline](architecture.md#politician-evidence-pipeline) instead. Feed collectors all normalise to the `FeedItem` shape, tag with entity IDs via keyword matching, generate a SHA-256 fingerprint for dedup, and upsert to the `feed_items` table in batches of 25.
 
-Run all collectors (full 12-month lookback): `npx tsx scripts/collect-all.ts`
+Run all feed collectors (full 12-month lookback): `npx tsx scripts/collect-all.ts`
 
-Automated collection runs every 4 hours via Vercel cron (`/api/cron/collect`) with a 4.5-hour lookback — see [API Reference](api.md#get-apicroncollect).
+Automated collection runs every 12 hours via Vercel cron (`/api/cron/collect`) with a 12.5-hour lookback. The `politician_sync` group runs nightly at 03:00 — see [API Reference](api.md#get-apicroncollect).
 
 ## Common Patterns
 
 - **Fingerprint:** SHA-256 of `url||title` (unique constraint on `feed_items`)
+- **Title cleaning:** All collectors run `cleanTitle()` from `lib/feeds/clean-title.ts` to strip XML/HTML entities, drop committee metadata fragments ("Report: Published On…", "Opened DD Month YYYY"), and collapse whitespace. Stakeholder collectors additionally use `improveStakeholderTitle()` for prefixing source name and falling back to first-sentence body for bare titles.
 - **Entity tagging:** Two-tier keyword matching via `enrichEntityIds()` in `lib/feeds/entity-enrichment.ts`:
-  1. Regex patterns (57 rules) matching department abbreviations, regulator names, body names
-  2. Content patterns matching broader topic terms (e.g. "energy" → `desnz`)
+  1. Regex patterns (~47 rules in `KEYWORD_ENTITY_MAP`) matching department abbreviations, regulator names, body names
+  2. Content patterns (~29 entity IDs in `CONTENT_ENTITY_PATTERNS`) for broader topic terms (e.g. "energy" → `desnz`)
 - **RAG assignment:** Deterministic keyword rules — RED (urgent, emergency, safety alert), AMBER (consultation, call for evidence, draft), GREEN (default)
 - **Rate limiting:** 300-500ms between requests to respect server load
 - **Timeout:** 15s per HTTP request
 - **Error handling:** Try/catch per item, log warnings, continue collection
-- **Lookback:** All collectors accept an optional `since?: Date` parameter. Defaults to 365 days (12 months) for scripts. The Vercel cron passes a 4.5-hour lookback.
+- **Lookback:** All collectors accept an optional `since?: Date` parameter. Defaults to 365 days (12 months) for scripts. The Vercel cron passes a 12.5-hour lookback.
 
 ---
 
@@ -25,7 +26,7 @@ Automated collection runs every 4 hours via Vercel cron (`/api/cron/collect`) wi
 | | |
 |---|---|
 | **Source** | `https://www.gov.uk/government/organisations/{slug}.atom` |
-| **Orgs** | 35 departments and regulators |
+| **Orgs** | 34 departments and regulators |
 | **Feed types** | 3 per org: organisation, policy papers, news/communications |
 | **Source type** | `govuk` |
 | **Rate limit** | 300ms between requests |
@@ -37,7 +38,7 @@ Entity mapping via `GOVUK_TO_ENTITY` constant (slug → entity ID). Parses XML `
 | | |
 |---|---|
 | **Source** | `https://www.gov.uk/api/search.json` |
-| **Strategy** | Two-pass: org-based (26 orgs) + document-type (17 types) |
+| **Strategy** | Two-pass: org-based (25 orgs) + document-type (18 types) |
 | **Lookback** | 365 days |
 | **Source type** | `govuk` |
 | **Rate limit** | 300ms between pages |
@@ -52,7 +53,7 @@ Paginates at 200 items/page. Stops at date cutoff or empty response.
 |---|---|
 | **Source** | `https://hansard-api.parliament.uk/search/contributions/` |
 | **Endpoints** | Spoken (Commons debates) + Written (parliamentary statements) |
-| **Search terms** | 63 terms (department names, abbreviations, key policy topics) |
+| **Search terms** | ~36 terms (department names, abbreviations, key policy topics) |
 | **Source type** | `hansard` |
 | **Rate limit** | 300ms between term requests |
 
@@ -63,12 +64,12 @@ Body assembled from `AttributedTo` + `ContributionText` (HTML-stripped, max 2000
 | | |
 |---|---|
 | **Endpoints** | 7 REST APIs |
-| **Source type** | `hansard` (debates), `committee` (questions) |
+| **Source type** | `committee` (Bills) and `hansard` (everything else) |
 | **Lookback** | 12 months |
 | **Rate limit** | 300ms between pages |
 
-**Sub-collectors:**
-1. Bills — `https://bills-api.parliament.uk/api/v1/Bills`
+**Sub-collectors (all in `lib/feeds/parliament.ts`):**
+1. Bills — `https://bills-api.parliament.uk/api/v1/Bills` (`source_type: committee`)
 2. Written Questions — `https://questions-statements-api.parliament.uk/api/writtenquestions/questions`
 3. Commons Divisions — `https://commonsvotes-api.parliament.uk/data/divisions.json/search`
 4. Lords Divisions — `https://lordsvotes-api.parliament.uk/data/Divisions/search`
@@ -76,7 +77,9 @@ Body assembled from `AttributedTo` + `ContributionText` (HTML-stripped, max 2000
 6. Early Day Motions — `https://oralquestionsandmotions-api.parliament.uk/EarlyDayMotions/list`
 7. Oral Questions — `https://questions-statements-api.parliament.uk/api/oralquestions/list`
 
-Entity mapping via `ANSWERING_BODY_MAP` (22 answering body → entity ID mappings) + keyword enrichment.
+Entity mapping via `ANSWERING_BODY_MAP` (~23 answering body → entity ID mappings) + keyword enrichment.
+
+> Three sibling files — `parliament-members.ts`, `parliament-divisions.ts`, `parliament-edms.ts` — feed the politician evidence pipeline (politicians, division votes, EDM signatures) rather than `feed_items`. They are wired into the `politician_sync` cron group, not the feed cron.
 
 ## 5. Legislation.gov.uk (`lib/feeds/legislation.ts`)
 
@@ -94,7 +97,7 @@ Default RAG is AMBER (new regulation warrants attention). RED for enforcement/pr
 
 | | |
 |---|---|
-| **Sources** | 25 RSS/Atom feeds |
+| **Sources** | 24 RSS/Atom feeds |
 | **Source type** | `trade_press` |
 | **Rate limit** | 300ms between feeds |
 
@@ -110,7 +113,7 @@ Each feed has `defaultEntityIds` for base tagging, supplemented by keyword enric
 
 | | |
 |---|---|
-| **Sources** | 19 web pages (government bodies, regulators, industry orgs) |
+| **Sources** | 18 web pages (government bodies, regulators, industry orgs) |
 | **Source type** | `stakeholder` |
 | **Rate limit** | 400ms between sources |
 
@@ -120,15 +123,15 @@ Web scraping via `<a>` tag extraction. Multi-method date extraction (DD Month YY
 
 | | |
 |---|---|
-| **Sources** | 13 key parliamentary committees |
+| **Sources** | 12 key parliamentary committees |
 | **Source type** | `committee` |
 | **Rate limit** | 400ms between committees |
 
-Energy (6): Energy Security & Net Zero, Environmental Audit, Business & Trade, Science/Innovation/Technology, Lords Industry & Regulators, Welsh/Scottish Affairs
+Energy (7): Energy Security & Net Zero, Environmental Audit, Business & Trade, Science/Innovation/Technology, Lords Industry & Regulators, Welsh Affairs, Scottish Affairs
 
 Health (2): Health & Social Care, Lords Science & Technology
 
-General (5): Public Accounts, Treasury, Public Admin & Constitutional Affairs
+General (3): Public Accounts, Treasury, Public Administration & Constitutional Affairs
 
 Each committee has keyword requirements — links must match at least one keyword to be collected.
 
@@ -147,7 +150,7 @@ Body includes background, government response summary, debate overview, and sign
 
 | | |
 |---|---|
-| **Sources** | 2 RSS feeds (Commons + Lords Library) + 11 topic searches |
+| **Sources** | 2 RSS feeds (Commons + Lords Library) + 12 topic searches |
 | **Search topics** | Energy, health, environment, transport, education, housing, defence, immigration, NHS, offshore wind, nuclear, pharmaceutical |
 | **Source type** | `research` |
 | **Rate limit** | 300ms between feeds |
@@ -156,7 +159,7 @@ Body includes background, government response summary, debate overview, and sign
 
 | | |
 |---|---|
-| **Model** | Claude Sonnet 4 |
+| **Model** | `claude-sonnet-4-20250514` |
 | **Source type** | `web_search` |
 | **Rate limit** | 1s between queries |
 
@@ -166,7 +169,7 @@ Generates search queries dynamically from client config: client name, project na
 
 | | |
 |---|---|
-| **Model** | Claude Sonnet 4 |
+| **Model** | `claude-sonnet-4-20250514` |
 | **Source type** | `forward_scan` |
 | **Rate limit** | 1s between queries |
 
@@ -185,8 +188,8 @@ Run: `npx tsx scripts/enrich-content.ts`
 ### Entity Enrichment (`lib/feeds/entity-enrichment.ts`)
 
 Centralised two-tier keyword-to-entity mapping:
-1. **Regex rules** (57 patterns): Department abbreviations, regulator names, body names, topic triggers
-2. **Content patterns** (30+ entity IDs): Broader semantic matches per entity
+1. **Regex rules** (~47 patterns in `KEYWORD_ENTITY_MAP`): Department abbreviations, regulator names, body names, topic triggers
+2. **Content patterns** (~29 entity IDs in `CONTENT_ENTITY_PATTERNS`): Broader semantic matches per entity
 
 Also provides deterministic RAG assignment via keyword matching.
 
@@ -205,4 +208,18 @@ Keeps best source per cluster by priority: govuk (10) > legislation (9) > commit
 
 HEAD requests to validate URLs before report generation. 5s timeout, 200ms between checks. Partitions into valid (2xx or no URL) and broken (4xx/5xx/timeout). Redirects (common on GOV.UK) are considered valid.
 
-See also: [Scoring](scoring.md) for how collected items are ranked.
+---
+
+## Politician Collectors (separate pipeline)
+
+These three modules write to `politicians`, `politician_roles`, and `politician_evidence` rather than `feed_items`. They run nightly via the `politician_sync` cron group and feed the [classifier and indicator math layers](architecture.md#politician-evidence-pipeline).
+
+| File | Purpose |
+|---|---|
+| `lib/feeds/parliament-members.ts` | Sync `politicians` and `politician_roles` from the Members API; collect register-of-interests evidence |
+| `lib/feeds/parliament-divisions.ts` | Per-MP vote records from Commons + Lords Votes APIs → `politician_evidence` (`evidence_type='division_vote'`) |
+| `lib/feeds/parliament-edms.ts` | EDM signatories → `politician_evidence` (`evidence_type='edm_signature'` / `'edm_proposed'`) |
+
+Both `parliament-divisions` and `parliament-edms` accept `{ since }` or `{ backfillYears }` options for backfills.
+
+See also: [Scoring](scoring.md) for how collected feed items are ranked, and [Data Model](data-model.md#politician-tables) for the politician schema.

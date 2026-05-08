@@ -1,6 +1,17 @@
 # API Reference
 
-All routes are in `app/api/`. No authentication for POC except the cron route (Bearer token) — see [Security](security.md).
+All routes are in `app/api/`. No user authentication for POC except the cron route (Bearer token) — see [Security](security.md).
+
+| Route | File |
+|---|---|
+| `POST /api/chat` | `app/api/chat/route.ts` |
+| `POST /api/reports/generate` | `app/api/reports/generate/route.ts` |
+| `GET / PATCH /api/reports/[id]` | `app/api/reports/[id]/route.ts` |
+| `POST /api/reports/[id]/chat` | `app/api/reports/[id]/chat/route.ts` |
+| `POST /api/reports/[id]/export` | `app/api/reports/[id]/export/route.ts` |
+| `GET / POST /api/reports/[id]/revisions` | `app/api/reports/[id]/revisions/route.ts` |
+| `GET /api/cron/collect` | `app/api/cron/collect/route.ts` |
+| `POST /api/scan` | `app/api/scan/route.ts` |
 
 ---
 
@@ -122,6 +133,52 @@ Update report sections or status.
 
 Status values: `draft`, `in_review`, `approved`, `exported`. Setting `in_review` auto-generates a `review_token`. Setting `approved` or `exported` records timestamps.
 
+Whenever `sections` is present in the request, the previous `sections` blob is snapshotted into `report_revisions` with `edit_source: 'manual_patch'` before the update is applied.
+
+---
+
+## `GET /api/reports/[id]/revisions`
+
+List revision history for a report draft.
+
+| | |
+|---|---|
+| **File** | `app/api/reports/[id]/revisions/route.ts` |
+
+Returns the most recent 50 revisions, newest first.
+
+**Response:**
+```json
+[
+  {
+    "id": "...",
+    "edit_source": "manual_patch" | "chat_mutation" | "rollback",
+    "mutation_summary": { ... } | null,
+    "chat_message_id": "..." | null,
+    "created_at": "..."
+  }
+]
+```
+
+---
+
+## `POST /api/reports/[id]/revisions`
+
+Roll back a report to a specific revision. The current state is snapshotted as a new revision (with `edit_source: 'rollback'`) before the rollback is applied.
+
+| | |
+|---|---|
+| **File** | `app/api/reports/[id]/revisions/route.ts` |
+
+**Request:**
+```json
+{ "revisionId": "..." }
+```
+
+**Response:** the updated `report_drafts` row.
+
+Returns 404 if the revision doesn't belong to this report.
+
 ---
 
 ## `POST /api/reports/[id]/chat`
@@ -167,39 +224,16 @@ Marks draft status as `exported` with `exported_at` timestamp.
 
 ---
 
-## `POST /api/export`
-
-Full report generation and DOCX export in one request (no draft persistence).
-
-| | |
-|---|---|
-| **File** | `app/api/export/route.ts` |
-| **Rate limit** | 5/hour per IP |
-| **maxDuration** | 300s |
-
-**Request:**
-```json
-{
-  "clientId": "rwe",
-  "dateRange": { "from": "2025-03-01", "to": "2025-03-07" },
-  "skipEval": false
-}
-```
-
-**Response:** Binary DOCX file. Pipeline: gather → group → enrich → evaluate → generate.
-
----
-
 ## `GET /api/cron/collect`
 
-Scheduled collection of structured API feeds. Runs as 8 parallel Vercel crons every 4 hours.
+Scheduled collection of structured API feeds. Runs as 8 parallel Vercel crons every 12 hours, plus a nightly `politician_sync` group.
 
 | | |
 |---|---|
 | **File** | `app/api/cron/collect/route.ts` |
 | **Auth** | `Authorization: Bearer $CRON_SECRET` |
 | **maxDuration** | 300s |
-| **Schedule** | `0 */4 * * *` (configured in `vercel.json`) |
+| **Schedule** | `0 */12 * * *` for feed groups, `0 3 * * *` for `politician_sync` (configured in `vercel.json`) |
 
 **Query params:** `?group=<name>` (required)
 
@@ -213,8 +247,9 @@ Scheduled collection of structured API feeds. Runs as 8 parallel Vercel crons ev
 | `legislation` | legislation.gov.uk | ~7s |
 | `media` | RSS, Direct Sources | ~40s |
 | `research` | Committees, Petitions, Research Briefings | ~5s |
+| `politician_sync` | Members + roles, division votes, EDM signatures (nightly) | varies |
 
-All groups use a 4.5-hour lookback (30 min overlap with the 4-hour schedule). The full 12-month lookback is only used by `scripts/collect-all.ts`.
+Feed groups use a 12.5-hour lookback (30 min overlap with the 12-hour schedule). The full 12-month lookback is only used by `scripts/collect-all.ts`. `politician_sync` writes to `politicians`, `politician_roles`, and `politician_evidence` rather than `feed_items`.
 
 **Response:**
 ```json

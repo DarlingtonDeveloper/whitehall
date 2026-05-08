@@ -23,7 +23,14 @@ interface Entity {
 }
 ```
 
-764 entities across 4 categories: ministerial departments, ministers, NDPBs/executive agencies/regulators, select committees, and cross-government groups.
+764 entities across the four `category` values:
+
+| Category | Count | Examples |
+|---|---|---|
+| `body` | 421 | NDPBs, executive agencies, regulators, select committees |
+| `department` | 199 | Ministerial departments, sub-units |
+| `official` | 143 | Named role-holders (Secretary of State, etc.) |
+| `group` | 1 | Cross-government grouping |
 
 ### Relationships (`data/relationships.ts`)
 
@@ -99,7 +106,7 @@ interface StaffProfile {
 
 ### Tags (`data/tags.ts`)
 
-19 type tags (regulator, research-council, tribunal, etc.) and 26 sector tags (sector-energy, sector-health, etc.). Each has an ID, label, category, and hex colour.
+18 type tags (regulator, research-council, tribunal, etc.) and 27 sector tags (sector-energy, sector-health, etc.). Each has an ID, label, category, and hex colour.
 
 ---
 
@@ -143,8 +150,23 @@ Defined in `supabase/schema.sql`.
 | `original_sections` | JSONB | Original `AnalysisJSON` (for diff) |
 | `feed_item_ids` | UUID[] | Source items used |
 | `review_token` | TEXT (UNIQUE) | Generated on `in_review` status |
-| `review_requested_at`, `approved_at`, `exported_at` | TIMESTAMPTZ | Status timestamps |
+| `created_by`, `reviewed_by` | TEXT | Optional attribution (anonymous in POC) |
+| `review_requested_at`, `reviewed_at`, `approved_at`, `exported_at` | TIMESTAMPTZ | Status timestamps |
 | `created_at`, `updated_at` | TIMESTAMPTZ | |
+
+### `report_revisions` — Section snapshot history
+
+Every chat-driven mutation and every `PATCH /api/reports/[id]` that includes a `sections` body writes a snapshot here before the underlying `report_drafts` row is mutated. Powers the rollback endpoint (`POST /api/reports/[id]/revisions`).
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `id` | UUID (PK) | |
+| `report_draft_id` | UUID (FK) | |
+| `sections_snapshot` | JSONB | Prior `sections` blob |
+| `edit_source` | TEXT | `manual_patch`, `chat_mutation`, or `rollback` |
+| `mutation_summary` | JSONB | Optional summary of the mutation that caused this revision |
+| `chat_message_id` | UUID | Optional FK to `report_chat_messages` for chat-driven edits |
+| `created_at` | TIMESTAMPTZ | |
 
 ### `report_chat_messages` — Report editing chat
 
@@ -154,7 +176,7 @@ Defined in `supabase/schema.sql`.
 | `report_draft_id` | UUID (FK) | Links to report_drafts |
 | `role` | TEXT | `user` or `assistant` |
 | `content` | TEXT | Message text |
-| `user_role` | TEXT | Optional role context |
+| `user_name`, `user_role` | TEXT | Optional attribution + role context |
 | `active_section` | TEXT | Section being viewed |
 | `active_item_ref` | TEXT | Item being viewed (e.g. "2.1") |
 | `mutations` | JSONB | Structured mutations applied |
@@ -179,20 +201,50 @@ Defined in `supabase/schema.sql`.
 | `client_id` | TEXT | |
 | `report_id` | TEXT | |
 | `theme_id` | TEXT | |
-| `step` | TEXT | `theme_analysis`, `synthesis`, `factuality_eval`, `specificity_eval`, `web_search`, `forward_scan` |
+| `step` | TEXT | `theme_analysis`, `synthesis`, `factuality_eval`, `specificity_eval`, `web_search`, `forward_scan`, `chat`, `report_chat` |
 | `model` | TEXT | Claude model used |
 | `input_tokens`, `output_tokens` | INT | |
+| `input_preview`, `output_preview` | TEXT | Truncated samples for debugging |
 | `duration_ms` | INT | |
 | `scores` | JSONB | Evaluation scores |
 | `created_at` | TIMESTAMPTZ | |
 
-### Other tables
+### Other feed/chat tables
 
 - **`client_feed_scores`** — Per-client relevance scores (feed_item_id + client_id unique)
 - **`client_scans`** — Scan run tracking (client_id, scan_type, status, items_found)
 - **`chat_conversations`** — Chat session metadata (client_id, context_entity, context_type)
 - **`chat_messages`** — Chat message history with tool_calls JSONB
 - **`enriched_items`** — Cached enrichment results per client (summary, client_relevance, recommended_action)
+
+### Politician tables
+
+The politician evidence pipeline uses a separate set of tables. See [Architecture › Politician Evidence Pipeline](architecture.md#politician-evidence-pipeline) for the dataflow.
+
+| Table | Purpose |
+|---|---|
+| `politicians` | Member records keyed by Members API ID (name, current party, current constituency, status) |
+| `politician_roles` | Time-bounded role history (minister, shadow, frontbench, committee chair/member, …) |
+| `politician_evidence` | Raw evidence rows: division votes, EDM signatures, Hansard contributions, register entries (18 `evidence_type` values) |
+| `indicator_definitions` | Catalogue of stance indicators with default weights |
+| `politician_indicators` | Per-politician Beta(α, β) state per indicator + last-updated timestamps |
+| `politician_indicator_evidence` | Classifier output linking evidence → indicator with anchor + effective_weight + reasoning |
+| `politician_match_review` | Manual review queue for ambiguous member matches |
+| `bill_policy_mappings` | Bill → indicator mapping (deterministic input to classifier) |
+| `org_indicator_map` | Stakeholder org → indicator mapping (deterministic) |
+| `appg_indicator_map` | All-Party Parliamentary Group → indicator mapping |
+| `committee_indicator_map` | Select committee → indicator mapping |
+| `classifier_failures` | Dead-letter table for evidence that failed classification |
+| `indicator_correlations` | Pairwise correlations driving single-hop propagation in the math layer |
+| `epoch_transitions` | Decay/reset boundaries (election dates, etc.) |
+| `politician_voting_alignment` | Pre-computed per-pair voting agreement statistics |
+| `politician_indicators_decayed` (matview) | Time-decayed indicator state, refreshed via `refresh_indicators_decayed()` RPC |
+
+### Row-Level Security
+
+Every table has `ENABLE ROW LEVEL SECURITY`. The anonymous role gets `SELECT` on read-mostly tables (`feed_items`, `client_feed_scores`, politician tables, classifier mapping tables); writes go through the service role client (`getServiceClient()` in `lib/db.ts`). Authentication and per-user policies are still deferred — see [Security](security.md).
+
+> `lib/audit.ts` writes rate-limit hits to an `audit_log` table that **is not declared in `supabase/schema.sql`**. The table either lives in a separate migration or the writes silently fail in environments where it hasn't been created.
 
 ---
 
@@ -230,7 +282,20 @@ interface MonitoringTheme {
 ```
 
 ### RWE (energy sector)
-28 stakeholders (DESNZ, Ofgem, NSTA, Defra, Treasury, etc.), 4 projects (Sofia, Norfolk Vanguard, Norfolk Boreas, Triton Knoll), 10 competitors, 35+ policy keywords, 6 monitoring themes.
+26 stakeholders (DESNZ, Ofgem, NSTA, Defra, Treasury, etc.), 5 projects (Sofia, Norfolk Vanguard, Norfolk Boreas, Triton Knoll, RWE Renewables UK), 10 competitors, 23 policy keywords + 5 industry keywords, 6 monitoring themes.
 
 ### Sanofi (pharmaceuticals)
-17 stakeholders (DHSC, MHRA, NICE, NHS England, etc.), 5 projects, 10 competitors, 30+ policy keywords, 7 monitoring themes.
+18 stakeholders (DHSC, MHRA, NICE, NHS England, etc.), 5 projects, 10 competitors, 25 policy keywords + 5 industry keywords, 7 monitoring themes.
+
+---
+
+## Politician Types (`types/politician.ts`)
+
+Defines the TypeScript surface for the politician pipeline:
+
+- `Politician`, `PartyEntry`, `ConstituencyEntry`
+- `PoliticianRole`, `RoleType` (7 values: `minister`, `shadow_minister`, `spokesperson`, `select_committee_member`, `select_committee_chair`, `frontbench`, `backbench`), `RoleSource`
+- `EvidenceType` (18 values, mirrors the DB CHECK constraint on `politician_evidence.evidence_type`)
+- `PoliticianEvidence`, `Classification`
+- `MemberCandidate` (used by the matching/review queue)
+- Indicator definition / correlation types

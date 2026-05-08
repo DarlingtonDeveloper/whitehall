@@ -32,9 +32,10 @@ Contributions cap at 0.30 total.
 |--------|--------|
 | `govuk`, `hansard` | 0.10 |
 | `committee`, `legislation`, `research` | 0.08 |
-| `trade_press` | 0.06 |
-| `stakeholder` | 0.04 |
-| `petition`, `web_search`, `forward_scan` | 0.02-0.04 |
+| `stakeholder` | 0.07 |
+| `trade_press`, `forward_scan` | 0.06 |
+| `petition`, `web_search` | 0.05 |
+| anything else | 0.03 (default fallback) |
 
 ### 4. Recency Decay (up to 0.15)
 
@@ -53,9 +54,10 @@ Contributions cap at 0.30 total.
 
 ### 6. Learned Signals (up to 0.10)
 
-From the feedback loop (`client_learned_signals` table):
-- **Source boosts:** `source_boosts[source_type]` added to score
-- **Keyword boosts:** `keyword_boosts[keyword]` added per match
+From the feedback loop (`client_learned_signals` table). Each individual contribution is capped at 0.05, and the combined component is capped at 0.10:
+
+- **Source boosts:** `source_boosts[item.source_name]` added to score (note: keyed by the human-readable `source_name`, **not** `source_type`)
+- **Keyword boosts:** `keyword_boosts[keyword]` added per match found in title or body
 
 ## Floor Thresholds
 
@@ -63,9 +65,11 @@ Minimum scores for certain matches, regardless of component scores:
 
 | Condition | Floor |
 |-----------|-------|
-| Client name mentioned in title | 0.60 |
+| Client name or core project term found in title or body | 0.60 |
 | Primary stakeholder entity matched | 0.30 |
-| Secondary stakeholder entity matched | 0.20 |
+| Secondary stakeholder entity matched (and no primary match) | 0.20 |
+
+The client/project term check uses `extractClientTerms()`, which pulls proper-noun fragments from the client name and project list (e.g. "Sofia" from "Sofia offshore wind"), drops generic words (`offshore`, `onshore`, `wind farm`, `wind`, `renewables`, `energy`, `power`, `plant`, `project`, `farm`, `UK`), and keeps tokens of 4+ characters.
 
 ## Scoring Examples
 
@@ -89,16 +93,16 @@ A Lords division on an unrelated topic from 5 days ago:
 
 ## Learned Signals Feedback Loop
 
-Implemented in `lib/report/feedback.ts`. When an analyst approves a report, `computeReportDiff()` compares original vs edited versions:
+Implemented in `lib/report/feedback.ts`. When an analyst approves a report, `computeReportDiff()` compares original vs edited versions and `updateLearnedSignals()` writes:
 
-- **Items removed by analyst:** Source type gets -0.01 to `source_boosts`
-- **Items added by analyst:** Keywords from title get +0.01 to `keyword_boosts`
-- **RAG upgraded to RED:** Records adjusted thresholds in `rag_adjustments`
+- **Items removed by analyst:** `source_boosts[item.source_name] -= 0.01` (keyed by human-readable source name).
+- **Items added by analyst:** `keyword_boosts[keyword] += 0.01` for **every** keyword in `client.allKeywords` for each added item — note this is broader than just keywords parsed from the new item's title.
+- **RAG upgraded to RED:** `rag_adjustments[item.ref] = { red_threshold: 0.6, amber_threshold: 0.3 }` (keyed by report `item_ref`).
 
 These signals are loaded via `getLearnedSignals()` and applied during report generation scoring.
 
 ## Report Generation Threshold
 
-`RELEVANCE_THRESHOLD = 0.25` — items below this score are excluded from report generation. Top 40 items (after dedup and verification) proceed to theme grouping and Claude enrichment.
+`RELEVANCE_THRESHOLD = 0.25` — items below this score are excluded from report generation. The pipeline scores all gathered items, takes the top 60, runs semantic dedup, then takes `MAX_ITEMS = 40` for theme grouping and Claude enrichment.
 
 See also: [Collectors](collectors.md) for how items enter the system, [Reports](reports.md) for the full generation pipeline.

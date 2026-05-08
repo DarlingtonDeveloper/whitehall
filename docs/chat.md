@@ -48,11 +48,13 @@ type GraphCommand =
   | { type: 'clear_highlight' }
 ```
 
+`highlight_entities` and `clear_highlight` are part of the dispatch protocol but are not currently emitted by the chat route — only `select_entity`, `search`, `reset`, and `focus_mode` come out of `graph_action` tool results today.
+
 ### Message Flow
 
 1. User types message in `IntelligencePanel`
 2. `POST /api/chat` with message, history, clientId, entityId, viewState, isBriefing
-3. `streamText` with Claude Sonnet 4, `stopWhen: stepCountIs(5)`
+3. `streamText` with `claude-opus-4-6`, `stopWhen: stepCountIs(5)`
 4. `fullStream` iterated — text-delta chunks streamed, tool-results trigger graph command embedding
 5. Client reads stream, parses `<!--GRAPH_CMD:-->` markers, dispatches to Cytoscape
 6. `ChatMessage.tsx` renders with markdown formatting, entity highlighting, and clickable links
@@ -88,10 +90,12 @@ Plus general tools: `entity_lookup`, `feed_search`, `stakeholder_map`.
 
 ### Mutation Persistence
 
-Each mutation produces a `ReportMutation` with:
+Each mutation produces a `ReportMutation` (`types/report.ts`) with:
 ```typescript
 {
-  type: 'edit_field' | 'add_item' | 'remove_item' | 'move_item' | ...
+  type:
+    | 'edit_field' | 'add_item' | 'remove_item' | 'move_item'
+    | 'change_rag' | 'change_escalation' | 'reorder';
   section_id: string;
   item_ref?: string;
   field?: string;
@@ -101,10 +105,14 @@ Each mutation produces a `ReportMutation` with:
 }
 ```
 
-Mutations are:
-1. Embedded as `<!--MUTATION:{json}-->` in the response stream for real-time UI updates
-2. Saved to `report_chat_messages` with the assistant message after stream completes
-3. Applied to `report_drafts.sections` via Supabase update
+Mutations flow through `lib/report/mutations.ts`, which:
+
+1. Applies the mutation to a deep-cloned `AnalysisJSON` via `applyEditField` / `applyRemoveItem` / `applyMoveItem` / `applyAddItem`.
+2. Calls `saveReportContent(reportId, content, opts)`. This **always snapshots the prior `sections` blob into `report_revisions`** with `edit_source: 'chat_mutation'`, an optional `mutation_summary`, and the linking `chat_message_id` before the `report_drafts` row is updated.
+3. Embeds the mutation as `<!--MUTATION:{json}-->` in the response stream for live UI updates.
+4. Persists the assistant message to `report_chat_messages` with the mutations and tool-call metadata after the stream completes.
+
+The revision history is exposed via `GET /api/reports/[id]/revisions` and `POST /api/reports/[id]/revisions` (rollback). See [API Reference](api.md#get-apireportsidrevisions).
 
 ### Streaming
 
@@ -128,6 +136,10 @@ The feed panel publishes its current state (date range, sort mode, search text, 
 
 Intelligence chat history is passed as `history` in the request body (client-side array). Report chat history is persisted to `report_chat_messages` table in Supabase and loaded on each request.
 
-### Observability
+### Suggestions (`lib/chat/suggestions.ts`)
 
-Both chat routes log traces to Opik (when `OPIK_API_KEY` is configured) and the `pipeline_traces` Supabase table after each stream completes. Traces include model, input/output tokens, and duration. Step types: `chat` (intelligence chat), `report_chat` (report editing).
+`generateSuggestions(context)` produces 1–4 chat starter prompts based on the active client, recent feed items (last 7 days, by source type), and pulse-score "hot" entities. Falls back to generic prompts when there's no client/entity context.
+
+### Observability (`lib/observability/opik.ts`)
+
+Both chat routes log traces to Opik (when `OPIK_API_KEY` is configured) and to the `pipeline_traces` Supabase table after each stream completes. Traces include model, input/output tokens, and duration. Full set of step types: `theme_analysis`, `synthesis`, `factuality_eval`, `specificity_eval`, `web_search`, `forward_scan`, `chat`, `report_chat`.
