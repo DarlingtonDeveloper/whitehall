@@ -2,6 +2,7 @@ import { streamText, stepCountIs } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { buildSystemPrompt, type ChatViewState } from '@/lib/chat/systemPrompt';
 import { chatTools } from '@/lib/chat/tools';
+import { politicianTools } from '@/lib/chat/politicianTools';
 import { validateChatMessage, validateConversationLength } from '@/lib/security/validateInput';
 import { checkRateLimit } from '@/lib/security/rateLimit';
 import { logAudit } from '@/lib/audit';
@@ -95,7 +96,7 @@ export async function POST(request: Request) {
     model: anthropic('claude-opus-4-6'),
     system: systemPrompt,
     messages,
-    tools: chatTools,
+    tools: { ...chatTools, ...politicianTools },
     stopWhen: stepCountIs(5),
     maxRetries: 5,
   });

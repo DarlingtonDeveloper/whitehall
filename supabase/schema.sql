@@ -570,3 +570,22 @@ ALTER TABLE politician_voting_alignment  ENABLE ROW LEVEL SECURITY;
 CREATE POLICY anon_read_correlations ON indicator_correlations     FOR SELECT TO anon USING (true);
 CREATE POLICY anon_read_epochs       ON epoch_transitions          FOR SELECT TO anon USING (true);
 CREATE POLICY anon_read_alignment    ON politician_voting_alignment FOR SELECT TO anon USING (true);
+
+-- ============================================================================
+-- Predictions layer — prediction log for audit and backtest
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS predictions_log (
+  id              TEXT PRIMARY KEY,
+  prediction_type TEXT NOT NULL CHECK (prediction_type IN ('vote','position','coalition','swing','eig','backtest')),
+  input           JSONB NOT NULL,
+  output          JSONB NOT NULL,
+  outcome         JSONB,
+  created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_predictions_log_type ON predictions_log(prediction_type);
+CREATE INDEX IF NOT EXISTS idx_predictions_log_created ON predictions_log(created_at DESC);
+
+ALTER TABLE predictions_log ENABLE ROW LEVEL SECURITY;
+CREATE POLICY anon_read_predictions ON predictions_log FOR SELECT TO anon USING (true);

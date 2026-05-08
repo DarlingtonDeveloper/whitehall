@@ -19,7 +19,7 @@ import { BASE_WEIGHTS } from './constants';
 // 1. Division votes
 // ---------------------------------------------------------------------------
 
-async function getBillPolicyMappings(
+export async function getBillPolicyMappings(
   billId: string,
   amendmentId: string | null,
 ): Promise<BillPolicyMapping[]> {
