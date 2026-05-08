@@ -376,3 +376,82 @@ CREATE POLICY anon_read_pol_roles        ON politician_roles     FOR SELECT TO a
 CREATE POLICY anon_read_pol_evidence     ON politician_evidence  FOR SELECT TO anon USING (true);
 CREATE POLICY anon_read_indicators       ON indicator_definitions FOR SELECT TO anon USING (true);
 CREATE POLICY anon_read_pol_indicators   ON politician_indicators FOR SELECT TO anon USING (true);
+
+-- ============================================================================
+-- Classifier mapping tables
+-- ============================================================================
+
+-- Bill/amendment → indicator mapping for deterministic division vote classification.
+-- Populated by LLM proposals (reviewed via UI) and manual curation.
+CREATE TABLE IF NOT EXISTS bill_policy_mappings (
+  id                    BIGSERIAL PRIMARY KEY,
+  bill_id               TEXT NOT NULL,
+  amendment_id          TEXT,
+  stage                 TEXT,
+  indicator_id          TEXT NOT NULL REFERENCES indicator_definitions(id) ON DELETE CASCADE,
+  aye_anchor            NUMERIC NOT NULL CHECK (aye_anchor BETWEEN 0 AND 1),
+  no_anchor             NUMERIC NOT NULL CHECK (no_anchor BETWEEN 0 AND 1),
+  diagnostic_strength   NUMERIC NOT NULL DEFAULT 1.0 CHECK (diagnostic_strength BETWEEN 0 AND 1),
+  created_by            TEXT NOT NULL CHECK (created_by IN ('auto-llm','manual','imported')),
+  reviewed              BOOLEAN NOT NULL DEFAULT false,
+  notes                 TEXT,
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  UNIQUE(bill_id, amendment_id, indicator_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_bpm_bill ON bill_policy_mappings(bill_id);
+
+-- Organisation → indicator mapping for register of interests classification.
+CREATE TABLE IF NOT EXISTS org_indicator_map (
+  org_name              TEXT NOT NULL,
+  org_aliases           TEXT[] DEFAULT '{}',
+  indicator_id          TEXT NOT NULL REFERENCES indicator_definitions(id) ON DELETE CASCADE,
+  anchor                NUMERIC NOT NULL CHECK (anchor BETWEEN 0 AND 1),
+  weight_multiplier     NUMERIC NOT NULL DEFAULT 1.0,
+  rationale             TEXT NOT NULL,
+  PRIMARY KEY (org_name, indicator_id)
+);
+
+-- APPG → indicator mapping.
+CREATE TABLE IF NOT EXISTS appg_indicator_map (
+  appg_id               TEXT PRIMARY KEY,
+  indicator_id          TEXT NOT NULL REFERENCES indicator_definitions(id) ON DELETE CASCADE,
+  anchor                NUMERIC NOT NULL CHECK (anchor BETWEEN 0 AND 1),
+  weight_multiplier     NUMERIC NOT NULL DEFAULT 0.5
+);
+
+-- Committee → indicator mapping.
+CREATE TABLE IF NOT EXISTS committee_indicator_map (
+  committee_id          TEXT NOT NULL,
+  indicator_id          TEXT NOT NULL REFERENCES indicator_definitions(id) ON DELETE CASCADE,
+  membership_anchor     NUMERIC NOT NULL CHECK (membership_anchor BETWEEN 0 AND 1),
+  chair_anchor          NUMERIC CHECK (chair_anchor BETWEEN 0 AND 1),
+  weight_multiplier     NUMERIC NOT NULL DEFAULT 0.6,
+  PRIMARY KEY (committee_id, indicator_id)
+);
+
+-- Dead-letter queue for classifier failures requiring manual review.
+CREATE TABLE IF NOT EXISTS classifier_failures (
+  id                    BIGSERIAL PRIMARY KEY,
+  evidence_id           BIGINT NOT NULL REFERENCES politician_evidence(id) ON DELETE CASCADE,
+  classifier_version    TEXT NOT NULL,
+  error_type            TEXT NOT NULL,
+  error_message         TEXT,
+  retry_count           INTEGER NOT NULL DEFAULT 0,
+  resolved              BOOLEAN NOT NULL DEFAULT false,
+  created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_clf_failures_unresolved ON classifier_failures(resolved) WHERE resolved = false;
+
+-- RLS for classifier tables
+ALTER TABLE bill_policy_mappings   ENABLE ROW LEVEL SECURITY;
+ALTER TABLE org_indicator_map      ENABLE ROW LEVEL SECURITY;
+ALTER TABLE appg_indicator_map     ENABLE ROW LEVEL SECURITY;
+ALTER TABLE committee_indicator_map ENABLE ROW LEVEL SECURITY;
+ALTER TABLE classifier_failures    ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY anon_read_bpm        ON bill_policy_mappings    FOR SELECT TO anon USING (true);
+CREATE POLICY anon_read_org_map    ON org_indicator_map       FOR SELECT TO anon USING (true);
+CREATE POLICY anon_read_appg_map   ON appg_indicator_map      FOR SELECT TO anon USING (true);
+CREATE POLICY anon_read_comm_map   ON committee_indicator_map FOR SELECT TO anon USING (true);
