@@ -259,6 +259,229 @@ async function main() {
       source: 'hand_coded',
       notes: 'Pro-defence spending weakly correlates with authoritarian stance',
     },
+
+    // ── More same-indicator revealed/public pairs ───────────────────────
+    {
+      indicator_a: 'agriculture.farming_subsidies.public',
+      indicator_b: 'agriculture.farming_subsidies.revealed',
+      correlation: 0.85,
+      source: 'hand_coded',
+      notes: 'Same concept — public vs voting on farming subsidies',
+    },
+    {
+      indicator_a: 'culture.arts_funding.public',
+      indicator_b: 'culture.arts_funding.revealed',
+      correlation: 0.85,
+      source: 'hand_coded',
+      notes: 'Same concept — public vs voting on arts funding',
+    },
+    {
+      indicator_a: 'culture.bbc_funding.public',
+      indicator_b: 'culture.bbc_funding.revealed',
+      correlation: 0.85,
+      source: 'hand_coded',
+      notes: 'Same concept — public vs voting on BBC funding',
+    },
+    {
+      indicator_a: 'digital.ai_regulation.public',
+      indicator_b: 'digital.ai_regulation.revealed',
+      correlation: 0.85,
+      source: 'hand_coded',
+      notes: 'Same concept — public vs voting on AI regulation',
+    },
+    {
+      indicator_a: 'digital.data_privacy.public',
+      indicator_b: 'digital.data_privacy.revealed',
+      correlation: 0.85,
+      source: 'hand_coded',
+      notes: 'Same concept — public vs voting on data privacy',
+    },
+    {
+      indicator_a: 'digital.online_safety.public',
+      indicator_b: 'digital.online_safety.revealed',
+      correlation: 0.85,
+      source: 'hand_coded',
+      notes: 'Same concept — public vs voting on online safety',
+    },
+    {
+      indicator_a: 'education.school_funding.public',
+      indicator_b: 'education.school_funding.revealed',
+      correlation: 0.85,
+      source: 'hand_coded',
+      notes: 'Same concept — public vs voting on school funding',
+    },
+    {
+      indicator_a: 'education.university_fees.public',
+      indicator_b: 'education.university_fees.revealed',
+      correlation: 0.85,
+      source: 'hand_coded',
+      notes: 'Same concept — public vs voting on university fees',
+    },
+    {
+      indicator_a: 'local_gov.council_powers.public',
+      indicator_b: 'local_gov.council_powers.revealed',
+      correlation: 0.85,
+      source: 'hand_coded',
+      notes: 'Same concept — public vs voting on council powers',
+    },
+    {
+      indicator_a: 'local_gov.devolution.public',
+      indicator_b: 'local_gov.devolution.revealed',
+      correlation: 0.85,
+      source: 'hand_coded',
+      notes: 'Same concept — public vs voting on devolution',
+    },
+    {
+      indicator_a: 'trade.liberalisation.public',
+      indicator_b: 'trade.liberalisation.revealed',
+      correlation: 0.85,
+      source: 'hand_coded',
+      notes: 'Same concept — public vs voting on trade liberalisation',
+    },
+    {
+      indicator_a: 'transport.hs2.public',
+      indicator_b: 'transport.hs2.revealed',
+      correlation: 0.85,
+      source: 'hand_coded',
+      notes: 'Same concept — public vs voting on HS2',
+    },
+    {
+      indicator_a: 'transport.roads_vs_rail.public',
+      indicator_b: 'transport.roads_vs_rail.revealed',
+      correlation: 0.85,
+      source: 'hand_coded',
+      notes: 'Same concept — public vs voting on roads vs rail',
+    },
+
+    // ── Environment cluster (expanded) ──────────────────────────────────
+    // Farming, water quality, net zero, and green transport form a cluster.
+    {
+      indicator_a: 'agriculture.farming_subsidies.revealed',
+      indicator_b: 'environment.water_regulation.revealed',
+      correlation: 0.40,
+      source: 'hand_coded',
+      notes: 'Agricultural regulation closely linked to water quality outcomes',
+    },
+    {
+      indicator_a: 'energy.net_zero.revealed',
+      indicator_b: 'transport.roads_vs_rail.revealed',
+      correlation: 0.35,
+      source: 'hand_coded',
+      notes: 'Pro-net zero correlates with rail investment preference (green transport)',
+    },
+    {
+      indicator_a: 'environment.water_regulation.revealed',
+      indicator_b: 'ideology.economic_left_right.revealed',
+      correlation: 0.30,
+      source: 'hand_coded',
+      notes: 'Economic left slightly favours stronger environmental regulation',
+    },
+
+    // ── Health / public services cluster ─────────────────────────────────
+    {
+      indicator_a: 'education.school_funding.public',
+      indicator_b: 'health.nhs_funding.public',
+      correlation: 0.45,
+      source: 'hand_coded',
+      notes: 'Pro-NHS and pro-school funding form a public services spending cluster',
+    },
+    {
+      indicator_a: 'health.nhs_funding.public',
+      indicator_b: 'local_gov.council_powers.public',
+      correlation: 0.30,
+      source: 'hand_coded',
+      notes: 'Support for public services extends to local government capacity',
+    },
+
+    // ── Lib-auth cluster (expanded) ─────────────────────────────────────
+    {
+      indicator_a: 'immigration.border_control.revealed',
+      indicator_b: 'justice.criminal_justice.public',
+      correlation: 0.45,
+      source: 'hand_coded',
+      notes: 'Pro-open borders correlates with rehabilitative justice (both libertarian)',
+    },
+    {
+      indicator_a: 'digital.online_safety.revealed',
+      indicator_b: 'ideology.lib_auth.revealed',
+      correlation: 0.40,
+      source: 'hand_coded',
+      notes: 'Authoritarian stance correlates with support for online content regulation',
+    },
+    {
+      indicator_a: 'digital.data_privacy.revealed',
+      indicator_b: 'ideology.lib_auth.revealed',
+      correlation: -0.35,
+      source: 'hand_coded',
+      notes: 'Strong data privacy stance is libertarian — opposes state surveillance',
+    },
+    {
+      indicator_a: 'ideology.lib_auth.revealed',
+      indicator_b: 'local_gov.devolution.revealed',
+      correlation: -0.30,
+      source: 'hand_coded',
+      notes: 'Libertarian stance weakly favours devolution / dispersed power',
+    },
+
+    // ── Defence ↔ fiscal links ──────────────────────────────────────────
+    {
+      indicator_a: 'defence.military_spending.public',
+      indicator_b: 'fiscal.public_spending.revealed',
+      correlation: 0.35,
+      source: 'hand_coded',
+      notes: 'Defence spending is a component of public spending — positively linked',
+    },
+    {
+      indicator_a: 'defence.military_spending.public',
+      indicator_b: 'fiscal.taxation.revealed',
+      correlation: 0.25,
+      source: 'hand_coded',
+      notes: 'Pro-defence spending weakly requires acceptance of taxation to fund it',
+    },
+    {
+      indicator_a: 'defence.military_spending.public',
+      indicator_b: 'ideology.economic_left_right.revealed',
+      correlation: -0.35,
+      source: 'hand_coded',
+      notes: 'Economic right tends to favour higher defence spending',
+    },
+
+    // ── Cross-domain correlations ───────────────────────────────────────
+    {
+      indicator_a: 'education.school_funding.public',
+      indicator_b: 'education.schools.public',
+      correlation: 0.80,
+      source: 'hand_coded',
+      notes: 'Overlapping indicators — school funding is a subset of schools policy',
+    },
+    {
+      indicator_a: 'education.school_funding.revealed',
+      indicator_b: 'ideology.economic_left_right.revealed',
+      correlation: 0.40,
+      source: 'hand_coded',
+      notes: 'Economic left favours state school spending over choice/competition',
+    },
+    {
+      indicator_a: 'culture.arts_funding.revealed',
+      indicator_b: 'ideology.economic_left_right.revealed',
+      correlation: 0.35,
+      source: 'hand_coded',
+      notes: 'Economic left supports public arts and culture funding',
+    },
+    {
+      indicator_a: 'culture.bbc_funding.revealed',
+      indicator_b: 'ideology.economic_left_right.revealed',
+      correlation: 0.30,
+      source: 'hand_coded',
+      notes: 'Economic left supports public broadcasting funding',
+    },
+    {
+      indicator_a: 'ideology.economic_left_right.revealed',
+      indicator_b: 'trade.liberalisation.revealed',
+      correlation: -0.40,
+      source: 'hand_coded',
+      notes: 'Economic right favours trade liberalisation / free trade',
+    },
   ];
 
   // Validate alphabetical ordering before insert

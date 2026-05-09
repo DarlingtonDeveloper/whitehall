@@ -9,6 +9,7 @@
     { "path": "/api/cron/collect?group=media", "schedule": "0 */12 * * *" },
     { "path": "/api/cron/collect?group=research", "schedule": "0 */12 * * *" },
     { "path": "/api/cron/collect?group=politician_sync", "schedule": "0 3 * * *" },
+    { "path": "/api/cron/classify", "schedule": "30 3 * * *" },
     { "path": "/api/cron/math-refresh", "schedule": "0 4 * * *" }
   ]
 }
