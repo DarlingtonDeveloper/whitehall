@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS feed_items (
   body            TEXT,
   raw_data        JSONB,
   entity_ids      TEXT[] DEFAULT '{}',
+  topic_tags      TEXT[] DEFAULT '{}',
   monitoring_theme TEXT,
   rag_status      TEXT,
   relevance_score REAL DEFAULT 0,
@@ -21,6 +22,7 @@ CREATE TABLE IF NOT EXISTS feed_items (
 CREATE INDEX IF NOT EXISTS idx_feed_items_published ON feed_items (published_at DESC);
 CREATE INDEX IF NOT EXISTS idx_feed_items_source ON feed_items (source_type);
 CREATE INDEX IF NOT EXISTS idx_feed_items_entities ON feed_items USING GIN (entity_ids);
+CREATE INDEX IF NOT EXISTS idx_feed_items_topics ON feed_items USING GIN (topic_tags);
 CREATE INDEX IF NOT EXISTS idx_feed_items_fingerprint ON feed_items (fingerprint);
 CREATE INDEX IF NOT EXISTS idx_feed_items_theme ON feed_items (monitoring_theme);
 

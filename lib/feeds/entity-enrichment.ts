@@ -67,6 +67,17 @@ export const KEYWORD_ENTITY_MAP: [RegExp, string][] = [
   [/\bREMA\b|electricity market reform/i, 'desnz'],
   [/\bcapacity market|capacity auction/i, 'desnz'],
   [/\bgrid connection|grid queue|SSEP/i, 'desnz'],
+
+  // Industry bodies (map to sponsoring department)
+  [/\bORE Catapult\b|offshore renewable/i, 'desnz'],
+  [/\bOEUK\b|Oil & Gas UK|offshore energies/i, 'desnz'],
+  [/\bCarbon Brief\b/i, 'desnz'],
+  [/\bEnergy UK\b/i, 'desnz'],
+  [/\bRenewableUK\b|renewable uk/i, 'desnz'],
+  [/\bNIHR\b|national institute.{0,5}health research/i, 'dhsc'],
+  [/\bPRA\b|Prudential Regulation/i, 'treasury'],
+  [/\bFCA\b|Financial Conduct Authority/i, 'treasury'],
+  [/\bBank of England\b/i, 'treasury'],
 ];
 
 // ── Content-based entity patterns ─────────────────────────────────────────
@@ -282,7 +293,7 @@ export const TOPIC_TAG_MAP: [RegExp, string][] = [
   [/\bhydrogen\b|hydrogen strategy/i, 'hydrogen'],
   [/\bCCUS\b|carbon capture|CCS\b/i, 'carbon-capture'],
   [/\bnet zero|decarboni[sz]ation|climate change|carbon budget|emission/i, 'climate-change'],
-  [/\benergy (security|crisis|bill|price)|fuel poverty|energy efficiency/i, 'energy-policy'],
+  [/\benergy (security|crisis|bill|price)|fuel poverty|energy efficiency|Opposition Day.*Energy/i, 'energy-policy'],
   [/\boil and gas|oil & gas|North Sea|petroleum|fossil fuel/i, 'oil-and-gas'],
   [/\bgrid connection|grid queue|electricity grid|transmission|distribution network/i, 'grid-infrastructure'],
   [/\bCfD\b|contracts? for difference|allocation round|REMA\b|electricity market/i, 'energy-markets'],
@@ -308,13 +319,14 @@ export const TOPIC_TAG_MAP: [RegExp, string][] = [
 
   // Economy & finance
   [/\bbudget\b|fiscal|public spending|spending review/i, 'fiscal-policy'],
-  [/\btax (reform|relief|cut|rise|policy)|income tax|corporation tax|capital gains/i, 'taxation'],
+  [/\btax (reform|relief|cut|rise|policy)|income tax|corporation tax|capital gains|Opposition Day.*Tax/i, 'taxation'],
+  [/\bFinance (\(No\.\s*\d+\)\s*)?Bill/i, 'taxation'],
   [/\binflation|cost of living|interest rate/i, 'cost-of-living'],
   [/\bpension|state pension|retirement/i, 'pensions'],
-  [/\buniversal credit|benefits?|welfare/i, 'welfare'],
+  [/\buniversal credit|benefits?|welfare|unemployment/i, 'welfare'],
 
   // Defence & security
-  [/\bdefence (spending|review|procurement)|armed forces|military/i, 'defence'],
+  [/\bdefence (spending|review|procurement)|armed forces|military|Opposition Day.*Defence/i, 'defence'],
   [/\bUkraine|Russia|NATO\b/i, 'ukraine-russia'],
   [/\bcyber (security|attack|threat)/i, 'cyber-security'],
   [/\bterror/i, 'counter-terrorism'],
@@ -324,7 +336,8 @@ export const TOPIC_TAG_MAP: [RegExp, string][] = [
   [/\bvisa\b|work permit|skilled worker/i, 'visas'],
 
   // Justice & policing
-  [/\bprison|probation|reoffending|criminal justice/i, 'criminal-justice'],
+  [/\bprison|probation|reoffending|criminal justice|jury trial/i, 'criminal-justice'],
+  [/\bSentencing Bill|Victims and Courts Bill|Courts and Tribunals Bill/i, 'criminal-justice'],
   [/\bpolic(e|ing)|knife crime|violent crime|county lines/i, 'policing'],
   [/\blegal aid|access to justice|court (backlog|delay)/i, 'access-to-justice'],
 
@@ -346,7 +359,7 @@ export const TOPIC_TAG_MAP: [RegExp, string][] = [
   [/\bflood (risk|defence|warning)/i, 'flooding'],
   [/\bair quality|air pollution|clean air/i, 'air-quality'],
   [/\bwaste|recycling|circular economy|plastic/i, 'waste-recycling'],
-  [/\bfarming|agriculture|food (security|production)|rural/i, 'agriculture'],
+  [/\bfarming|agriculture|food (security|production)|rural|Opposition Day.*[Rr]ural/i, 'agriculture'],
 
   // Technology & digital
   [/\bartificial intelligence|AI (regulation|safety|governance)|machine learning/i, 'ai-regulation'],
@@ -356,13 +369,60 @@ export const TOPIC_TAG_MAP: [RegExp, string][] = [
   // Trade & industry
   [/\btrade (deal|agreement|policy)|tariff|WTO\b|free trade/i, 'trade-policy'],
   [/\bindustrial strategy|manufacturing|steel|automotive/i, 'industrial-strategy'],
+  [/\bIndustry and Exports/i, 'trade-policy'],
   [/\bfreeport|investment zone|enterprise zone/i, 'freeports'],
 
   // Devolution & constitution
   [/\bScotland|Scottish\b/i, 'scotland'],
   [/\bWales|Welsh\b/i, 'wales'],
   [/\bNorthern Ireland|Stormont/i, 'northern-ireland'],
-  [/\bdevolution|combined authority|metro mayor/i, 'devolution'],
+  [/\bdevolution|combined authority|metro mayor|English Devolution/i, 'devolution'],
+  [/\bRepresentation of the People/i, 'equality'],
+
+  // Foreign affairs & international
+  [/\bforeign (affairs|policy|secretary)|diplomat|embassy|sanction/i, 'foreign-affairs'],
+  [/\binternational development|overseas aid|ODA\b|foreign aid|humanitarian/i, 'international-development'],
+  [/\bChina|Beijing|Indo-Pacific|AUKUS\b/i, 'indo-pacific'],
+  [/\bMiddle East|Israel|Palestine|Gaza|Iran/i, 'middle-east'],
+
+  // Equality & human rights
+  [/\bequality|discrimination|human rights|protected characteristic/i, 'equality'],
+  [/\bmodern slavery|trafficking|forced labour/i, 'modern-slavery'],
+  [/\bdisability|disabled|accessibility|special educational needs|SEND\b/i, 'disability'],
+  [/\bgender pay|equal pay|women('s| and) equalit/i, 'gender-equality'],
+
+  // Children & families
+  [/\bchild (protection|abuse|poverty|welfare)|safeguarding|looked.after children/i, 'child-welfare'],
+  [/\bdomestic (abuse|violence)|victim/i, 'domestic-abuse'],
+
+  // Public health
+  [/\bobesity|smoking|tobacco|alcohol|vaping|e-cigarette/i, 'public-health'],
+  [/\bantimicrobial|antibiotic resistance|AMR\b/i, 'antimicrobial-resistance'],
+
+  // Veterans & armed forces community
+  [/\bveteran|armed forces covenant|ex-service/i, 'veterans'],
+
+  // Space & science
+  [/\bspace (industry|sector|launch|agency)|satellite|UK Space/i, 'space'],
+
+  // Maritime & shipping
+  [/\bmaritime|shipping|port (infrastructure|expansion)|seafarer/i, 'maritime'],
+
+  // Local government & communities
+  [/\blocal (government|council|authority)|council tax|municipal|Local Government Finance/i, 'local-government'],
+  [/\bcommunity (safety|cohesion)|anti-social behaviour|ASB\b/i, 'community-safety'],
+
+  // Financial services & regulation
+  [/\bfinancial (conduct|regulation|services)|FCA\b|PRA\b|banking/i, 'financial-regulation'],
+  [/\bcryptocurren|blockchain|digital asset|stablecoin/i, 'crypto-digital-assets'],
+
+  // Culture, media & sport
+  [/\bBBC\b|broadcasting|Channel 4|media regulation/i, 'broadcasting'],
+  [/\bsport|football|Olympic|Paralympic/i, 'sport'],
+  [/\bheritage|museum|listed building|cultural/i, 'heritage-culture'],
+
+  // Gambling & addiction
+  [/\bgambling|betting|lottery|casino/i, 'gambling'],
 ];
 
 /**

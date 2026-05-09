@@ -363,6 +363,7 @@ export async function collectHansard(since?: Date): Promise<{ inserted: number; 
           published_at: publishedAt,
           body: body || null,
           entity_ids: entityIds,
+          topic_tags: extractTopicTags(title, body),
           rag_status: ragStatus.toLowerCase(),
           relevance_score: 0.3,
           fingerprint,

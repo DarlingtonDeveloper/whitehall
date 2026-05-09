@@ -20,6 +20,7 @@ import {
   enrichEntityIds,
   determineRagStatus,
 } from './govuk';
+import { extractTopicTags } from './entity-enrichment';
 import { cleanTitle } from './clean-title';
 
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env.local') });
@@ -261,6 +262,7 @@ function processSearchResults(
       published_at: pubDate,
       body: description.slice(0, 2000) || null,
       entity_ids: entityIds,
+      topic_tags: extractTopicTags(result.title, description),
       rag_status: ragStatus.toLowerCase(),
       relevance_score: 0.3,
       fingerprint,

@@ -18,6 +18,7 @@ import {
   enrichEntityIds,
   determineRagStatus,
   makeFingerprint,
+  extractTopicTags,
 } from './entity-enrichment';
 import { cleanTitle } from './clean-title';
 
@@ -180,6 +181,7 @@ export async function collectPetitions(since?: Date): Promise<{ inserted: number
             published_at: new Date(publishedAt).toISOString(),
             body: body.slice(0, 3000) || null,
             entity_ids: entityIds,
+            topic_tags: extractTopicTags(title, body),
             rag_status: ragStatus.toLowerCase(),
             relevance_score: 0.15,
             fingerprint,

@@ -1,12 +1,16 @@
 /**
  * Backfill topic_tags on all politician_evidence rows.
  *
- * Reads evidence rows in batches, applies extractTopicTags() to raw_content + parsed data,
+ * Reads evidence rows in batches using cursor-based pagination,
+ * applies extractTopicTags() to raw_content + parsed data,
  * and updates the topic_tags column.
  *
  * Usage:
  *   npx tsx scripts/backfill-topic-tags.ts           — Backfill all rows with empty topic_tags
  *   npx tsx scripts/backfill-topic-tags.ts --all     — Re-tag all rows (overwrite existing)
+ *
+ * Environment:
+ *   START_ID=12345  — Resume from a specific evidence ID
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -34,19 +38,20 @@ async function backfill() {
   console.log(`\n=== Topic Tags Backfill ===`);
   console.log(`Mode: ${retagAll ? 'Re-tag ALL rows' : 'Only empty topic_tags'}\n`);
 
-  let offset = 0;
+  let lastId = parseInt(process.env.START_ID || '0', 10);
   let totalUpdated = 0;
   let totalSkipped = 0;
   let totalRows = 0;
   let hasMore = true;
 
   while (hasMore) {
-    // Fetch batch of evidence rows
+    // Cursor-based pagination — always efficient regardless of position
     let query = supabase
       .from('politician_evidence')
       .select('id, evidence_type, raw_content, parsed')
+      .gt('id', lastId)
       .order('id')
-      .range(offset, offset + BATCH_SIZE - 1);
+      .limit(BATCH_SIZE);
 
     // Only process rows with empty topic_tags unless --all
     if (!retagAll) {
@@ -56,7 +61,8 @@ async function backfill() {
     const { data: rows, error } = await query;
 
     if (error) {
-      console.error(`  [ERR] Fetch failed at offset ${offset}: ${error.message}`);
+      console.error(`  [ERR] Fetch failed after id ${lastId}: ${error.message}`);
+      console.log(`  Resume with: START_ID=${lastId} npx tsx scripts/backfill-topic-tags.ts --all`);
       break;
     }
 
@@ -66,6 +72,8 @@ async function backfill() {
     }
 
     totalRows += rows.length;
+    // Advance cursor to last ID in this batch
+    lastId = rows[rows.length - 1].id;
 
     // Build updates
     const updates: Array<{ id: string; topic_tags: string[] }> = [];
@@ -129,10 +137,8 @@ async function backfill() {
       }
     }
 
-    offset += rows.length;
-
-    if (offset % 5000 === 0 || rows.length < BATCH_SIZE) {
-      console.log(`  Progress: ${totalRows} scanned, ${totalUpdated} tagged, ${totalSkipped} no topics`);
+    if (totalRows % 5000 === 0 || rows.length < BATCH_SIZE) {
+      console.log(`  Progress: ${totalRows} scanned, ${totalUpdated} tagged, ${totalSkipped} no topics (cursor: ${lastId})`);
     }
   }
 

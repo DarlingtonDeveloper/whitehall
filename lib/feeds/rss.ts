@@ -17,6 +17,7 @@ import {
   determineRagStatus,
   makeFingerprint,
   stripHtml,
+  extractTopicTags,
 } from './entity-enrichment';
 import { cleanTitle } from './clean-title';
 
@@ -335,6 +336,7 @@ export async function collectRss(since?: Date): Promise<{ inserted: number; skip
           published_at: item.published_at || new Date().toISOString(),
           body: item.body || null,
           entity_ids: entityIds,
+          topic_tags: extractTopicTags(item.title, item.body),
           rag_status: ragStatus.toLowerCase(),
           relevance_score: 0.2,
           fingerprint,

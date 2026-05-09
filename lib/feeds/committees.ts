@@ -19,6 +19,7 @@ import {
   determineRagStatus,
   makeFingerprint,
   stripHtml,
+  extractTopicTags,
 } from './entity-enrichment';
 import { cleanTitle } from './clean-title';
 
@@ -237,6 +238,7 @@ export async function collectCommittees(): Promise<{ inserted: number; skipped: 
           published_at: new Date().toISOString(),
           body: null,
           entity_ids: entityIds,
+          topic_tags: extractTopicTags(title, ''),
           rag_status: ragStatus.toLowerCase(),
           relevance_score: 0.25,
           fingerprint,
