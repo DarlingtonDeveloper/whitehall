@@ -668,6 +668,7 @@ async function main() {
     const batch = mappings.slice(i, i + batchSize);
     const { error } = await sb.from('bill_policy_mappings').upsert(batch, {
       onConflict: 'bill_id,amendment_id,indicator_id',
+      ignoreDuplicates: true,
     });
     if (error) {
       console.error(`Batch ${i}-${i + batch.length} error:`, error.message);

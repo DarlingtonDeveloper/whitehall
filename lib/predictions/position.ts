@@ -6,6 +6,7 @@ import { posterior } from '@/lib/math/beta';
 import { decayedState } from '@/lib/math/indicators';
 import { withRetry } from '@/lib/ai/retry';
 import { CLASSIFIER_MODEL, CLASSIFIER_MAX_TOKENS } from '@/lib/classifier/constants';
+import { extractTopicTags } from '@/lib/feeds/entity-enrichment';
 import { weightedAverage, blend, generateCaveats } from './utils';
 import type {
   PositionPredictionInput,
@@ -377,8 +378,37 @@ Rules:
       .filter((l) => validIds.has(l.indicator_id))
       .slice(0, 6);
   } catch (err) {
-    console.warn('[PREDICTIONS] Issue classification LLM call failed:', err);
-    return [];
+    console.warn('[PREDICTIONS] Issue classification LLM call failed, using deterministic fallback');
+
+    // Deterministic fallback: use keyword-based topic tags to find matching indicators
+    const topicTags = extractTopicTags(issueText, '');
+    if (topicTags.length === 0) return [];
+
+    // Map topic tags to policy areas that match indicator_definitions
+    const matchedAreas = new Set<string>();
+    for (const tag of topicTags) {
+      // Topic tags often match policy_area names directly
+      matchedAreas.add(tag);
+    }
+
+    const fallbackLoads: IssueIndicatorLoad[] = [];
+    for (const ind of indicators) {
+      const area = ind.policy_area as string;
+      if (matchedAreas.has(area)) {
+        fallbackLoads.push({
+          indicator_id: ind.id as string,
+          load_direction: 1.0,
+          relevance: 0.7,
+          policy_area: area,
+        });
+      }
+    }
+
+    if (fallbackLoads.length > 0) {
+      console.log(`[PREDICTIONS] Deterministic fallback matched ${fallbackLoads.length} indicators via tags: ${topicTags.join(', ')}`);
+    }
+
+    return fallbackLoads.slice(0, 6);
   }
 }
 

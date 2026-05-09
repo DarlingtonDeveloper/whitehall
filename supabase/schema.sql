@@ -398,7 +398,7 @@ CREATE TABLE IF NOT EXISTS bill_policy_mappings (
   reviewed              BOOLEAN NOT NULL DEFAULT false,
   notes                 TEXT,
   created_at            TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  UNIQUE(bill_id, amendment_id, indicator_id)
+  UNIQUE NULLS NOT DISTINCT (bill_id, amendment_id, indicator_id)
 );
 
 CREATE INDEX IF NOT EXISTS idx_bpm_bill ON bill_policy_mappings(bill_id);

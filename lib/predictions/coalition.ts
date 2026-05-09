@@ -113,11 +113,11 @@ export async function mapCoalitions(input: CoalitionInput): Promise<CoalitionRes
   }
 
   // 6. Build indicator label map
+  // IDs already include .revealed/.public suffixes — use as-is
   const labelMap = new Map<string, { label_low: string; label_high: string }>();
   for (const ind of indicators) {
     const id = ind.id as string;
-    labelMap.set(`${id}.revealed`, { label_low: ind.label_low as string, label_high: ind.label_high as string });
-    labelMap.set(`${id}.public`, { label_low: ind.label_low as string, label_high: ind.label_high as string });
+    labelMap.set(id, { label_low: ind.label_low as string, label_high: ind.label_high as string });
   }
 
   // 7. Build clusters
