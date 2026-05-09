@@ -394,6 +394,161 @@ const TAG_TO_INDICATORS: Record<string, Array<{
   ],
 };
 
+// ── Title-based fallback patterns ──────────────────────────────────────────
+// Catches division titles that extractTopicTags misses. Each entry maps a
+// regex (tested against the full title) to one or more topic tags, which are
+// then resolved via TAG_TO_INDICATORS above.
+const TITLE_FALLBACK_PATTERNS: [RegExp, string[]][] = [
+  // Bills with apostrophe / Unicode variants
+  [/Renter/i, ['housing']],
+  [/Bank Resolution/i, ['financial-regulation']],
+  [/Investigatory Powers/i, ['online-safety']],
+  [/Hunting Trophies/i, ['biodiversity']],
+  [/Dormant Assets/i, ['financial-regulation']],
+  [/Post Office.*Horizon/i, ['criminal-justice']],
+  [/Automated Vehicles/i, ['roads']],
+  [/Professional Qualifications/i, ['trade-policy']],
+  [/Non-Domestic Rating/i, ['local-government']],
+  [/Royal Albert Hall/i, ['heritage-culture']],
+  [/Copyright/i, ['heritage-culture']],
+
+  // Sentencing (broader than existing pattern)
+  [/Sentencing Guideline/i, ['criminal-justice']],
+  // Data bill (title without parens)
+  [/Data Use and Access/i, ['online-safety']],
+  // Economic Activity (without Overseas Matters)
+  [/Economic Activity of Public Bodies/i, ['trade-policy']],
+  // Environment Bill (typo-tolerant)
+  [/Environment Bil/i, ['biodiversity']],
+
+  // Health Protection / Coronavirus regulations
+  [/Health Protection.*Coronavirus|Health Protection.*Entry|Health Protection.*Face Covering|COVID/i, ['public-health']],
+
+  // Trade union regulations
+  [/Trade Union|Union Subscriptions/i, ['industrial-strategy']],
+
+  // Electoral / voter
+  [/Voter Identification|Electoral Commission/i, ['equality']],
+
+  // Fracking
+  [/Fracking|Shale Gas/i, ['oil-and-gas']],
+
+  // Motor vehicles / driving
+  [/Motor Vehicles.*Driving|Driving Licences/i, ['roads']],
+
+  // Social Security
+  [/Social Security/i, ['welfare']],
+
+  // Environmental targets
+  [/Environmental Targets/i, ['biodiversity']],
+
+  // Genetically Modified / Precision Breeding
+  [/Genetically Modified/i, ['agriculture']],
+
+  // Misuse of Drugs
+  [/Misuse of Drugs/i, ['public-health']],
+
+  // Animal By-Products
+  [/Animal By-Products/i, ['agriculture']],
+
+  // Marking of Retail Goods
+  [/Marking of Retail Goods/i, ['trade-policy']],
+
+  // Windsor Framework (broader)
+  [/Windsor Framework/i, ['northern-ireland']],
+
+  // Strikes / Minimum Service Levels (SI variants)
+  [/Strikes.*Minimum Service|Minimum Service.*Border/i, ['industrial-strategy']],
+
+  // Official Controls (food/agriculture SIs)
+  [/Official Controls/i, ['agriculture']],
+
+  // Pharmacy / Pharmacists
+  [/Pharmac/i, ['pharmaceuticals']],
+
+  // Architects Act
+  [/Architects Act/i, ['housing']],
+
+  // Information Commissioner
+  [/Information Commissioner/i, ['online-safety']],
+
+  // Enterprise Act / regulations
+  [/Enterprise Act/i, ['consumer-protection']],
+
+  // Confidence / censure motions
+  [/Confidence in .* Government/i, ['parliamentary-procedure']],
+
+  // Committee on Standards / Code of Conduct
+  [/Standards Code of Conduct|Committee on Standards|Conduct of the Rt Hon|Conduct Committee/i, ['parliamentary-procedure']],
+
+  // Humble Address
+  [/Humble Address/i, ['parliamentary-procedure']],
+
+  // Supplementary Estimates
+  [/Supplementary Estimate|Ways and Means/i, ['fiscal-policy']],
+
+  // Chagos / Mauritius
+  [/Chagos|Mauritius/i, ['foreign-affairs']],
+
+  // Housing (Right to Buy)
+  [/Right to Buy/i, ['housing']],
+
+  // Pet Animals / Windsor pets
+  [/Pet Animals/i, ['northern-ireland']],
+
+  // Postal Packets
+  [/Postal Packets/i, ['trade-policy']],
+
+  // Justification Decision (Scientific Age Imaging) - immigration
+  [/Scientific Age Imaging/i, ['immigration']],
+
+  // Economic Growth regulatory order
+  [/Economic Growth.*Regulatory/i, ['fiscal-policy']],
+
+  // Risk-based exclusion
+  [/Risk-based exclusion/i, ['parliamentary-procedure']],
+
+  // Employment Agencies / Businesses regulations
+  [/Employment Agencies|Employment Businesses/i, ['industrial-strategy']],
+
+  // Health Regulations (non-coronavirus catch)
+  [/Health Regulations/i, ['public-health']],
+
+  // Medical Devices
+  [/Medical Devices/i, ['pharmaceuticals']],
+
+  // Planning (broader catch)
+  [/Town and Country Planning|Planning and Local Representation|Planning Act|Pavement Licences/i, ['planning']],
+
+  // Economic Partnership / Trade agreements
+  [/Economic Partnership Agreement|Trade Agreement/i, ['trade-policy']],
+
+  // Provisional Collection of Taxes
+  [/Provisional Collection of Taxes/i, ['taxation']],
+
+  // Treasury updates
+  [/Treasury update/i, ['fiscal-policy']],
+
+  // Censure / Safe and Legal Migration
+  [/[Cc]ensure.*[Mm]igration|[Ss]afe and [Ll]egal [Mm]igration/i, ['immigration']],
+
+  // Broader Opposition Day fallbacks
+  [/Opposition [Dd]ay.*[Bb]usiness|Opposition [Dd]ay.*[Ee]conom|Opposition [Dd]ay.*[Gg]rowth/i, ['fiscal-policy']],
+  [/Opposition [Dd]ay.*[Mm]ortgage|Opposition [Dd]ay.*[Rr]ental/i, ['housing']],
+  [/Opposition [Dd]ay.*[Cc]arer|Opposition [Dd]ay.*[Bb]enefit/i, ['welfare']],
+  [/Opposition [Dd]ay.*[Ss]tandard|Opposition [Dd]ay.*[Cc]onduct|Opposition [Dd]ay.*[Aa]ccountab|Opposition [Dd]ay.*[Mm]inisterial|Opposition [Dd]ay.*[Cc]hancellor/i, ['parliamentary-procedure']],
+  [/Opposition [Dd]ay.*[Ss]mall [Bb]usiness|Opposition [Dd]ay.*[Ff]amily [Bb]usiness|Opposition [Dd]ay.*[Hh]igh [Ss]treet/i, ['fiscal-policy']],
+  [/Opposition [Dd]ay.*[Pp]lanning/i, ['planning']],
+  [/Opposition [Dd]ay.*[Bb]order/i, ['immigration']],
+  [/Opposition [Dd]ay.*[Cc]hildren|Opposition [Dd]ay.*[Yy]oung/i, ['child-welfare']],
+  [/Opposition [Dd]ay.*[Ff]unding|Opposition [Dd]ay.*[Aa]id/i, ['fiscal-policy']],
+  [/Opposition [Dd]ay.*[Aa]fghanistan/i, ['defence']],
+  [/Opposition [Dd]ay.*[Cc]ovid|Opposition [Dd]ay.*[Pp]andemic/i, ['public-health']],
+  [/Opposition [Dd]ay.*[Ee]xempt [Aa]ccommodation/i, ['housing']],
+  [/Opposition [Dd]ay.*[Ww]orking [Pp]eople|Opposition [Dd]ay.*[Ff]inances/i, ['welfare']],
+  [/Opposition [Dd]ay.*[Pp]apers/i, ['parliamentary-procedure']],
+];
+
 async function main() {
   const { createClient } = await import('@supabase/supabase-js');
   const { extractTopicTags } = await import('../lib/feeds/entity-enrichment');
@@ -447,7 +602,19 @@ async function main() {
   let unmatched = 0;
 
   for (const [divId, title] of divisionMap) {
-    const tags = extractTopicTags(title, '');
+    let tags = extractTopicTags(title, '');
+
+    // Fallback: if extractTopicTags found nothing, try title-specific patterns
+    if (tags.length === 0) {
+      const fallbackTags = new Set<string>();
+      for (const [pattern, tagList] of TITLE_FALLBACK_PATTERNS) {
+        if (pattern.test(title)) {
+          for (const t of tagList) fallbackTags.add(t);
+        }
+      }
+      tags = Array.from(fallbackTags);
+    }
+
     if (tags.length === 0) {
       unmatched++;
       continue;

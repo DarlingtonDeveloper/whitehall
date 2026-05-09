@@ -203,7 +203,7 @@ async function main() {
   const orgMappings = [
     // Energy sector — net zero / public ownership
     { org_name: 'bp', org_aliases: ['bp plc', 'bp p.l.c.'], indicator_id: 'energy.net_zero.revealed', anchor: 0.35, weight_multiplier: 1.2, rationale: 'Major oil & gas company — financial interest signals fossil fuel alignment' },
-    { org_name: 'shell', org_aliases: ['shell plc', 'shell uk'], indicator_id: 'energy.net_zero.revealed', anchor: 0.35, weight_multiplier: 1.2, rationale: 'Major oil & gas company' },
+    { org_name: 'shell', org_aliases: ['shell plc', 'shell uk', 'royal dutch shell plc', 'royal dutch shell'], indicator_id: 'energy.net_zero.revealed', anchor: 0.35, weight_multiplier: 1.2, rationale: 'Major oil & gas company' },
     { org_name: 'edf energy', org_aliases: ['edf', 'electricite de france'], indicator_id: 'energy.net_zero.revealed', anchor: 0.65, weight_multiplier: 1.0, rationale: 'Nuclear and renewable energy provider' },
     { org_name: 'octopus energy', org_aliases: ['octopus energy group'], indicator_id: 'energy.net_zero.revealed', anchor: 0.75, weight_multiplier: 1.0, rationale: 'Green energy supplier and investor' },
     { org_name: 'drax', org_aliases: ['drax group', 'drax power'], indicator_id: 'energy.net_zero.revealed', anchor: 0.55, weight_multiplier: 0.9, rationale: 'Biomass and power generation — mixed climate signal' },
@@ -232,7 +232,7 @@ async function main() {
     { org_name: 'tuc', org_aliases: ['trades union congress'], indicator_id: 'employment.workers_rights.revealed', anchor: 0.85, weight_multiplier: 1.2, rationale: 'Trade union umbrella body — strong pro-workers\' rights signal' },
     { org_name: 'unite', org_aliases: ['unite the union', 'unite union'], indicator_id: 'employment.workers_rights.revealed', anchor: 0.9, weight_multiplier: 1.2, rationale: 'Major trade union' },
     { org_name: 'unison', org_aliases: ['unison union'], indicator_id: 'employment.workers_rights.revealed', anchor: 0.85, weight_multiplier: 1.1, rationale: 'Public sector trade union' },
-    { org_name: 'gmb', org_aliases: ['gmb union'], indicator_id: 'employment.workers_rights.revealed', anchor: 0.85, weight_multiplier: 1.1, rationale: 'General trade union' },
+    { org_name: 'gmb', org_aliases: ['gmb union', 'gmb london region', 'gmb london'], indicator_id: 'employment.workers_rights.revealed', anchor: 0.85, weight_multiplier: 1.1, rationale: 'General trade union' },
     { org_name: 'usdaw', org_aliases: ['union of shop, distributive and allied workers'], indicator_id: 'employment.workers_rights.revealed', anchor: 0.8, weight_multiplier: 1.0, rationale: 'Retail/distribution trade union' },
     { org_name: 'communication workers union', org_aliases: ['cwu'], indicator_id: 'employment.workers_rights.revealed', anchor: 0.85, weight_multiplier: 1.0, rationale: 'Postal/telecoms trade union' },
     { org_name: 'aslef', org_aliases: ['associated society of locomotive engineers and firemen'], indicator_id: 'employment.workers_rights.revealed', anchor: 0.85, weight_multiplier: 1.0, rationale: 'Train drivers\' union' },
@@ -245,7 +245,7 @@ async function main() {
 
     // Defence sector
     { org_name: 'bae systems', org_aliases: ['bae systems plc'], indicator_id: 'defence.military_spending.public', anchor: 0.85, weight_multiplier: 1.2, rationale: 'Major defence contractor — financial interest signals pro-defence spending' },
-    { org_name: 'rolls-royce', org_aliases: ['rolls-royce holdings', 'rolls-royce plc'], indicator_id: 'defence.military_spending.public', anchor: 0.7, weight_multiplier: 1.0, rationale: 'Defence and aerospace engine manufacturer' },
+    { org_name: 'rolls-royce', org_aliases: ['rolls-royce holdings', 'rolls-royce plc', 'rolls royce', 'rolls-royce uk'], indicator_id: 'defence.military_spending.public', anchor: 0.7, weight_multiplier: 1.0, rationale: 'Defence and aerospace engine manufacturer' },
     { org_name: 'qinetiq', org_aliases: ['qinetiq group'], indicator_id: 'defence.military_spending.public', anchor: 0.75, weight_multiplier: 0.9, rationale: 'Defence technology company' },
     { org_name: 'rusi', org_aliases: ['royal united services institute'], indicator_id: 'defence.military_spending.public', anchor: 0.7, weight_multiplier: 0.8, rationale: 'Defence and security think tank' },
 
@@ -301,6 +301,60 @@ async function main() {
 
     // Local government
     { org_name: 'local government association', org_aliases: ['lga'], indicator_id: 'local_gov.council_powers.revealed', anchor: 0.8, weight_multiplier: 1.0, rationale: 'Council umbrella body — advocates greater local autonomy' },
+
+    // ── Additional mappings (batch 2) ──────────────────────────────────
+
+    // Tech companies
+    { org_name: 'google', org_aliases: ['google uk ltd', 'google uk', 'google llc', 'google inc'], indicator_id: 'digital.ai_regulation.revealed', anchor: 0.25, weight_multiplier: 1.2, rationale: 'Major tech company — lobbies for light-touch AI regulation' },
+    { org_name: 'alphabet inc', org_aliases: ['alphabet', 'alphabet inc.'], indicator_id: 'digital.ai_regulation.revealed', anchor: 0.25, weight_multiplier: 1.2, rationale: 'Google parent company — light-touch AI regulation' },
+    { org_name: 'microsoft corporation', org_aliases: ['microsoft', 'microsoft uk', 'microsoft corp'], indicator_id: 'digital.ai_regulation.revealed', anchor: 0.3, weight_multiplier: 1.1, rationale: 'Major tech company — generally favours industry self-regulation' },
+    { org_name: 'apple inc', org_aliases: ['apple', 'apple uk'], indicator_id: 'digital.data_privacy.revealed', anchor: 0.7, weight_multiplier: 1.0, rationale: 'Tech company with strong privacy positioning' },
+    { org_name: 'meta', org_aliases: ['meta platforms', 'facebook', 'meta platforms inc'], indicator_id: 'digital.online_safety.revealed', anchor: 0.2, weight_multiplier: 1.2, rationale: 'Social media company — favours platform self-regulation' },
+
+    // Defence
+    { org_name: 'armed forces parliamentary trust', org_aliases: ['afpt'], indicator_id: 'defence.military_spending.public', anchor: 0.8, weight_multiplier: 0.9, rationale: 'Parliamentary trust supporting armed forces — pro-defence spending' },
+    { org_name: 'babcock international group', org_aliases: ['babcock international', 'babcock'], indicator_id: 'defence.military_spending.public', anchor: 0.8, weight_multiplier: 1.0, rationale: 'Major defence contractor — pro-defence spending' },
+
+    // Media / culture
+    { org_name: 'bbc', org_aliases: ['british broadcasting corporation', 'bbc studios'], indicator_id: 'culture.bbc_funding.revealed', anchor: 0.75, weight_multiplier: 1.0, rationale: 'Public broadcaster — financial interest signals support for BBC model' },
+    { org_name: 'channel 4', org_aliases: ['channel four', 'channel 4 television'], indicator_id: 'culture.arts_funding.revealed', anchor: 0.75, weight_multiplier: 0.9, rationale: 'Public service broadcaster' },
+    { org_name: 'uk music', org_aliases: ['uk music ltd'], indicator_id: 'culture.arts_funding.revealed', anchor: 0.8, weight_multiplier: 0.9, rationale: 'Music industry umbrella body — advocates for creative sector funding' },
+    { org_name: 'prs for music', org_aliases: ['prs', 'performing right society'], indicator_id: 'culture.arts_funding.revealed', anchor: 0.75, weight_multiplier: 0.8, rationale: 'Music royalty collection body' },
+    { org_name: 'bpi', org_aliases: ['bpi (british recorded music industry) ltd', 'british recorded music industry'], indicator_id: 'culture.arts_funding.revealed', anchor: 0.7, weight_multiplier: 0.8, rationale: 'Recorded music trade body' },
+
+    // Energy / environment
+    { org_name: 'energy & climate intelligence unit', org_aliases: ['eciu', 'energy and climate intelligence unit'], indicator_id: 'energy.net_zero.revealed', anchor: 0.85, weight_multiplier: 1.0, rationale: 'Climate policy research body — pro net zero' },
+    { org_name: 'nuclear industry association', org_aliases: ['nia'], indicator_id: 'energy.net_zero.revealed', anchor: 0.6, weight_multiplier: 0.9, rationale: 'Nuclear industry body — supports low carbon but specific technology' },
+
+    // Business / economics
+    { org_name: 'sme4labour ltd', org_aliases: ['sme4labour', 'sme for labour'], indicator_id: 'fiscal.small_business.revealed', anchor: 0.75, weight_multiplier: 0.9, rationale: 'Small business group aligned with Labour' },
+    { org_name: 'diageo plc', org_aliases: ['diageo', 'diageo plc.'], indicator_id: 'fiscal.taxation.revealed', anchor: 0.3, weight_multiplier: 0.9, rationale: 'Major drinks company — generally opposes alcohol duty increases' },
+    { org_name: 'unilever plc', org_aliases: ['unilever', 'unilever uk'], indicator_id: 'fiscal.taxation.revealed', anchor: 0.35, weight_multiplier: 0.8, rationale: 'Major multinational — favours lower corporate tax' },
+    { org_name: 'nestle sa', org_aliases: ['nestle', 'nestlé', 'nestle uk'], indicator_id: 'agriculture.food_standards.revealed', anchor: 0.35, weight_multiplier: 0.9, rationale: 'Major food company — may favour relaxed standards for trade' },
+    { org_name: 'visa inc', org_aliases: ['visa', 'visa uk', 'visa europe'], indicator_id: 'ideology.economic_left_right.revealed', anchor: 0.2, weight_multiplier: 0.8, rationale: 'Global payments company — free market orientation' },
+    { org_name: 'fenchurch advisory partners llp', org_aliases: ['fenchurch advisory partners', 'fenchurch advisory'], indicator_id: 'ideology.economic_left_right.revealed', anchor: 0.2, weight_multiplier: 0.8, rationale: 'Financial advisory firm — City orientation' },
+
+    // Housing
+    { org_name: 'the yimby initiative ltd', org_aliases: ['yimby', 'yimby alliance', 'yimby initiative'], indicator_id: 'housing.supply.public', anchor: 0.9, weight_multiplier: 1.1, rationale: 'Pro-housebuilding campaign group' },
+    { org_name: 'homes for britain ltd', org_aliases: ['homes for britain'], indicator_id: 'housing.supply.public', anchor: 0.85, weight_multiplier: 1.0, rationale: 'Housing supply campaign group' },
+
+    // Immigration
+    { org_name: 'the refugee, asylum and migration policy project (ramp)', org_aliases: ['ramp', 'refugee asylum and migration policy project', 'the refugee, asylum and migration policy project'], indicator_id: 'immigration.border_control.revealed', anchor: 0.8, weight_multiplier: 1.0, rationale: 'Migration policy research — favours more open approach' },
+
+    // Progressive / ideology
+    { org_name: 'compass - together for a good society ltd', org_aliases: ['compass', 'compass good society'], indicator_id: 'ideology.economic_left_right.revealed', anchor: 0.75, weight_multiplier: 1.0, rationale: 'Progressive think tank — centre-left economic orientation' },
+    { org_name: 'the peace and justice project', org_aliases: ['peace and justice project', 'pjp'], indicator_id: 'ideology.economic_left_right.revealed', anchor: 0.85, weight_multiplier: 1.0, rationale: 'Left-wing campaign group founded by Jeremy Corbyn' },
+    { org_name: 'best for britain ltd', org_aliases: ['best for britain'], indicator_id: 'trade.liberalisation.revealed', anchor: 0.8, weight_multiplier: 0.9, rationale: 'Pro-EU, pro-trade campaign group' },
+
+    // Betting / gambling
+    { org_name: 'betting & gaming council', org_aliases: ['bgc', 'betting and gaming council'], indicator_id: 'ideology.lib_auth.revealed', anchor: 0.3, weight_multiplier: 0.9, rationale: 'Gambling industry body — favours lighter regulation' },
+    { org_name: 'allwyn entertainment ltd', org_aliases: ['allwyn', 'allwyn entertainment'], indicator_id: 'ideology.lib_auth.revealed', anchor: 0.3, weight_multiplier: 0.8, rationale: 'Lottery/gambling operator' },
+
+    // Education
+    { org_name: 'faith in public ltd', org_aliases: ['faith in public'], indicator_id: 'education.schools.public', anchor: 0.6, weight_multiplier: 0.7, rationale: 'Faith-based education advocacy' },
+
+    // Welfare
+    { org_name: 'results uk', org_aliases: ['results'], indicator_id: 'welfare.benefits_expansion.revealed', anchor: 0.75, weight_multiplier: 0.8, rationale: 'Anti-poverty campaign group' },
   ];
 
   const { error: orgErr } = await sb.from('org_indicator_map').upsert(orgMappings, { onConflict: 'org_name,indicator_id' });

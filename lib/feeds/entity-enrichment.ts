@@ -527,6 +527,51 @@ export const TOPIC_TAG_MAP: [RegExp, string][] = [
   [/\brecall alert|product recall|safety alert/i, 'consumer-protection'],
   [/\bcoastal (defence|erosion|protection)|seabed mapping/i, 'maritime'],
 
+  // ── Broader pattern gap-fillers ──────────────────────────────────────────
+  // Fills gaps found via backfill coverage analysis
+  [/\bflooding\b|storm.*damage|flood damage/i, 'flooding'],
+  [/\boil refin|refinery|petrochemical/i, 'oil-and-gas'],
+  [/\bdoctor|nurse|health (professional|workforce)|paramedic|midwi|junior doctor/i, 'nhs'],
+  [/\btourism|tourist|hospitality sector/i, 'heritage-culture'],
+  [/\bantisemit|islamophob|hate crime|racial hatred/i, 'equality'],
+  [/\binfected blood|contaminated blood|blood scandal/i, 'nhs'],
+  [/\bcompensation scheme|redress scheme/i, 'welfare'],
+  [/\bpark home|mobile home|caravan site/i, 'housing'],
+  [/\bwheelchair|prostheti|assistive technolog/i, 'disability'],
+  [/\bfire (service|safety|brigade|authority)/i, 'community-safety'],
+  [/\bcouncil (funding|budget|finance|spending)/i, 'local-government'],
+  [/\binquest|coroner/i, 'criminal-justice'],
+  [/\bgrocery|supermarket|food (poverty|bank|insecurity)/i, 'welfare'],
+
+  // ── Department / answering-body patterns ─────────────────────────────────
+  // Catches written questions addressed to specific departments
+  [/\bSecretary of State for Defence|Ministry of Defence|MoD\b/i, 'defence'],
+  [/\bSecretary of State for Energy|Department for Energy Security/i, 'energy-policy'],
+  [/\bSecretary of State for (the )?Environment|Department for Environment|Defra\b/i, 'agriculture'],
+  [/\bSecretary of State for Education|Department for Education|DfE\b/i, 'schools'],
+  [/\bSecretary of State for Health|Department of Health|DHSC\b/i, 'nhs'],
+  [/\bSecretary of State for Transport|Department for Transport|DfT\b/i, 'roads'],
+  [/\bSecretary of State for Work|Department for Work and Pensions|DWP\b/i, 'welfare'],
+  [/\bSecretary of State for the Home Department|Home Office|Home Secretary/i, 'immigration'],
+  [/\bSecretary of State for Justice|Ministry of Justice|MoJ\b/i, 'criminal-justice'],
+  [/\bSecretary of State for Business|Department for Business/i, 'industrial-strategy'],
+  [/\bSecretary of State for (Science|Innovation|Technology)|DSIT\b/i, 'ai-regulation'],
+  [/\bSecretary of State for Housing|Department for Levelling Up|DLUHC\b|MHCLG\b/i, 'housing'],
+  [/\bSecretary of State for (Digital|Culture|Media)|DCMS\b/i, 'broadcasting'],
+  [/\bHM Treasury|Chancellor of the Exchequer/i, 'fiscal-policy'],
+  [/\bForeign.{0,20}Commonwealth.{0,20}Development Office|FCDO\b/i, 'foreign-affairs'],
+
+  // ── Broader energy patterns ─────────────────────────────────────────────
+  [/\benergy cost|electricity (supplier|payment|regulation)|industrial energy|energy competitiv/i, 'energy-policy'],
+  [/\belectricity\b|energy (transition|mix|sector|infrastructure)/i, 'energy-policy'],
+
+  // ── Broader defence patterns ────────────────────────────────────────────
+  [/\bdefence\b|army\b|navy\b|royal air force|RAF\b|cadet/i, 'defence'],
+
+  // ── Broader transport patterns ──────────────────────────────────────────
+  [/\btransport\b|bus (service|route|network)|cycling|pedestrian|active travel/i, 'roads'],
+  [/\bpublic transport/i, 'public-transport'],
+
   // ── Broader content patterns for GOV.UK items ───────────────────────────
   [/\bSSSI\b|Site of Special Scientific Interest|nature reserve/i, 'biodiversity'],
   [/\bslaughter|meat production|abattoir|livestock/i, 'agriculture'],
