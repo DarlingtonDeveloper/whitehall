@@ -82,8 +82,18 @@ async function runRefresh() {
   console.log('Refreshing materialized view...');
   const start = Date.now();
 
-  const { refreshMaterializedView } = await import('../lib/math/indicators');
-  await refreshMaterializedView();
+  // Use a dedicated client with extended fetch timeout — the view aggregates
+  // 100K+ evidence rows with decay calculations and can exceed default timeouts.
+  const { createClient: cc } = await import('@supabase/supabase-js');
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
+  const db = cc(url, key, {
+    global: { fetch: (input: any, init: any) => fetch(input, { ...init, signal: AbortSignal.timeout(120_000) }) },
+  });
+  const { error } = await db.rpc('refresh_indicators_decayed');
+  if (error) {
+    console.warn(`  [ERR] Refresh materialized view: ${error.message}`);
+  }
 
   console.log(`Done in ${Date.now() - start}ms`);
 }

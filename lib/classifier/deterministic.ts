@@ -54,9 +54,11 @@ export async function classifyDivisionVote(
   if (vote === 'absent' || vote === 'abstain' || vote === 'teller_aye' || vote === 'teller_no') {
     return [];
   }
-  if (!bill_ref) return [];
+  // Fall back to division_id when bill_ref is not populated (Parliament API doesn't provide clean bill refs)
+  const lookupId = bill_ref ?? (parsed.division_id ? String(parsed.division_id) : null);
+  if (!lookupId) return [];
 
-  const mappings = await getBillPolicyMappings(bill_ref, amendment_ref ?? null);
+  const mappings = await getBillPolicyMappings(lookupId, amendment_ref ?? null);
   if (!mappings.length) return [];
 
   return mappings.map((m) => ({
@@ -76,11 +78,11 @@ async function getOrgMappings(orgName: string): Promise<OrgIndicatorMapping[]> {
   const db = getServiceClient();
   const normalised = orgName.trim().toLowerCase();
 
-  // Check exact match first, then aliases
+  // Check exact match first (case-insensitive via pre-normalised lowercase), then aliases
   const { data: exact } = await db
     .from('org_indicator_map')
     .select('*')
-    .ilike('org_name', normalised);
+    .eq('org_name', normalised);
 
   if (exact && exact.length > 0) return exact as OrgIndicatorMapping[];
 

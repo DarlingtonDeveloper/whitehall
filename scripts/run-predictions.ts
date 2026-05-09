@@ -21,14 +21,14 @@ dotenv.config({ path: path.resolve(__dirname, '..', '.env.local') });
 
 async function runVote(politicianId: string, billId: string, amendmentId?: string) {
   const { predictVote } = await import('../lib/predictions/vote');
+  const { logPrediction } = await import('../lib/predictions/log');
 
   console.log(`\nVote prediction: ${politicianId} on bill ${billId}${amendmentId ? ` amendment ${amendmentId}` : ''}:\n`);
 
-  const result = await predictVote({
-    politician_id: politicianId,
-    bill_id: billId,
-    amendment_id: amendmentId,
-  });
+  const input = { politician_id: politicianId, bill_id: billId, amendment_id: amendmentId };
+  const result = await predictVote(input);
+
+  await logPrediction(result.prediction_id, 'vote', input, result).catch(() => {});
 
   console.log(`  Prediction ID: ${result.prediction_id}`);
   console.log(`  P(aye): ${result.p_aye.toFixed(4)}`);

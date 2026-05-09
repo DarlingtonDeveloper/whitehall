@@ -20,9 +20,8 @@ export async function mapCoalitions(input: CoalitionInput): Promise<CoalitionRes
     return { prediction_id: predictionId, policy_area: input.policy_area, k: 0, silhouette_score: 0, clusters: [] };
   }
 
-  const indicatorIds = indicators.map((i) => i.id as string);
-  // Include both .revealed and .public variants
-  const allIndicatorIds = indicatorIds.flatMap((id) => [`${id}.revealed`, `${id}.public`]);
+  // Use indicator IDs as-is — they already include .revealed/.public suffixes
+  const allIndicatorIds = indicators.map((i) => i.id as string);
 
   // 2. Fetch politicians matching filter
   let polQuery = db
@@ -45,11 +44,11 @@ export async function mapCoalitions(input: CoalitionInput): Promise<CoalitionRes
   const polMap = new Map(politicians.map((p) => [p.id as string, p]));
 
   // 3. Bulk-read from materialized view
+  // Filter by indicators only — politician filter applied in step 4 via polMap
   const { data: decayed } = await db
     .from('politician_indicators_decayed')
     .select('politician_id, indicator_id, alpha_decayed, beta_decayed, evidence_count')
-    .in('indicator_id', allIndicatorIds)
-    .in('politician_id', [...polMap.keys()]);
+    .in('indicator_id', allIndicatorIds);
 
   if (!decayed || decayed.length === 0) {
     return { prediction_id: predictionId, policy_area: input.policy_area, k: 0, silhouette_score: 0, clusters: [] };
@@ -69,10 +68,10 @@ export async function mapCoalitions(input: CoalitionInput): Promise<CoalitionRes
   // Use all indicator IDs that appear in the data as feature dimensions
   const featureDims = [...new Set(decayed.map((r) => r.indicator_id as string))];
 
-  // Filter: politicians with at least 2 indicators with data
+  // Filter: politicians with at least 1 indicator with data
   const validPols: Array<{ id: string; vector: number[] }> = [];
   for (const [pid, indMap] of vectors) {
-    if (indMap.size < 2) continue;
+    if (indMap.size < 1) continue;
     if (!polMap.has(pid)) continue;
     const vec = featureDims.map((dim) => indMap.get(dim) ?? 0.5); // default to 0.5 (uninformative)
     validPols.push({ id: pid, vector: vec });

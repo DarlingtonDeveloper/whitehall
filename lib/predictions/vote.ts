@@ -196,12 +196,22 @@ async function inferWhipDirection(
   const db = getServiceClient();
 
   // Find division votes on this bill by members of the same party
-  // Use JSONB filter on parsed.bill_ref and join with politicians for party
-  const { data: votes } = await db
+  // Try bill_ref first, fall back to division_id (Parliament API often has null bill_ref)
+  let { data: votes } = await db
     .from('politician_evidence')
     .select('parsed, politician_id')
     .eq('evidence_type', 'division_vote')
     .filter('parsed->>bill_ref', 'eq', billId);
+
+  if (!votes || votes.length === 0) {
+    // Fall back to division_id
+    const res = await db
+      .from('politician_evidence')
+      .select('parsed, politician_id')
+      .eq('evidence_type', 'division_vote')
+      .filter('parsed->>division_id', 'eq', billId);
+    votes = res.data;
+  }
 
   if (!votes || votes.length === 0) return null;
 
@@ -237,12 +247,29 @@ async function inferWhipDirection(
   }
 
   const total = whippedAye + whippedNo;
-  if (total < 3) return null;
+  if (total >= 3) {
+    if (whippedAye / total > 0.85) return 'aye';
+    if (whippedNo / total > 0.85) return 'no';
+  }
 
-  if (whippedAye / total > 0.85) return 'aye';
-  if (whippedNo / total > 0.85) return 'no';
+  // Fallback: infer from raw vote direction when whip metadata is missing
+  // If >85% of party members voted the same way, treat it as an implicit whip
+  let rawAye = 0;
+  let rawNo = 0;
+  for (const v of relevant) {
+    const parsed = v.parsed as Record<string, unknown>;
+    const vote = parsed.vote as string;
+    if (vote === 'aye') rawAye++;
+    else if (vote === 'no') rawNo++;
+  }
 
-  return null; // no clear whip direction
+  const rawTotal = rawAye + rawNo;
+  if (rawTotal < 3) return null;
+
+  if (rawAye / rawTotal > 0.85) return 'aye';
+  if (rawNo / rawTotal > 0.85) return 'no';
+
+  return null; // genuinely mixed — likely a free vote
 }
 
 /**

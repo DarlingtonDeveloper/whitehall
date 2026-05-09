@@ -33,10 +33,9 @@ export async function runBacktest(input: BacktestInput): Promise<BacktestResult>
 
     // Determine bill_id from the first vote's parsed data
     const firstParsed = votes[0].parsed as Record<string, unknown>;
-    const billRef = firstParsed.bill_ref as string | null;
-    if (!billRef) continue;
+    const billRef = (firstParsed.bill_ref as string | null) ?? String(divisionId);
 
-    const divisionTitle = (votes[0].raw_content as string)?.slice(0, 100) ?? `Division ${divisionId}`;
+    const divisionTitle = (firstParsed.division_title as string)?.slice(0, 100) ?? (votes[0].raw_content as string)?.slice(0, 100) ?? `Division ${divisionId}`;
     const occurredAt = new Date(votes[0].occurred_at);
 
     // Predict 1 day before the vote

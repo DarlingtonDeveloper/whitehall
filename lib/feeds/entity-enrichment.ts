@@ -68,6 +68,28 @@ export const KEYWORD_ENTITY_MAP: [RegExp, string][] = [
   [/\bcapacity market|capacity auction/i, 'desnz'],
   [/\bgrid connection|grid queue|SSEP/i, 'desnz'],
 
+  // Bill-specific department mappings
+  [/\bEmployment Rights Bill|Strikes \(Minimum Service/i, 'dbt'],
+  [/\bRenters['''']?\s*Rights Bill|Renters \(Reform\)|Social Housing \(Regulation\)|Levelling.up and Regeneration Bill|English Devolution/i, 'dluhc'],
+  [/\bTerminally Ill Adults|Health and Care Bill|Tobacco and Vapes Bill|Medical Training/i, 'dhsc'],
+  [/\bFinance \(No|Finance Bill\b|Stamp Duty|National Insurance Contributions/i, 'treasury'],
+  [/\bPension Schemes Bill/i, 'dwp'],
+  [/\bData \(Use and Access\) Bill|Product Security and Telecomm/i, 'dsit'],
+  [/\bFootball Governance Bill|Media Bill\b/i, 'dcms'],
+  [/\bCrown Estate Bill/i, 'desnz'],
+  [/\bWater \(Special Measures\)|Environment Bill\b/i, 'defra'],
+  [/\bBus Services.{0,10}Bill/i, 'dft'],
+  [/\bPublic Order Bill|National Security Bill|Illegal Migration Bill|Nationality and Borders Bill/i, 'home-office'],
+  [/\bSentencing Guidelines|Judicial Review and Courts Bill/i, 'moj'],
+  [/\bProduct Regulation and Metrology|Retained EU Law|Economic Activity of Public Bodies/i, 'dbt'],
+  [/\bDigital Markets.{0,10}Competition/i, 'dbt'],
+  [/\bTrade \(.*Trans-Pacific|Trade \(Australia|Trade \(New Zealand/i, 'dbt'],
+  [/\bProcurement Bill\b|Public Authorities \(Fraud/i, 'co'],
+  [/\bNorthern Ireland Troubles/i, 'home-office'],
+  [/\bEconomic Crime.{0,10}(Transparency|Corporate)/i, 'treasury'],
+  [/\bGenetic Technology \(Precision Breeding\)/i, 'defra'],
+  [/\bPlanning and Infrastructure Bill/i, 'dluhc'],
+
   // Industry bodies (map to sponsoring department)
   [/\bORE Catapult\b|offshore renewable/i, 'desnz'],
   [/\bOEUK\b|Oil & Gas UK|offshore energies/i, 'desnz'],
@@ -220,6 +242,18 @@ function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
+// Pre-compiled matchers for tagFromContent — avoids regex recompilation per call
+const CONTENT_MATCHERS: { entityId: string; matchers: { type: 'regex'; re: RegExp } | { type: 'includes'; pattern: string } }[][] = [];
+const CONTENT_MATCHER_ENTRIES: { entityId: string; matchers: ({ type: 'regex'; re: RegExp } | { type: 'includes'; pattern: string })[] }[] =
+  Object.entries(CONTENT_ENTITY_PATTERNS).map(([entityId, patterns]) => ({
+    entityId,
+    matchers: patterns.map((pattern) =>
+      pattern.length <= 5
+        ? { type: 'regex' as const, re: new RegExp(`\\b${escapeRegex(pattern)}\\b`, 'i') }
+        : { type: 'includes' as const, pattern },
+    ),
+  }));
+
 /**
  * Tag items based on their content against CONTENT_ENTITY_PATTERNS.
  * Short patterns (≤5 chars) use word-boundary matching to avoid false
@@ -229,21 +263,13 @@ export function tagFromContent(text: string): string[] {
   const lower = text.toLowerCase();
   const matched: string[] = [];
 
-  for (const [entityId, patterns] of Object.entries(CONTENT_ENTITY_PATTERNS)) {
+  for (const { entityId, matchers } of CONTENT_MATCHER_ENTRIES) {
     let found = false;
-    for (const pattern of patterns) {
-      if (pattern.length <= 5) {
-        // Short patterns — word boundary to avoid "nice report" → NICE
-        const re = new RegExp(`\\b${escapeRegex(pattern)}\\b`, 'i');
-        if (re.test(text)) {
-          found = true;
-          break;
-        }
+    for (const matcher of matchers) {
+      if (matcher.type === 'regex') {
+        if (matcher.re.test(text)) { found = true; break; }
       } else {
-        if (lower.includes(pattern)) {
-          found = true;
-          break;
-        }
+        if (lower.includes(matcher.pattern)) { found = true; break; }
       }
     }
     if (found) {
@@ -301,7 +327,7 @@ export const TOPIC_TAG_MAP: [RegExp, string][] = [
   [/\bbatter(y|ies)|energy storage|pumped hydro/i, 'energy-storage'],
 
   // Health & social care
-  [/\bNHS\b|hospital|ambulance|A&E\b|waiting list|waiting time/i, 'nhs'],
+  [/\bNHS\b|hospital|ambulance|A&E\b|waiting list|waiting time|Medical Training/i, 'nhs'],
   [/\bmental health|suicide|psychiatric|eating disorder/i, 'mental-health'],
   [/\bsocial care|care home|domiciliary care|adult social care/i, 'social-care'],
   [/\bvaccin|immunis/i, 'vaccines'],
@@ -312,14 +338,14 @@ export const TOPIC_TAG_MAP: [RegExp, string][] = [
 
   // Housing & planning
   [/\bhousing (target|crisis|supply|market)|housebuilding|affordable home/i, 'housing'],
-  [/\bplanning (reform|permission|system|application)|NSIP\b|development consent/i, 'planning'],
+  [/\bplanning (reform|permission|system|application)|NSIP\b|development consent|Planning and Infrastructure Bill/i, 'planning'],
   [/\bcladding|building safety|Grenfell|fire safety/i, 'building-safety'],
   [/\bleasehold|freehold|ground rent|service charge/i, 'leasehold-reform'],
   [/\bhomeless/i, 'homelessness'],
 
   // Economy & finance
-  [/\bbudget\b|fiscal|public spending|spending review/i, 'fiscal-policy'],
-  [/\btax (reform|relief|cut|rise|policy)|income tax|corporation tax|capital gains|Opposition Day.*Tax/i, 'taxation'],
+  [/\bbudget\b|fiscal|public spending|spending review|Public Authorities.*Fraud|Fraud.*Recovery/i, 'fiscal-policy'],
+  [/\btax (reform|relief|cut|rise|policy)|income tax|corporation tax|capital gains|Opposition Day.*Tax|[Nn]ational [Ii]nsurance [Cc]ontributions?|fuel duty/i, 'taxation'],
   [/\bFinance (\(No\.\s*\d+\)\s*)?Bill/i, 'taxation'],
   [/\binflation|cost of living|interest rate/i, 'cost-of-living'],
   [/\bpension|state pension|retirement/i, 'pensions'],
@@ -332,12 +358,12 @@ export const TOPIC_TAG_MAP: [RegExp, string][] = [
   [/\bterror/i, 'counter-terrorism'],
 
   // Immigration & borders
-  [/\bimmigration|asylum|refugee|migrant|small boat|Rwanda\b/i, 'immigration'],
+  [/\bimmigration|asylum|refugee|migrant|small boat|Rwanda\b|[Ii]llegal [Mm]igration/i, 'immigration'],
   [/\bvisa\b|work permit|skilled worker/i, 'visas'],
 
   // Justice & policing
   [/\bprison|probation|reoffending|criminal justice|jury trial/i, 'criminal-justice'],
-  [/\bSentencing Bill|Victims and Courts Bill|Courts and Tribunals Bill/i, 'criminal-justice'],
+  [/\bSentencing Bill|Victims and Courts Bill|Courts and Tribunals Bill|Public Order Act/i, 'criminal-justice'],
   [/\bpolic(e|ing)|knife crime|violent crime|county lines/i, 'policing'],
   [/\blegal aid|access to justice|court (backlog|delay)/i, 'access-to-justice'],
 
@@ -359,7 +385,7 @@ export const TOPIC_TAG_MAP: [RegExp, string][] = [
   [/\bflood (risk|defence|warning)/i, 'flooding'],
   [/\bair quality|air pollution|clean air/i, 'air-quality'],
   [/\bwaste|recycling|circular economy|plastic/i, 'waste-recycling'],
-  [/\bfarming|agriculture|food (security|production)|rural|Opposition Day.*[Rr]ural/i, 'agriculture'],
+  [/\bfarming|agriculture|food (security|production)|rural|Opposition Day.*[Rr]ural|seasonal work/i, 'agriculture'],
 
   // Technology & digital
   [/\bartificial intelligence|AI (regulation|safety|governance)|machine learning/i, 'ai-regulation'],
@@ -368,7 +394,7 @@ export const TOPIC_TAG_MAP: [RegExp, string][] = [
 
   // Trade & industry
   [/\btrade (deal|agreement|policy)|tariff|WTO\b|free trade/i, 'trade-policy'],
-  [/\bindustrial strategy|manufacturing|steel|automotive/i, 'industrial-strategy'],
+  [/\bindustrial strategy|manufacturing|steel|automotive|Employment Rights/i, 'industrial-strategy'],
   [/\bIndustry and Exports/i, 'trade-policy'],
   [/\bfreeport|investment zone|enterprise zone/i, 'freeports'],
 
@@ -423,6 +449,105 @@ export const TOPIC_TAG_MAP: [RegExp, string][] = [
 
   // Gambling & addiction
   [/\bgambling|betting|lottery|casino/i, 'gambling'],
+
+  // ── Bill-specific patterns ──────────────────────────────────────────────
+  // Catches division votes and debates on specific legislation
+  [/\bRenters['''']?\s*Rights Bill|Renters \(Reform\) Bill|Social Housing \(Regulation\) Bill/i, 'housing'],
+  [/\bTerminally Ill Adults|End of Life Bill/i, 'end-of-life'],
+  [/\bHouse of Lords \(Hereditary Peers\) Bill|Dissolution and Calling of Parliament/i, 'constitutional-reform'],
+  [/\bData \(Use and Access\) Bill|Product Security and Telecommunications/i, 'online-safety'],
+  [/\bCrown Estate Bill/i, 'energy-policy'],
+  [/\bWater \(Special Measures\) Bill/i, 'water-quality'],
+  [/\bBus Services.{0,10}Bill/i, 'public-transport'],
+  [/\bDigital Markets.{0,10}Competition.{0,10}Consumers Bill/i, 'consumer-protection'],
+  [/\bStrikes \(Minimum Service Levels\) Bill/i, 'industrial-strategy'],
+  [/\bEconomic Crime.{0,10}(Transparency|Corporate)/i, 'financial-regulation'],
+  [/\bNational Security Bill/i, 'counter-terrorism'],
+  [/\bRetained EU Law \(Revocation/i, 'trade-policy'],
+  [/\bProcurement Bill/i, 'fiscal-policy'],
+  [/\bElections Bill\b/i, 'equality'],
+  [/\bAdvanced Research and Invention Agency Bill|ARIA\b/i, 'space'],
+  [/\bSkills and Post-16 Education Bill/i, 'higher-education'],
+  [/\bTelecommunications \(Security\) Bill/i, 'digital-infrastructure'],
+  [/\bJudicial Review and Courts Bill/i, 'access-to-justice'],
+  [/\bEconomic Activity of Public Bodies \(Overseas Matters\)/i, 'trade-policy'],
+  [/\bProduct Regulation and Metrology Bill/i, 'trade-policy'],
+  [/\bGenetic Technology \(Precision Breeding\) Bill/i, 'agriculture'],
+  [/\bMedia Bill\b/i, 'broadcasting'],
+  [/\bUK Infrastructure Bank Bill/i, 'fiscal-policy'],
+  [/\bSubsidy Control Bill/i, 'industrial-strategy'],
+  [/\bFinancial Markets and Services Bill/i, 'financial-regulation'],
+  [/\bHolocaust Memorial Bill/i, 'heritage-culture'],
+  [/\bTrade \(.*Trans-Pacific|CPTPP\)/i, 'trade-policy'],
+  [/\bTrade \(Australia|New Zealand\) Bill/i, 'trade-policy'],
+  [/\bIllegal Migration Bill|Nationality and Borders Bill/i, 'immigration'],
+  [/\bLevelling.up and Regeneration Bill/i, 'planning'],
+  [/\bHealth and Care Bill/i, 'nhs'],
+  [/\bEnvironment Bill\b/i, 'biodiversity'],
+  [/\bPublic Order Bill/i, 'policing'],
+  [/\bSentencing Guidelines.{0,40}Bill|Sentencing Guidelines \(/i, 'criminal-justice'],
+  [/\bStamp Duty Land Tax/i, 'taxation'],
+  [/\bHousing Bill|Building Safety Bill/i, 'building-safety'],
+  [/\bEnglish Devolution.{0,30}Bill/i, 'devolution'],
+  [/\bTobacco and Vapes Bill/i, 'public-health'],
+  [/\bFootball Governance Bill/i, 'sport'],
+  [/\bPension Schemes Bill/i, 'pensions'],
+  [/\bNorthern Ireland Troubles/i, 'northern-ireland'],
+
+  // Draft regulations / statutory instruments
+  [/\bDraft Clean Heat Market Mechanism/i, 'heat-buildings'],
+  [/\bDraft Electricity Capacity Mechanism/i, 'energy-markets'],
+  [/\bDraft.*Detention Curfew|Home Detention/i, 'criminal-justice'],
+  [/\bDraft.*Medical Devices/i, 'pharmaceuticals'],
+  [/\bDraft.*Windsor Framework/i, 'northern-ireland'],
+  [/\bDraft.*Enterprise Act/i, 'consumer-protection'],
+  [/\bDraft.*Strikes.*Minimum Service/i, 'industrial-strategy'],
+  [/\bDraft.*Official Controls.*Regulations/i, 'agriculture'],
+
+  // Opposition day patterns
+  [/\bOpposition [Dd]ay.*Winter Fuel|Winter Fuel Payment/i, 'welfare'],
+  [/\bOpposition [Dd]ay.*British Indian Ocean/i, 'foreign-affairs'],
+  [/\bOpposition [Dd]ay.*NHS|Opposition [Dd]ay.*Health/i, 'nhs'],
+  [/\bOpposition [Dd]ay.*Housing|Opposition [Dd]ay.*Hous(e|ing)/i, 'housing'],
+  [/\bOpposition [Dd]ay.*Police|Opposition [Dd]ay.*Crime/i, 'policing'],
+  [/\bOpposition [Dd]ay.*Education|Opposition [Dd]ay.*School/i, 'schools'],
+  [/\bOpposition [Dd]ay.*Asylum|Opposition [Dd]ay.*Immigration/i, 'immigration'],
+  [/\bOpposition [Dd]ay.*Cost of Living/i, 'cost-of-living'],
+
+  // Procedural motions (still useful to tag for filtering)
+  [/\bKing'?s? Speech|Queen'?s? Speech/i, 'parliamentary-procedure'],
+  [/\bMotion to sit in private|Closure motion\b|Programme motion|Privilege\b/i, 'parliamentary-procedure'],
+
+  // GOV.UK content patterns (catch govuk items)
+  [/\bappoint|reappoint|non-executive/i, 'appointments'],
+  [/\binspection|investigation report|annual report/i, 'regulatory-oversight'],
+  [/\btransferred to public ownership|nationalised|public ownership/i, 'public-transport'],
+  [/\belectoral reform|voter registration|election/i, 'equality'],
+  [/\benvironmental permit|pollution permit/i, 'biodiversity'],
+  [/\brecall alert|product recall|safety alert/i, 'consumer-protection'],
+  [/\bcoastal (defence|erosion|protection)|seabed mapping/i, 'maritime'],
+
+  // ── Broader content patterns for GOV.UK items ───────────────────────────
+  [/\bSSSI\b|Site of Special Scientific Interest|nature reserve/i, 'biodiversity'],
+  [/\bslaughter|meat production|abattoir|livestock/i, 'agriculture'],
+  [/\bspending over £|departmental spending|annual report and accounts/i, 'fiscal-policy'],
+  [/\bfield safety notice|device alert|safety information/i, 'consumer-protection'],
+  [/\bsurveillance report|mortality|flu.*report|COVID.*report/i, 'public-health'],
+  [/\bbathing water|water (season|quality|framework)/i, 'water-quality'],
+  [/\bSyria|Lebanon|Jordan/i, 'middle-east'],
+  [/\bGermany|France|EU\b|European/i, 'foreign-affairs'],
+  [/\bself assessment|HMRC\b|tax (credit|return|relief)/i, 'taxation'],
+  [/\btransport strategy|road (safety|network)|traffic/i, 'roads'],
+  [/\bknife|offensive weapon|violent (crime|disorder)/i, 'policing'],
+  [/\bService Family Accommodation|military housing/i, 'veterans'],
+  [/\bCoast Path|national trail|right of way/i, 'biodiversity'],
+  [/\bfilm|cinema|creative (industr|sector)|Bollywood/i, 'heritage-culture'],
+  [/\bfraud|money laundering|economic crime/i, 'financial-regulation'],
+  [/\bEnergy Trends|energy statistics|fuel (mix|generation)/i, 'energy-policy'],
+  [/\bbiosecurity|invasive species|plant health/i, 'agriculture'],
+  [/\bcharity|voluntary sector|social enterprise/i, 'local-government'],
+  [/\bpreschool|playgroup|Brownie|Scout|youth (group|club)/i, 'child-welfare'],
+  [/\banniversary|commemoration|centenary|remembrance/i, 'heritage-culture'],
 ];
 
 /**
@@ -469,7 +594,7 @@ export function determineRagStatus(title: string, body: string): 'RED' | 'AMBER'
     /\bproposed\s+changes?\b/.test(text) ||
     /\bdraft\b/.test(text) ||
     /\breview\b/.test(text) ||
-    /\bdelayed?\b/.test(text) ||
+    /\bdelay(ed)?\b/.test(text) ||
     /\bwarning\b/.test(text) ||
     /\binquiry\b/.test(text) ||
     /\binvestigation\b/.test(text)
@@ -484,9 +609,10 @@ export function determineRagStatus(title: string, body: string): 'RED' | 'AMBER'
  * SHA-256 fingerprint for deduplication.
  */
 export function makeFingerprint(url: string, title: string): string {
+  if (!url && !title) return '';
   return crypto
     .createHash('sha256')
-    .update(`${url}||${title}`)
+    .update(`${url || ''}||${title || ''}`)
     .digest('hex');
 }
 
@@ -501,6 +627,7 @@ export function stripHtml(html: string): string {
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
     .replace(/&#39;/g, "'")
+    .replace(/&apos;/g, "'")
     .replace(/\s+/g, ' ')
     .trim();
 }
