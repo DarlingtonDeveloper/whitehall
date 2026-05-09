@@ -26,15 +26,18 @@ const DAY_MS = 24 * 60 * 60 * 1000;
  */
 export function posterior(alpha: number, beta: number): Posterior {
   const n = alpha + beta;
+  if (n === 0) {
+    return { mean: 0.5, variance: 0, effective_sample_size: 0, confidence: 0, ci_95: [0, 1] };
+  }
   const mean = alpha / n;
   const variance = (alpha * beta) / (n * n * (n + 1));
-  const ess = n - 2;
+  const ess = Math.max(0, n - 2);
   const confidence = ess / (ess + CONFIDENCE_K);
   return {
     mean,
     variance,
     effective_sample_size: ess,
-    confidence: Math.max(0, confidence),
+    confidence,
     ci_95: betaCI(alpha, beta, 0.95),
   };
 }

@@ -29,21 +29,54 @@ export interface LearnedSignals {
 const GENERIC_PROJECT_SUFFIXES =
   /\b(offshore|onshore|wind\s*farm|wind|renewables|energy|power|plant|project|farm|UK)\b/gi;
 
-function extractClientTerms(client: ClientConfig): string[] {
-  const terms: string[] = [client.name.toLowerCase()];
+function escapeRegex(str: string): string {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
-  for (const p of client.projects || []) {
-    const full = p.toLowerCase();
-    terms.push(full);
+function extractClientTerms(client: ClientConfig): RegExp[] {
+  const seen = new Set<string>();
+  const regexes: RegExp[] = [];
 
-    // Also add the core proper-noun part
-    const core = p.replace(GENERIC_PROJECT_SUFFIXES, '').replace(/\s+/g, ' ').trim().toLowerCase();
-    if (core.length >= 4 && core !== full) {
-      terms.push(core);
+  function addTerm(term: string) {
+    const lower = term.toLowerCase();
+    if (!seen.has(lower)) {
+      seen.add(lower);
+      regexes.push(new RegExp(`\\b${escapeRegex(lower)}\\b`, 'i'));
     }
   }
 
-  return [...new Set(terms)];
+  addTerm(client.name);
+  for (const p of client.projects || []) {
+    addTerm(p);
+    const core = p.replace(GENERIC_PROJECT_SUFFIXES, '').replace(/\s+/g, ' ').trim();
+    if (core.length >= 4 && core.toLowerCase() !== p.toLowerCase()) {
+      addTerm(core);
+    }
+  }
+
+  return regexes;
+}
+
+// Cache compiled client terms to avoid recomputation per item
+const clientTermsCache = new WeakMap<ClientConfig, RegExp[]>();
+function getClientTerms(client: ClientConfig): RegExp[] {
+  let cached = clientTermsCache.get(client);
+  if (!cached) {
+    cached = extractClientTerms(client);
+    clientTermsCache.set(client, cached);
+  }
+  return cached;
+}
+
+// Cache compiled keyword regexes per client
+const keywordRegexCache = new WeakMap<ClientConfig, RegExp[]>();
+function getKeywordRegexes(client: ClientConfig): RegExp[] {
+  let cached = keywordRegexCache.get(client);
+  if (!cached) {
+    cached = client.allKeywords.map(kw => new RegExp(`\\b${escapeRegex(kw)}\\b`, 'i'));
+    keywordRegexCache.set(client, cached);
+  }
+  return cached;
 }
 
 export function computeFeedRelevance(
@@ -67,9 +100,9 @@ export function computeFeedRelevance(
   }
   score += Math.min(entityScore, 0.30);
 
-  // 2. Keyword matches (up to 0.25)
-  const allKeywords = client.allKeywords;
-  const kwMatches = allKeywords.filter(kw => text.includes(kw.toLowerCase())).length;
+  // 2. Keyword matches (up to 0.25) — word-boundary matching to avoid substring false positives
+  const kwRegexes = getKeywordRegexes(client);
+  const kwMatches = kwRegexes.filter(re => re.test(text)).length;
   score += Math.min(kwMatches * 0.04, 0.25);
 
   // 3. Source type quality (up to 0.10)
@@ -88,7 +121,8 @@ export function computeFeedRelevance(
   score += sourceWeights[item.source_type] || 0.03;
 
   // 4. Recency decay (up to 0.15)
-  const hoursAgo = (Date.now() - new Date(item.published_at).getTime()) / (1000 * 60 * 60);
+  const publishedMs = new Date(item.published_at).getTime();
+  const hoursAgo = Number.isNaN(publishedMs) ? Infinity : (Date.now() - publishedMs) / (1000 * 60 * 60);
   if (hoursAgo < 6) score += 0.15;
   else if (hoursAgo < 24) score += 0.12;
   else if (hoursAgo < 72) score += 0.08;
@@ -104,8 +138,8 @@ export function computeFeedRelevance(
     const sourceBoost = learnedSignals.source_boosts[item.source_name] || 0;
     score += Math.min(sourceBoost, 0.05);
 
-    const kwBoost = allKeywords.reduce((sum, kw) => {
-      if (text.includes(kw.toLowerCase()) && learnedSignals.keyword_boosts[kw]) {
+    const kwBoost = client.allKeywords.reduce((sum, kw, i) => {
+      if (kwRegexes[i].test(text) && learnedSignals.keyword_boosts[kw]) {
         return sum + learnedSignals.keyword_boosts[kw];
       }
       return sum;
@@ -119,8 +153,8 @@ export function computeFeedRelevance(
 
   // Tier 1: Client named directly — almost always relevant
   // Also match core project names (e.g. "Sofia" from "Sofia offshore wind")
-  const clientNameTerms = extractClientTerms(client);
-  const clientMentioned = clientNameTerms.some(term => text.includes(term));
+  const clientTermRegexes = getClientTerms(client);
+  const clientMentioned = clientTermRegexes.some(re => re.test(text));
   if (clientMentioned) {
     score = Math.max(score, 0.60);
   }
@@ -154,7 +188,7 @@ export function computeFeedRelevance(
   if (debug) {
     console.log(`[SCORE] ${item.title.substring(0, 80)}`);
     console.log(`  entities: ${(item.entity_ids || []).join(', ')}`);
-    console.log(`  entity=${Math.min(entityScore, 0.30).toFixed(2)} kw=${Math.min(kwMatches * 0.04, 0.25).toFixed(2)} source=${(sourceWeights[item.source_type] || 0.03).toFixed(2)}`);
+    console.log(`  entity=${Math.min(entityScore, 0.30).toFixed(2)} kw=${Math.min(kwMatches * 0.04, 0.25).toFixed(2)} source=${(sourceWeights[item.source_type] || 0.03).toFixed(2)} recency=${hoursAgo === Infinity ? 'invalid-date' : hoursAgo.toFixed(0) + 'h'}`);
     console.log(`  clientFloor=${clientMentioned ? 0.60 : 0} primaryFloor=${hasPrimaryEntity ? 0.30 : 0} secondaryFloor=${hasSecondaryEntity && !hasPrimaryEntity ? 0.20 : 0}`);
     console.log(`  final=${finalScore.toFixed(3)}`);
   }

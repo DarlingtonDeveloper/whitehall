@@ -27,15 +27,18 @@ import {
 dotenv.config({ path: path.resolve(__dirname, '..', '..', '.env.local') });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!;
+const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!supabaseUrl || !supabaseKey) {
   throw new Error(
-    'Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env.local',
+    'Missing NEXT_PUBLIC_SUPABASE_URL or NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY in .env.local',
   );
 }
 
-const supabase = createClient(supabaseUrl, supabaseKey);
+const supabaseReadonly = createClient(supabaseUrl, supabaseKey);
+// Use service role for all writes (RLS blocks anon inserts)
+const supabase = serviceKey ? createClient(supabaseUrl, serviceKey) : supabaseReadonly;
 
 // -- API endpoints -----------------------------------------------------------
 

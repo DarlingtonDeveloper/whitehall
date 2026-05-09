@@ -14,6 +14,8 @@ export function checkRateLimit(
   const entry = rateLimits.get(key);
 
   if (!entry || now > entry.resetAt) {
+    // Clean up expired entry to prevent unbounded Map growth
+    if (entry) rateLimits.delete(key);
     rateLimits.set(key, { count: 1, resetAt: now + windowMs });
     return true;
   }

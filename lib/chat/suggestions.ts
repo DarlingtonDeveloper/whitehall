@@ -7,6 +7,8 @@ interface SuggestionContext {
   entity?: Entity;
   recentFeedItems?: FeedItem[];
   pulseScores?: Map<string, number>;
+  /** Optional entity ID → display name lookup for readable suggestions */
+  entityNames?: Map<string, string>;
 }
 
 export function generateSuggestions(context: SuggestionContext): string[] {
@@ -68,7 +70,9 @@ export function generateSuggestions(context: SuggestionContext): string[] {
         .slice(0, 2);
 
       if (hotEntities.length > 0) {
-        const names = hotEntities.map((id) => id.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()));
+        const names = hotEntities.map((id) =>
+          context.entityNames?.get(id) || id.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase()),
+        );
         suggestions.push(
           `${names.join(' and ')} ${hotEntities.length > 1 ? 'are' : 'is'} very active — what's happening?`,
         );

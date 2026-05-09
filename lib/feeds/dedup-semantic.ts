@@ -42,29 +42,32 @@ function extractSignificantWords(text: string): string[] {
     .filter((w) => w.length > 2 && !STOP_WORDS.has(w));
 }
 
-function isSameDevelopment(a: FeedItem, b: FeedItem): boolean {
+function isSameDevelopmentWithWords(
+  a: FeedItem, aWords: string[],
+  b: FeedItem, bWords: string[],
+): boolean {
   // Must be published within 3 days of each other
-  const daysDiff =
-    Math.abs(
-      new Date(a.published_at).getTime() - new Date(b.published_at).getTime(),
-    ) /
-    (1000 * 60 * 60 * 24);
+  const aMs = new Date(a.published_at).getTime();
+  const bMs = new Date(b.published_at).getTime();
+  if (Number.isNaN(aMs) || Number.isNaN(bMs)) return false;
+  const daysDiff = Math.abs(aMs - bMs) / (1000 * 60 * 60 * 24);
   if (daysDiff > 3) return false;
 
   // Must share at least one entity tag
-  const sharedEntities = (a.entity_ids || []).filter((id) =>
-    (b.entity_ids || []).includes(id),
-  );
-  if (sharedEntities.length === 0) return false;
+  const bEntitySet = new Set(b.entity_ids || []);
+  const hasShared = (a.entity_ids || []).some((id) => bEntitySet.has(id));
+  if (!hasShared) return false;
 
-  // Title word overlap (Jaccard similarity > 0.3)
-  const aWords = extractSignificantWords(a.title);
-  const bWords = extractSignificantWords(b.title);
-  const intersection = aWords.filter((w) => bWords.includes(w));
-  const union = new Set([...aWords, ...bWords]);
+  // Title word overlap (Jaccard similarity > 0.3) using Set for O(n) intersection
+  const bWordSet = new Set(bWords);
+  let intersectionCount = 0;
+  for (const w of aWords) {
+    if (bWordSet.has(w)) intersectionCount++;
+  }
+  const unionSize = new Set([...aWords, ...bWords]).size;
 
-  if (union.size === 0) return false;
-  return intersection.length / union.size > 0.3;
+  if (unionSize === 0) return false;
+  return intersectionCount / unionSize > 0.3;
 }
 
 /**
@@ -84,15 +87,22 @@ export function deduplicateSemantic(items: FeedItem[]): FeedItem[] {
       (SOURCE_PRIORITY[a.source_type] || 0),
   );
 
+  // Pre-compute significant words for each item to avoid recomputation in O(n²) loop
+  const wordsMap = new Map<string, string[]>();
+  for (const item of sorted) {
+    wordsMap.set(item.id, extractSignificantWords(item.title));
+  }
+
   for (const item of sorted) {
     if (assigned.has(item.id)) continue;
 
     const cluster: FeedItem[] = [item];
     assigned.add(item.id);
+    const itemWords = wordsMap.get(item.id)!;
 
     for (const candidate of sorted) {
       if (assigned.has(candidate.id)) continue;
-      if (isSameDevelopment(item, candidate)) {
+      if (isSameDevelopmentWithWords(item, itemWords, candidate, wordsMap.get(candidate.id)!)) {
         cluster.push(candidate);
         assigned.add(candidate.id);
       }
@@ -108,7 +118,7 @@ export function deduplicateSemantic(items: FeedItem[]): FeedItem[] {
     const best = cluster[0];
     const others = cluster.slice(1);
     const otherSources = others
-      .map((c) => `${c.source_name}: ${c.title}`)
+      .map((c) => `${c.source_name || 'Unknown'}: ${c.title}`)
       .join('; ');
 
     return {

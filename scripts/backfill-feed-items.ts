@@ -75,7 +75,7 @@ async function backfill() {
     const { data: rows, error } = await query;
 
     if (error) {
-      console.error(`  [ERR] Fetch failed at offset ${offset}: ${error.message}`);
+      console.error(`  [ERR] Fetch failed after id ${lastId}: ${error.message}`);
       break;
     }
 

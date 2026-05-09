@@ -36,7 +36,7 @@ async function run() {
   console.log(`\n=== Entity Re-Enrichment ===`);
   console.log(`Mode: ${reEnrichAll ? 'ALL items' : onlyParliament ? 'Only parliament-tagged' : 'Only empty entity_ids'}\n`);
 
-  let offset = 0;
+  let lastId = process.env.START_ID || '';
   let totalUpdated = 0;
   let totalSkipped = 0;
   let totalRows = 0;
@@ -47,7 +47,11 @@ async function run() {
       .from('feed_items')
       .select('id, title, body, entity_ids')
       .order('id')
-      .range(offset, offset + BATCH_SIZE - 1);
+      .limit(BATCH_SIZE);
+
+    if (lastId) {
+      query = query.gt('id', lastId);
+    }
 
     if (!reEnrichAll) {
       if (onlyParliament) {
@@ -60,7 +64,7 @@ async function run() {
     const { data: rows, error } = await query;
 
     if (error) {
-      console.error(`  [ERR] Fetch failed at offset ${offset}: ${error.message}`);
+      console.error(`  [ERR] Fetch failed after id ${lastId}: ${error.message}`);
       break;
     }
 
@@ -70,6 +74,7 @@ async function run() {
     }
 
     totalRows += rows.length;
+    lastId = rows[rows.length - 1].id;
 
     for (const row of rows) {
       const title = row.title || '';
@@ -105,9 +110,7 @@ async function run() {
       }
     }
 
-    offset += rows.length;
-
-    if (offset % 2000 === 0 || rows.length < BATCH_SIZE) {
+    if (totalRows % 2000 === 0 || rows.length < BATCH_SIZE) {
       console.log(`  Progress: ${totalRows} scanned, ${totalUpdated} enriched, ${totalSkipped} unchanged`);
     }
   }
