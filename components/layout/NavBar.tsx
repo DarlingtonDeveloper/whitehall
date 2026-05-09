@@ -17,6 +17,16 @@ export default function NavBar() {
         </span>
       </Link>
 
+      {/* Centre: Nav links */}
+      <nav className="pointer-events-auto ml-6 flex items-center gap-3">
+        <Link
+          href="/politician"
+          className="text-xs text-wh-text-tertiary hover:text-wh-accent-teal transition-colors"
+        >
+          Politicians
+        </Link>
+      </nav>
+
       {/* Right: Panel toggles + Client Switcher + Theme */}
       <div className="pointer-events-auto ml-auto flex items-center gap-1.5">
         {/* Entity panel (left sidebar) */}

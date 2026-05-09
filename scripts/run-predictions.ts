@@ -28,7 +28,7 @@ async function runVote(politicianId: string, billId: string, amendmentId?: strin
   const input = { politician_id: politicianId, bill_id: billId, amendment_id: amendmentId };
   const result = await predictVote(input);
 
-  await logPrediction(result.prediction_id, 'vote', input, result).catch(() => {});
+  await logPrediction(result.prediction_id, 'vote', input, result as unknown as Record<string, unknown>).catch(() => {});
 
   console.log(`  Prediction ID: ${result.prediction_id}`);
   console.log(`  P(aye): ${result.p_aye.toFixed(4)}`);
