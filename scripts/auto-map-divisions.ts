@@ -111,9 +111,11 @@ const TAG_TO_INDICATORS: Record<string, Array<{
   // Education
   'schools': [
     { indicator_id: 'education.schools.public', aye_anchor: 0.75, no_anchor: 0.25, diagnostic_strength: 0.7 },
+    { indicator_id: 'education.school_funding.revealed', aye_anchor: 0.75, no_anchor: 0.25, diagnostic_strength: 0.7 },
   ],
   'higher-education': [
     { indicator_id: 'education.schools.public', aye_anchor: 0.65, no_anchor: 0.35, diagnostic_strength: 0.5 },
+    { indicator_id: 'education.university_fees.revealed', aye_anchor: 0.7, no_anchor: 0.3, diagnostic_strength: 0.7 },
   ],
   // Justice
   'criminal-justice': [
@@ -127,20 +129,25 @@ const TAG_TO_INDICATORS: Record<string, Array<{
   // Online safety / technology
   'online-safety': [
     { indicator_id: 'ideology.lib_auth.revealed', aye_anchor: 0.7, no_anchor: 0.3, diagnostic_strength: 0.6 },
+    { indicator_id: 'digital.online_safety.revealed', aye_anchor: 0.8, no_anchor: 0.2, diagnostic_strength: 0.8 },
   ],
   'ai-regulation': [
     { indicator_id: 'ideology.lib_auth.revealed', aye_anchor: 0.65, no_anchor: 0.35, diagnostic_strength: 0.5 },
+    { indicator_id: 'digital.ai_regulation.revealed', aye_anchor: 0.8, no_anchor: 0.2, diagnostic_strength: 0.75 },
   ],
   // Trade
   'trade-policy': [
     { indicator_id: 'ideology.economic_left_right.revealed', aye_anchor: 0.4, no_anchor: 0.6, diagnostic_strength: 0.4 },
+    { indicator_id: 'trade.liberalisation.revealed', aye_anchor: 0.7, no_anchor: 0.3, diagnostic_strength: 0.7 },
   ],
   // Devolution & local government
   'devolution': [
     { indicator_id: 'ideology.lib_auth.revealed', aye_anchor: 0.35, no_anchor: 0.65, diagnostic_strength: 0.45 },
+    { indicator_id: 'local_gov.devolution.revealed', aye_anchor: 0.8, no_anchor: 0.2, diagnostic_strength: 0.8 },
   ],
   'local-government': [
     { indicator_id: 'fiscal.public_spending.revealed', aye_anchor: 0.65, no_anchor: 0.35, diagnostic_strength: 0.4 },
+    { indicator_id: 'local_gov.council_powers.revealed', aye_anchor: 0.7, no_anchor: 0.3, diagnostic_strength: 0.7 },
   ],
   // Planning
   'planning': [
@@ -150,16 +157,21 @@ const TAG_TO_INDICATORS: Record<string, Array<{
   'railways': [
     { indicator_id: 'fiscal.public_spending.revealed', aye_anchor: 0.7, no_anchor: 0.3, diagnostic_strength: 0.5 },
     { indicator_id: 'energy.net_zero.revealed', aye_anchor: 0.65, no_anchor: 0.35, diagnostic_strength: 0.35 },
+    { indicator_id: 'transport.roads_vs_rail.revealed', aye_anchor: 0.85, no_anchor: 0.15, diagnostic_strength: 0.8 },
   ],
   'roads': [
     { indicator_id: 'fiscal.public_spending.revealed', aye_anchor: 0.6, no_anchor: 0.4, diagnostic_strength: 0.4 },
+    { indicator_id: 'transport.roads_vs_rail.revealed', aye_anchor: 0.15, no_anchor: 0.85, diagnostic_strength: 0.7 },
   ],
   'electric-vehicles': [
     { indicator_id: 'energy.net_zero.revealed', aye_anchor: 0.8, no_anchor: 0.2, diagnostic_strength: 0.6 },
+    { indicator_id: 'transport.roads_vs_rail.revealed', aye_anchor: 0.7, no_anchor: 0.3, diagnostic_strength: 0.4 },
   ],
   // Agriculture / environment
   'agriculture': [
     { indicator_id: 'fiscal.public_spending.revealed', aye_anchor: 0.6, no_anchor: 0.4, diagnostic_strength: 0.4 },
+    { indicator_id: 'agriculture.farming_subsidies.revealed', aye_anchor: 0.75, no_anchor: 0.25, diagnostic_strength: 0.7 },
+    { indicator_id: 'agriculture.food_standards.revealed', aye_anchor: 0.7, no_anchor: 0.3, diagnostic_strength: 0.5 },
   ],
   'flooding': [
     { indicator_id: 'environment.water_regulation.revealed', aye_anchor: 0.7, no_anchor: 0.3, diagnostic_strength: 0.5 },
@@ -245,12 +257,15 @@ const TAG_TO_INDICATORS: Record<string, Array<{
   // Scotland/Wales/NI (map to devolution-adjacent)
   'scotland': [
     { indicator_id: 'ideology.lib_auth.revealed', aye_anchor: 0.4, no_anchor: 0.6, diagnostic_strength: 0.3 },
+    { indicator_id: 'local_gov.devolution.revealed', aye_anchor: 0.7, no_anchor: 0.3, diagnostic_strength: 0.5 },
   ],
   'wales': [
     { indicator_id: 'ideology.lib_auth.revealed', aye_anchor: 0.4, no_anchor: 0.6, diagnostic_strength: 0.3 },
+    { indicator_id: 'local_gov.devolution.revealed', aye_anchor: 0.7, no_anchor: 0.3, diagnostic_strength: 0.5 },
   ],
   'northern-ireland': [
     { indicator_id: 'ideology.lib_auth.revealed', aye_anchor: 0.4, no_anchor: 0.6, diagnostic_strength: 0.3 },
+    { indicator_id: 'local_gov.devolution.revealed', aye_anchor: 0.7, no_anchor: 0.3, diagnostic_strength: 0.5 },
   ],
   // Conscience votes / ethics
   'end-of-life': [
@@ -266,18 +281,22 @@ const TAG_TO_INDICATORS: Record<string, Array<{
   'public-transport': [
     { indicator_id: 'fiscal.public_spending.revealed', aye_anchor: 0.7, no_anchor: 0.3, diagnostic_strength: 0.5 },
     { indicator_id: 'energy.net_zero.revealed', aye_anchor: 0.65, no_anchor: 0.35, diagnostic_strength: 0.3 },
+    { indicator_id: 'transport.roads_vs_rail.revealed', aye_anchor: 0.8, no_anchor: 0.2, diagnostic_strength: 0.7 },
   ],
   'pharmaceuticals': [
     { indicator_id: 'health.nhs_funding.public', aye_anchor: 0.6, no_anchor: 0.4, diagnostic_strength: 0.4 },
   ],
   'digital-infrastructure': [
     { indicator_id: 'fiscal.public_spending.revealed', aye_anchor: 0.6, no_anchor: 0.4, diagnostic_strength: 0.3 },
+    { indicator_id: 'digital.data_privacy.revealed', aye_anchor: 0.5, no_anchor: 0.5, diagnostic_strength: 0.3 },
   ],
   'broadcasting': [
     { indicator_id: 'ideology.lib_auth.revealed', aye_anchor: 0.5, no_anchor: 0.5, diagnostic_strength: 0.2 },
+    { indicator_id: 'culture.bbc_funding.revealed', aye_anchor: 0.7, no_anchor: 0.3, diagnostic_strength: 0.7 },
   ],
   'heritage-culture': [
     { indicator_id: 'fiscal.public_spending.revealed', aye_anchor: 0.6, no_anchor: 0.4, diagnostic_strength: 0.2 },
+    { indicator_id: 'culture.arts_funding.revealed', aye_anchor: 0.75, no_anchor: 0.25, diagnostic_strength: 0.65 },
   ],
   'cyber-security': [
     { indicator_id: 'ideology.lib_auth.revealed', aye_anchor: 0.65, no_anchor: 0.35, diagnostic_strength: 0.4 },
@@ -342,6 +361,7 @@ const TAG_TO_INDICATORS: Record<string, Array<{
   'freeports': [
     { indicator_id: 'ideology.economic_left_right.revealed', aye_anchor: 0.35, no_anchor: 0.65, diagnostic_strength: 0.45 },
     { indicator_id: 'fiscal.public_spending.revealed', aye_anchor: 0.6, no_anchor: 0.4, diagnostic_strength: 0.35 },
+    { indicator_id: 'trade.liberalisation.revealed', aye_anchor: 0.75, no_anchor: 0.25, diagnostic_strength: 0.6 },
   ],
   'crypto-digital-assets': [
     { indicator_id: 'ideology.economic_left_right.revealed', aye_anchor: 0.4, no_anchor: 0.6, diagnostic_strength: 0.3 },

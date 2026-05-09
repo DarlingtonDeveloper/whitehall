@@ -273,6 +273,34 @@ async function main() {
     { org_name: 'howard league', org_aliases: ['howard league for penal reform'], indicator_id: 'justice.criminal_justice.public', anchor: 0.85, weight_multiplier: 1.0, rationale: 'Penal reform charity — rehabilitative approach' },
     { org_name: 'prison reform trust', org_aliases: ['prt'], indicator_id: 'justice.criminal_justice.public', anchor: 0.85, weight_multiplier: 1.0, rationale: 'Prison reform charity' },
     { org_name: 'law society', org_aliases: ['the law society', 'law society of england and wales'], indicator_id: 'justice.criminal_justice.public', anchor: 0.6, weight_multiplier: 0.8, rationale: 'Legal professional body — moderate justice signal' },
+
+    // Transport
+    { org_name: 'network rail', org_aliases: ['network rail infrastructure'], indicator_id: 'transport.roads_vs_rail.revealed', anchor: 0.8, weight_multiplier: 1.0, rationale: 'Rail infrastructure owner — signals rail investment priority' },
+    { org_name: 'transport for london', org_aliases: ['tfl'], indicator_id: 'transport.roads_vs_rail.revealed', anchor: 0.75, weight_multiplier: 0.9, rationale: 'London public transport body' },
+    { org_name: 'rac', org_aliases: ['rac foundation', 'rac motoring services'], indicator_id: 'transport.roads_vs_rail.revealed', anchor: 0.2, weight_multiplier: 0.8, rationale: 'Motoring organisation — road investment focus' },
+    { org_name: 'aa', org_aliases: ['automobile association', 'the aa'], indicator_id: 'transport.roads_vs_rail.revealed', anchor: 0.2, weight_multiplier: 0.8, rationale: 'Motoring organisation — road investment focus' },
+
+    // Agriculture
+    { org_name: 'nfu', org_aliases: ['national farmers union', 'national farmers\' union'], indicator_id: 'agriculture.farming_subsidies.revealed', anchor: 0.85, weight_multiplier: 1.2, rationale: 'Farmers\' union — strong advocate for farm subsidies' },
+    { org_name: 'country land and business association', org_aliases: ['cla', 'country land association'], indicator_id: 'agriculture.farming_subsidies.revealed', anchor: 0.8, weight_multiplier: 1.0, rationale: 'Rural landowners\' body' },
+    { org_name: 'soil association', org_aliases: ['soil association certification'], indicator_id: 'agriculture.food_standards.revealed', anchor: 0.9, weight_multiplier: 1.0, rationale: 'Organic farming body — high food standards advocate' },
+    { org_name: 'sustain', org_aliases: ['sustain: the alliance for better food and farming'], indicator_id: 'agriculture.food_standards.revealed', anchor: 0.85, weight_multiplier: 1.0, rationale: 'Food and farming campaign alliance' },
+
+    // Digital / technology
+    { org_name: 'open rights group', org_aliases: ['org', 'openrightsgroup'], indicator_id: 'digital.data_privacy.revealed', anchor: 0.9, weight_multiplier: 1.0, rationale: 'Digital rights campaign group — strong privacy advocate' },
+    { org_name: 'big brother watch', org_aliases: ['big brother watch uk'], indicator_id: 'digital.data_privacy.revealed', anchor: 0.9, weight_multiplier: 1.0, rationale: 'Civil liberties group — opposes mass surveillance' },
+    { org_name: 'techuk', org_aliases: ['tech uk', 'technology trade association'], indicator_id: 'digital.ai_regulation.revealed', anchor: 0.3, weight_multiplier: 0.9, rationale: 'Tech industry body — favours light-touch regulation' },
+    { org_name: 'nspcc', org_aliases: ['national society for the prevention of cruelty to children'], indicator_id: 'digital.online_safety.revealed', anchor: 0.85, weight_multiplier: 1.0, rationale: 'Child protection charity — strong online safety advocate' },
+
+    // Trade
+    { org_name: 'british chambers of commerce', org_aliases: ['bcc'], indicator_id: 'trade.liberalisation.revealed', anchor: 0.75, weight_multiplier: 1.0, rationale: 'Business trade body — generally pro-free trade' },
+
+    // Culture & media
+    { org_name: 'arts council', org_aliases: ['arts council england', 'ace'], indicator_id: 'culture.arts_funding.revealed', anchor: 0.8, weight_multiplier: 1.0, rationale: 'National arts funding body' },
+    { org_name: 'creative industries federation', org_aliases: ['cif'], indicator_id: 'culture.arts_funding.revealed', anchor: 0.8, weight_multiplier: 0.9, rationale: 'Creative sector trade body' },
+
+    // Local government
+    { org_name: 'local government association', org_aliases: ['lga'], indicator_id: 'local_gov.council_powers.revealed', anchor: 0.8, weight_multiplier: 1.0, rationale: 'Council umbrella body — advocates greater local autonomy' },
   ];
 
   const { error: orgErr } = await sb.from('org_indicator_map').upsert(orgMappings, { onConflict: 'org_name,indicator_id' });
