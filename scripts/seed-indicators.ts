@@ -73,6 +73,48 @@ async function main() {
     // Ethics / conscience vote indicators
     { id: 'ethics.assisted_dying.revealed', radar: 'policy', policy_area: 'end-of-life', label_low: 'Opposes assisted dying legislation', label_high: 'Supports assisted dying legislation', description: 'Stance on terminally ill adults end-of-life choice', half_life_years: 7.0 },
 
+    // Transport
+    { id: 'transport.roads_vs_rail.revealed', radar: 'policy', policy_area: 'transport', label_low: 'Prioritises road investment', label_high: 'Prioritises public transport/rail investment', description: 'Stance on roads vs public transport and rail spending', half_life_years: 3.0 },
+    { id: 'transport.roads_vs_rail.public', radar: 'policy', policy_area: 'transport', label_low: 'Prioritises road investment', label_high: 'Prioritises public transport/rail investment', description: 'Public statements on transport investment priorities', half_life_years: 3.0 },
+    { id: 'transport.hs2.revealed', radar: 'policy', policy_area: 'transport', label_low: 'Opposes HS2 project', label_high: 'Supports HS2 project', description: 'Stance on HS2 high-speed rail', half_life_years: 3.0 },
+    { id: 'transport.hs2.public', radar: 'policy', policy_area: 'transport', label_low: 'Opposes HS2 project', label_high: 'Supports HS2 project', description: 'Public statements on HS2 high-speed rail', half_life_years: 3.0 },
+
+    // Digital & technology
+    { id: 'digital.online_safety.revealed', radar: 'policy', policy_area: 'online-safety', label_low: 'Favours platform self-regulation', label_high: 'Favours strong state regulation of online content', description: 'Stance on online safety and content regulation', half_life_years: 3.0 },
+    { id: 'digital.online_safety.public', radar: 'policy', policy_area: 'online-safety', label_low: 'Favours platform self-regulation', label_high: 'Favours strong state regulation of online content', description: 'Public statements on online safety regulation', half_life_years: 3.0 },
+    { id: 'digital.ai_regulation.revealed', radar: 'policy', policy_area: 'ai-regulation', label_low: 'Favours light-touch AI regulation', label_high: 'Favours strict AI regulation and oversight', description: 'Stance on artificial intelligence governance', half_life_years: 3.0 },
+    { id: 'digital.ai_regulation.public', radar: 'policy', policy_area: 'ai-regulation', label_low: 'Favours light-touch AI regulation', label_high: 'Favours strict AI regulation and oversight', description: 'Public statements on AI regulation', half_life_years: 3.0 },
+    { id: 'digital.data_privacy.revealed', radar: 'policy', policy_area: 'data-privacy', label_low: 'Prioritises innovation and data sharing', label_high: 'Prioritises individual data privacy protections', description: 'Stance on data protection and privacy rights', half_life_years: 3.0 },
+    { id: 'digital.data_privacy.public', radar: 'policy', policy_area: 'data-privacy', label_low: 'Prioritises innovation and data sharing', label_high: 'Prioritises individual data privacy protections', description: 'Public statements on data privacy', half_life_years: 3.0 },
+
+    // Education (expanded)
+    { id: 'education.university_fees.revealed', radar: 'policy', policy_area: 'higher-education', label_low: 'Supports tuition fees / market approach', label_high: 'Supports reducing or abolishing tuition fees', description: 'Stance on university tuition fee policy', half_life_years: 3.0 },
+    { id: 'education.university_fees.public', radar: 'policy', policy_area: 'higher-education', label_low: 'Supports tuition fees / market approach', label_high: 'Supports reducing or abolishing tuition fees', description: 'Public statements on university fees', half_life_years: 3.0 },
+    { id: 'education.school_funding.revealed', radar: 'policy', policy_area: 'schools', label_low: 'Favours school funding restraint', label_high: 'Favours increased school funding', description: 'Stance on school funding levels and per-pupil spending', half_life_years: 3.0 },
+    { id: 'education.school_funding.public', radar: 'policy', policy_area: 'schools', label_low: 'Favours school funding restraint', label_high: 'Favours increased school funding', description: 'Public statements on school funding', half_life_years: 3.0 },
+
+    // Agriculture
+    { id: 'agriculture.farming_subsidies.revealed', radar: 'policy', policy_area: 'agriculture', label_low: 'Favours reducing farm subsidies', label_high: 'Favours maintaining/increasing farm support', description: 'Stance on agricultural subsidies and farmer support payments', half_life_years: 3.0 },
+    { id: 'agriculture.farming_subsidies.public', radar: 'policy', policy_area: 'agriculture', label_low: 'Favours reducing farm subsidies', label_high: 'Favours maintaining/increasing farm support', description: 'Public statements on farm subsidies', half_life_years: 3.0 },
+    { id: 'agriculture.food_standards.revealed', radar: 'policy', policy_area: 'food-standards', label_low: 'Favours relaxing standards for trade deals', label_high: 'Favours maintaining high food and farming standards', description: 'Stance on food standards and imports regulation', half_life_years: 3.0 },
+    { id: 'agriculture.food_standards.public', radar: 'policy', policy_area: 'food-standards', label_low: 'Favours relaxing standards for trade deals', label_high: 'Favours maintaining high food and farming standards', description: 'Public statements on food standards', half_life_years: 3.0 },
+
+    // Trade
+    { id: 'trade.liberalisation.revealed', radar: 'policy', policy_area: 'trade', label_low: 'Protectionist / strategic autonomy', label_high: 'Favours free trade and open markets', description: 'Stance on trade liberalisation vs protectionism', half_life_years: 3.0 },
+    { id: 'trade.liberalisation.public', radar: 'policy', policy_area: 'trade', label_low: 'Protectionist / strategic autonomy', label_high: 'Favours free trade and open markets', description: 'Public statements on trade policy', half_life_years: 3.0 },
+
+    // Culture & media
+    { id: 'culture.bbc_funding.revealed', radar: 'policy', policy_area: 'broadcasting', label_low: 'Favours BBC reform/defunding', label_high: 'Supports maintaining BBC funding and licence fee', description: 'Stance on BBC funding model and licence fee', half_life_years: 3.0 },
+    { id: 'culture.bbc_funding.public', radar: 'policy', policy_area: 'broadcasting', label_low: 'Favours BBC reform/defunding', label_high: 'Supports maintaining BBC funding and licence fee', description: 'Public statements on BBC funding', half_life_years: 3.0 },
+    { id: 'culture.arts_funding.revealed', radar: 'policy', policy_area: 'culture', label_low: 'Favours reducing arts and culture subsidy', label_high: 'Supports increased arts and culture funding', description: 'Stance on public funding for arts and cultural institutions', half_life_years: 3.0 },
+    { id: 'culture.arts_funding.public', radar: 'policy', policy_area: 'culture', label_low: 'Favours reducing arts and culture subsidy', label_high: 'Supports increased arts and culture funding', description: 'Public statements on arts funding', half_life_years: 3.0 },
+
+    // Local government & devolution
+    { id: 'local_gov.council_powers.revealed', radar: 'policy', policy_area: 'local-government', label_low: 'Favours central government control', label_high: 'Favours greater council autonomy and powers', description: 'Stance on local authority autonomy and funding', half_life_years: 3.0 },
+    { id: 'local_gov.council_powers.public', radar: 'policy', policy_area: 'local-government', label_low: 'Favours central government control', label_high: 'Favours greater council autonomy and powers', description: 'Public statements on council powers', half_life_years: 3.0 },
+    { id: 'local_gov.devolution.revealed', radar: 'policy', policy_area: 'devolution', label_low: 'Favours centralised governance', label_high: 'Supports further devolution of powers', description: 'Stance on devolution to regions and nations', half_life_years: 3.0 },
+    { id: 'local_gov.devolution.public', radar: 'policy', policy_area: 'devolution', label_low: 'Favours centralised governance', label_high: 'Supports further devolution of powers', description: 'Public statements on devolution', half_life_years: 3.0 },
+
     // Ideology indicators
     { id: 'ideology.economic_left_right.revealed', radar: 'ideology', policy_area: null, label_low: 'Economic right (free market)', label_high: 'Economic left (state intervention)', description: 'Economic ideology spectrum', half_life_years: 5.0 },
     { id: 'ideology.lib_auth.revealed', radar: 'ideology', policy_area: null, label_low: 'Libertarian (individual freedom)', label_high: 'Authoritarian (state authority)', description: 'Social libertarian-authoritarian spectrum', half_life_years: 5.0 },
@@ -314,6 +356,42 @@ async function main() {
     { appg_id: 'taxation', indicator_id: 'fiscal.taxation.revealed', anchor: 0.5, weight_multiplier: 0.5 },
     { appg_id: 'small-business', indicator_id: 'fiscal.small_business.revealed', anchor: 0.8, weight_multiplier: 0.7 },
     { appg_id: 'entrepreneurship', indicator_id: 'fiscal.small_business.revealed', anchor: 0.7, weight_multiplier: 0.6 },
+
+    // Transport
+    { appg_id: 'rail', indicator_id: 'transport.roads_vs_rail.revealed', anchor: 0.85, weight_multiplier: 0.8 },
+    { appg_id: 'high-speed-rail', indicator_id: 'transport.hs2.revealed', anchor: 0.85, weight_multiplier: 0.8 },
+    { appg_id: 'cycling-and-walking', indicator_id: 'transport.roads_vs_rail.revealed', anchor: 0.75, weight_multiplier: 0.6 },
+    { appg_id: 'bus-services', indicator_id: 'transport.roads_vs_rail.revealed', anchor: 0.8, weight_multiplier: 0.7 },
+    { appg_id: 'roads', indicator_id: 'transport.roads_vs_rail.revealed', anchor: 0.2, weight_multiplier: 0.7 },
+    { appg_id: 'infrastructure', indicator_id: 'transport.roads_vs_rail.revealed', anchor: 0.55, weight_multiplier: 0.5 },
+
+    // Digital & technology
+    { appg_id: 'artificial-intelligence', indicator_id: 'digital.ai_regulation.revealed', anchor: 0.6, weight_multiplier: 0.7 },
+    { appg_id: 'data-analytics', indicator_id: 'digital.data_privacy.revealed', anchor: 0.4, weight_multiplier: 0.6 },
+    { appg_id: 'internet-communications-and-technology', indicator_id: 'digital.online_safety.revealed', anchor: 0.6, weight_multiplier: 0.6 },
+    { appg_id: 'online-safety', indicator_id: 'digital.online_safety.revealed', anchor: 0.8, weight_multiplier: 0.8 },
+
+    // Agriculture
+    { appg_id: 'agriculture-and-food-for-development', indicator_id: 'agriculture.farming_subsidies.revealed', anchor: 0.75, weight_multiplier: 0.7 },
+    { appg_id: 'rural-business', indicator_id: 'agriculture.farming_subsidies.revealed', anchor: 0.7, weight_multiplier: 0.6 },
+    { appg_id: 'food-and-drink-manufacturing', indicator_id: 'agriculture.food_standards.revealed', anchor: 0.6, weight_multiplier: 0.6 },
+    { appg_id: 'animal-welfare', indicator_id: 'agriculture.food_standards.revealed', anchor: 0.8, weight_multiplier: 0.7 },
+
+    // Trade
+    { appg_id: 'trade-and-investment', indicator_id: 'trade.liberalisation.revealed', anchor: 0.75, weight_multiplier: 0.7 },
+    { appg_id: 'fair-trade', indicator_id: 'trade.liberalisation.revealed', anchor: 0.55, weight_multiplier: 0.6 },
+
+    // Culture & media
+    { appg_id: 'bbc', indicator_id: 'culture.bbc_funding.revealed', anchor: 0.75, weight_multiplier: 0.8 },
+    { appg_id: 'arts-health-and-wellbeing', indicator_id: 'culture.arts_funding.revealed', anchor: 0.8, weight_multiplier: 0.7 },
+    { appg_id: 'creative-diversity', indicator_id: 'culture.arts_funding.revealed', anchor: 0.75, weight_multiplier: 0.6 },
+    { appg_id: 'music', indicator_id: 'culture.arts_funding.revealed', anchor: 0.7, weight_multiplier: 0.6 },
+    { appg_id: 'theatre', indicator_id: 'culture.arts_funding.revealed', anchor: 0.75, weight_multiplier: 0.6 },
+
+    // Local government & devolution
+    { appg_id: 'local-government', indicator_id: 'local_gov.council_powers.revealed', anchor: 0.75, weight_multiplier: 0.8 },
+    { appg_id: 'devolution', indicator_id: 'local_gov.devolution.revealed', anchor: 0.8, weight_multiplier: 0.8 },
+    { appg_id: 'combined-authorities', indicator_id: 'local_gov.devolution.revealed', anchor: 0.8, weight_multiplier: 0.7 },
   ];
 
   const { error: appgErr } = await sb.from('appg_indicator_map').upsert(appgMappings, { onConflict: 'appg_id' });
@@ -379,6 +457,31 @@ async function main() {
     // Transport
     { committee_id: 'transport', indicator_id: 'fiscal.public_spending.revealed', membership_anchor: 0.55, chair_anchor: 0.6, weight_multiplier: 0.5 },
     { committee_id: 'transport', indicator_id: 'energy.net_zero.revealed', membership_anchor: 0.55, chair_anchor: 0.6, weight_multiplier: 0.4 },
+    { committee_id: 'transport', indicator_id: 'transport.roads_vs_rail.revealed', membership_anchor: 0.6, chair_anchor: 0.65, weight_multiplier: 0.7 },
+
+    // Digital & technology
+    { committee_id: 'science-innovation-and-technology', indicator_id: 'digital.ai_regulation.revealed', membership_anchor: 0.6, chair_anchor: 0.65, weight_multiplier: 0.7 },
+    { committee_id: 'science-innovation-and-technology', indicator_id: 'digital.data_privacy.revealed', membership_anchor: 0.55, chair_anchor: 0.6, weight_multiplier: 0.5 },
+
+    // Culture, media & sport
+    { committee_id: 'culture-media-and-sport', indicator_id: 'culture.bbc_funding.revealed', membership_anchor: 0.6, chair_anchor: 0.65, weight_multiplier: 0.7 },
+    { committee_id: 'culture-media-and-sport', indicator_id: 'culture.arts_funding.revealed', membership_anchor: 0.6, chair_anchor: 0.65, weight_multiplier: 0.7 },
+    { committee_id: 'culture-media-and-sport', indicator_id: 'digital.online_safety.revealed', membership_anchor: 0.6, chair_anchor: 0.65, weight_multiplier: 0.6 },
+
+    // Agriculture
+    { committee_id: 'environment-food-and-rural-affairs', indicator_id: 'agriculture.farming_subsidies.revealed', membership_anchor: 0.65, chair_anchor: 0.7, weight_multiplier: 0.8 },
+    { committee_id: 'environment-food-and-rural-affairs', indicator_id: 'agriculture.food_standards.revealed', membership_anchor: 0.6, chair_anchor: 0.7, weight_multiplier: 0.7 },
+
+    // Trade
+    { committee_id: 'business-and-trade', indicator_id: 'trade.liberalisation.revealed', membership_anchor: 0.6, chair_anchor: 0.65, weight_multiplier: 0.6 },
+
+    // Local government & devolution
+    { committee_id: 'levelling-up-housing-and-communities', indicator_id: 'local_gov.council_powers.revealed', membership_anchor: 0.6, chair_anchor: 0.7, weight_multiplier: 0.7 },
+    { committee_id: 'levelling-up-housing-and-communities', indicator_id: 'local_gov.devolution.revealed', membership_anchor: 0.6, chair_anchor: 0.7, weight_multiplier: 0.7 },
+
+    // Education (expanded)
+    { committee_id: 'education', indicator_id: 'education.school_funding.revealed', membership_anchor: 0.6, chair_anchor: 0.7, weight_multiplier: 0.7 },
+    { committee_id: 'education', indicator_id: 'education.university_fees.revealed', membership_anchor: 0.55, chair_anchor: 0.6, weight_multiplier: 0.5 },
   ];
 
   const { error: cmErr } = await sb.from('committee_indicator_map').upsert(committeeMappings, { onConflict: 'committee_id,indicator_id' });
